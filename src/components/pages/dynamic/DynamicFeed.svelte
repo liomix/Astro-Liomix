@@ -1,7 +1,11 @@
 <script lang="ts">
 import { onMount, tick } from "svelte";
 import ClientPagination from "@/components/common/ClientPagination.svelte";
-import { formatTimezoneOffset } from "@/utils/date-utils";
+import {
+	registerDynamicActions,
+	syncDynamicLikeStates,
+} from "@/components/pages/dynamic/dynamic-actions";
+import { formatDynamicDate } from "@/utils/date-utils";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { registerDynamicGallery } from "./dynamic-gallery";
 import { registerDynamicInlineComments } from "./dynamic-inline-comments";
@@ -36,7 +40,6 @@ interface Props {
 	noResultsText: string;
 	loadingText: string;
 	allYearsText: string;
-	timezone: string;
 	memos?: MemosConfig;
 }
 
@@ -48,7 +51,6 @@ const {
 	noResultsText,
 	loadingText,
 	allYearsText,
-	timezone,
 	memos,
 }: Props = $props();
 
@@ -128,6 +130,7 @@ function createItem(entry: DynamicData) {
 	permalinkUrl.hash = anchorId;
 	const permalink = `${permalinkUrl.pathname}${permalinkUrl.search}${permalinkUrl.hash}`;
 	root.id = anchorId;
+	root.dataset.likeId = entry.id;
 	root.dataset.year = String(new Date(entry.published).getUTCFullYear());
 
 	const author = root.querySelector<HTMLElement>("[data-dynamic-author]");
@@ -158,44 +161,14 @@ function createItem(entry: DynamicData) {
 	if (time) {
 		const date = new Date(entry.published);
 		time.dateTime = date.toISOString();
-		// 第三方 API 和 Memos 使用浏览器本地时区，不做额外时区转换
-		if (source.startsWith("http") || memos?.enable) {
-			time.textContent = date.toLocaleDateString("zh-CN", {
-				year: "numeric",
-				month: "2-digit",
-				day: "2-digit",
-				hour: "2-digit",
-				minute: "2-digit",
-			});
-		} else {
-			time.textContent = new Intl.DateTimeFormat(
-				document.documentElement.lang || undefined,
-				{
-					timeZone: "UTC",
-					year: "numeric",
-					month: "2-digit",
-					day: "2-digit",
-					hour: "2-digit",
-					minute: "2-digit",
-					second: "2-digit",
-				},
-			).format(date);
-			time.textContent += ` ${formatTimezoneOffset(timezone, date)}`;
-		}
-	}
-	const location = root.querySelector<HTMLElement>("[data-dynamic-location]");
-	if (location) {
-		const locationText = entry.location?.trim();
-		if (locationText) {
-			const text = location.querySelector<HTMLElement>(
-				"[data-dynamic-location-text]",
-			);
-			if (text) text.textContent = locationText;
-			location.title = locationText;
-			location.removeAttribute("hidden");
-		} else {
-			location.setAttribute("hidden", "");
-		}
+		// 第三方 API 和 Memos 使用浏览器本地时区，本地构建数据用站点时区
+		time.textContent =
+			source.startsWith("http") || memos?.enable
+				? formatDynamicDate(
+						date,
+						Intl.DateTimeFormat().resolvedOptions().timeZone,
+					)
+				: formatDynamicDate(date);
 	}
 
 	const content = root.querySelector<HTMLElement>("[data-dynamic-content]");
@@ -231,6 +204,7 @@ function createItem(entry: DynamicData) {
 				`/dynamic/${entry.id}/`,
 			)}`;
 		} else {
+			// 评论系统关闭时移掉空壳元素，底部评论按钮保留（点击无动作）
 			comments.remove();
 		}
 	}
@@ -245,6 +219,7 @@ async function renderItems(items: DynamicData[]) {
 		const item = createItem(entry);
 		if (item) list.append(item);
 	}
+	syncDynamicLikeStates(list);
 	if (restoreAnchorAfterRender) {
 		restoreAnchorAfterRender = false;
 		const target = document.getElementById(
@@ -270,6 +245,7 @@ $effect(() => {
 onMount(() => {
 	registerDynamicGallery();
 	registerDynamicInlineComments();
+	registerDynamicActions();
 	const page = list.closest(".page-shell");
 	template =
 		page?.querySelector<HTMLTemplateElement>("[data-dynamic-item-template]") ??

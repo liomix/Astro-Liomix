@@ -663,3 +663,38 @@ html {
 .pagination-info {
   @apply text-sm text-(--text-secondary) text-center mb-2;
 }
+
+/* 弹窗类容器（原生 dialog / 浮动面板 / 搜索弹窗 / 海报弹窗）一律隐藏滚动条 UI，保留滚动能力 */
+dialog,
+dialog *,
+.float-panel,
+.float-panel *,
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+dialog::-webkit-scrollbar,
+dialog *::-webkit-scrollbar,
+.float-panel::-webkit-scrollbar,
+.float-panel *::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* 全站隐藏文档滚动条 UI（保留滚动能力）：Firefox 用 scrollbar-width，
+   Chromium/Safari 用 ::-webkit-scrollbar；内层滚动区的滚动条不受影响 */
+html,
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

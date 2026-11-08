@@ -1,8 +1,10 @@
 ---
-import { Icon } from "astro-icon/components";
+import { getImage } from "astro:assets";
+import * as path from "node:path";
+import type { ImageMetadata } from "astro";
 import WidgetLayout from "@/components/common/WidgetLayout.astro";
 import DynamicSidebar from "@/components/widget/DynamicSidebar.svelte";
-import { dynamicConfig, siteConfig } from "@/config";
+import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { WidgetComponentConfig } from "@/types/config";
@@ -23,6 +25,36 @@ const apiUrl = dynamicConfig.apiUrl?.startsWith("http")
 	? dynamicConfig.apiUrl
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
 const memos = dynamicConfig.memos;
+
+const profileUrl = url(dynamicConfig.profileUrl || "/about/");
+
+// 弹窗条目需要头像的最终 URL，这里把本地资源先交给 Astro 生成一次
+async function resolveAvatar(src: string): Promise<string> {
+	if (!src) return "";
+	if (
+		src.startsWith("/") ||
+		src.startsWith("http://") ||
+		src.startsWith("https://") ||
+		src.startsWith("data:")
+	) {
+		return url(src);
+	}
+	const files = import.meta.glob<ImageMetadata>(
+		"../../**/*.{png,jpg,jpeg,webp,avif}",
+		{ import: "default" },
+	);
+	const key = path.normalize(path.join("../../", src)).replace(/\\/g, "/");
+	const loader = files[key];
+	if (!loader) return "";
+	try {
+		const image = await loader();
+		return (await getImage({ src: image, width: 96, format: "webp" })).src;
+	} catch {
+		return "";
+	}
+}
+
+const avatarUrl = await resolveAvatar(profileConfig.avatar || "");
 ---
 
 {
@@ -34,20 +66,15 @@ const memos = dynamicConfig.memos;
 			class={className}
 			style={style}
 		>
-			<DynamicSidebar client:visible apiUrl={apiUrl} limit={limit} {memos} />
-			<a
-				class="btn-plain mt-2 flex items-center justify-center gap-1 rounded-lg p-1.5
-					text-sm text-(--primary)"
-				href={url("/dynamic/")}
-			>
-				<Icon
-					name="material-symbols:dynamic-feed-rounded"
-					class="size-4.5"
-					aria-hidden="true"
-				/>
-				<span>{i18n(I18nKey.moreDynamics)}</span>
-				<span data-dynamic-count class="opacity-60"></span>
-			</a>
+			<DynamicSidebar
+				client:visible
+				apiUrl={apiUrl}
+				limit={limit}
+				{memos}
+				profileName={profileConfig.name}
+				{profileUrl}
+				{avatarUrl}
+			/>
 		</WidgetLayout>
 	)
 }

@@ -45,6 +45,8 @@ export const ko: Translation = {
 	[Key.dynamicBackToList]: "일상 목록으로",
 	[Key.dynamicProfile]: "{name}님의 프로필 보기",
 	[Key.dynamicPermalink]: "이 일상의 고유 링크",
+	[Key.dynamicLike]: "좋아요",
+	[Key.dynamicComment]: "댓글",
 	[Key.dynamicCollapseGallery]: "접기",
 	[Key.dynamicViewOriginal]: "크게 보기",
 	[Key.dynamicPreviousImage]: "이전 이미지",

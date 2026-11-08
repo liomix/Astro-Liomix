@@ -54,7 +54,8 @@ export function registerDynamicInlineComments(): void {
 			}
 		};
 
-		private toggle() {
+		/** 供外部按钮（如动态卡片底部的评论图标）调用 */
+		toggle() {
 			const panel = this.querySelector<HTMLElement>("[data-comment-panel]");
 			if (!panel) return;
 			const willOpen = panel.hidden;

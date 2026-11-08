@@ -4,92 +4,278 @@ dynamic-feed {
 	display: block;
 }
 
-.page-filter {
-	grid-column: 1 / -1;
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
+/* ===== 页头：品牌图标 + 标题 + 计数胶囊 + 统一筛选条 ===== */
+
+.page-hero {
+	position: relative;
+	display: grid;
+	gap: 1.125rem;
+	isolation: isolate;
+	margin-bottom: 1rem;
+	padding: 1.4rem 1.6rem 1.5rem;
+	overflow: hidden;
 }
 
-.page-search {
-	position: relative;
-	display: block;
-	min-width: 12rem;
+/* 左上角柔光，给扁平卡片一点体积感 */
+.page-hero::before {
+	position: absolute;
+	inset: -30% -5% auto -5%;
+	z-index: -1;
+	height: 13rem;
+	background:
+		radial-gradient(
+			58% 100% at 12% 0%,
+			color-mix(in oklch, var(--primary) 20%, transparent),
+			transparent 72%
+		),
+		radial-gradient(
+			42% 100% at 78% 0%,
+			color-mix(in oklch, var(--primary) 9%, transparent),
+			transparent 76%
+		);
+	content: "";
+	pointer-events: none;
+}
+
+.page-hero-main {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+
+.page-hero-icon {
+	display: grid;
+	width: 3.125rem;
+	height: 3.125rem;
+	flex: 0 0 3.125rem;
+	place-items: center;
+	border-radius: 0.875rem;
+	background: linear-gradient(
+		150deg,
+		color-mix(in oklch, var(--primary) 80%, white) 0%,
+		var(--primary) 58%,
+		color-mix(in oklch, var(--primary) 88%, black) 100%
+	);
+	box-shadow:
+		0 10px 20px -10px color-mix(in oklch, var(--primary) 70%, transparent),
+		inset 0 1px 0 rgb(255 255 255 / 30%);
+	color: white;
+	font-size: 1.7rem;
+}
+
+:root.dark .page-hero-icon {
+	color: rgb(0 0 0 / 72%);
+	box-shadow:
+		0 10px 20px -12px rgb(0 0 0 / 45%),
+		inset 0 1px 0 rgb(255 255 255 / 14%);
+}
+
+.page-hero-text {
+	min-width: 0;
 	flex: 1;
 }
 
-.page-search svg {
-	position: absolute;
-	top: 50%;
-	left: 0.875rem;
-	color: var(--content-meta);
-	font-size: 1.25rem;
-	pointer-events: none;
-	transform: translateY(-50%);
+.page-hero-title {
+	margin: 0;
+	color: rgb(0 0 0 / 90%);
+	font-size: 1.55rem;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	line-height: 1.2;
 }
 
-.page-search input {
+:root.dark .page-hero-title {
+	color: rgb(255 255 255 / 92%);
+}
+
+.page-hero-sub {
+	margin: 0.3rem 0 0;
+	color: var(--content-meta);
+	font-size: 0.875rem;
+	line-height: 1.55;
+}
+
+.page-hero-count {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	margin-left: auto;
+	padding: 0.35rem 0.7rem 0.35rem 0.6rem;
+	border: 1px solid color-mix(in oklch, var(--primary) 26%, transparent);
+	border-radius: 999px;
+	background: color-mix(in oklch, var(--primary) 10%, transparent);
+	color: var(--primary);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.page-hero-count svg {
+	font-size: 1.05rem;
+}
+
+.page-hero-count strong {
+	font-size: 0.95rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+.page-hero-count span {
+	color: var(--content-meta);
+	font-size: 0.75rem;
+	font-weight: 500;
+}
+
+/* ===== 筛选条：搜索 + 年份，统一 44px 触控高度 ===== */
+
+.page-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	min-width: 0;
+}
+
+.page-toolbar-search,
+.page-toolbar-year {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+.page-toolbar-search {
+	flex: 1;
+}
+
+.page-toolbar-year {
+	flex: 0 0 auto;
+}
+
+.page-toolbar-icon,
+.page-toolbar-caret {
+	position: absolute;
+	display: grid;
+	place-items: center;
+	color: var(--content-meta);
+	pointer-events: none;
+	transition: color 0.15s ease;
+}
+
+.page-toolbar-icon {
+	left: 0.8rem;
+	font-size: 1.15rem;
+}
+
+.page-toolbar-caret {
+	right: 0.55rem;
+	font-size: 1.2rem;
+}
+
+.page-toolbar-search:focus-within .page-toolbar-icon,
+.page-toolbar-year:focus-within .page-toolbar-icon {
+	color: var(--primary);
+}
+
+.page-toolbar-search input,
+.page-toolbar-year select {
+	box-sizing: border-box;
 	width: 100%;
 	min-height: 2.75rem;
 	border: 1px solid var(--line-divider);
-	border-radius: var(--radius-large);
+	border-radius: 0.75rem;
 	outline: none;
-	background: transparent;
-	color: rgb(0 0 0 / 90%);
-	padding: 0.625rem 1rem 0.625rem 2.75rem;
+	background: color-mix(in oklch, var(--content-meta) 6%, transparent);
+	color: rgb(0 0 0 / 88%);
+	padding: 0.5rem 1rem 0.5rem 2.6rem;
+	font-family: inherit;
 	font-size: 0.9rem;
+	transition:
+		border-color 0.15s ease,
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
 }
 
-.page-search input:focus {
-	border-color: var(--primary);
-	box-shadow: 0 0 0 1px var(--primary);
-}
-
-.page-year-select {
-	position: relative;
-	display: flex;
-	flex: 0 0 auto;
-	align-items: center;
-	color: var(--content-meta);
-}
-
-.page-year-select svg:first-child {
-	position: absolute;
-	left: 0.75rem;
-	font-size: 1.15rem;
-	pointer-events: none;
-}
-
-.page-year-select svg:last-child {
-	position: absolute;
-	right: 0.5rem;
-	font-size: 1.25rem;
-	pointer-events: none;
-}
-
-.page-year-select select {
-	min-width: 9.5rem;
-	min-height: 2.75rem;
+.page-toolbar-year select {
 	appearance: none;
-	border: 1px solid var(--line-divider);
-	border-radius: var(--radius-large);
-	outline: none;
-	background: var(--card-bg);
-	color: rgb(0 0 0 / 90%);
+	width: auto;
+	min-width: 9rem;
+	padding-right: 2.3rem;
 	color-scheme: light;
-	padding: 0.625rem 2.25rem 0.625rem 2.35rem;
-	font-size: 0.9rem;
+	font-weight: 500;
 	cursor: pointer;
 }
 
-.page-year-select select option {
-	background: var(--card-bg);
-	color: rgb(0 0 0 / 90%);
+.page-toolbar-search input::placeholder {
+	color: color-mix(in oklch, var(--content-meta) 80%, transparent);
 }
 
-.page-year-select select:focus {
+.page-toolbar-search input:hover,
+.page-toolbar-year select:hover {
+	border-color: color-mix(in oklch, var(--primary) 40%, var(--line-divider));
+}
+
+.page-toolbar-search input:focus-visible,
+.page-toolbar-year select:focus-visible {
 	border-color: var(--primary);
-	box-shadow: 0 0 0 1px var(--primary);
+	background: var(--card-bg);
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+.page-toolbar-year select option {
+	background: var(--float-panel-bg);
+	color: rgb(0 0 0 / 88%);
+}
+
+:root.dark .page-toolbar-search input,
+:root.dark .page-toolbar-year select {
+	color: rgb(255 255 255 / 88%);
+}
+
+:root.dark .page-toolbar-year select {
+	color-scheme: dark;
+}
+
+:root.dark .page-toolbar-year select option {
+	color: rgb(255 255 255 / 88%);
+}
+
+@media (max-width: 640px) {
+	.page-hero {
+		gap: 1rem;
+		padding: 1.15rem 1.15rem 1.25rem;
+	}
+
+	.page-hero-icon {
+		width: 2.75rem;
+		height: 2.75rem;
+		flex: 0 0 2.75rem;
+		border-radius: 0.75rem;
+		font-size: 1.5rem;
+	}
+
+	.page-hero-title {
+		font-size: 1.35rem;
+	}
+
+	.page-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.page-toolbar-year select {
+		width: 100%;
+		min-width: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.page-toolbar-icon,
+	.page-toolbar-caret,
+	.page-toolbar-search input,
+	.page-toolbar-year select {
+		transition: none;
+	}
 }
 
 .page-feed {
@@ -105,6 +291,12 @@ dynamic-feed {
 	overflow: visible;
 	padding: 1.125rem;
 	scroll-margin-top: 5.5rem;
+	transition: box-shadow 0.18s ease;
+}
+
+/* 悬停轻微抬起，靠阴影而不是位移，避免列表跳动 */
+.page-entry:hover {
+	box-shadow: 0 16px 32px -24px color-mix(in oklch, var(--primary) 70%, transparent);
 }
 
 .page-entry[hidden] {
@@ -113,15 +305,15 @@ dynamic-feed {
 
 .page-entry-header {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	min-width: 0;
 	gap: 0.75rem;
 }
 
 .page-avatar {
-	width: 3rem;
-	height: 3rem;
-	flex: 0 0 3rem;
+	width: 3.5rem;
+	height: 3.5rem;
+	flex: 0 0 3.5rem;
 	overflow: hidden;
 	border-radius: 50%;
 }
@@ -137,12 +329,14 @@ dynamic-feed {
 	display: flex;
 	min-width: 0;
 	flex: 1;
-	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	/* 昵称顶部与头像顶边对齐后再下压一点，视觉更稳 */
+	padding-top: 0.2rem;
 }
 
 .page-author {
-	width: fit-content;
-	max-width: 100%;
+	min-width: 0;
 	overflow: hidden;
 	color: rgb(0 0 0 / 90%);
 	text-decoration: none;
@@ -156,24 +350,28 @@ dynamic-feed {
 	display: block;
 	overflow: hidden;
 	color: inherit;
-	font-size: 0.95rem;
+	font-size: 1.05rem;
+	font-weight: 600;
 	line-height: 1.4;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
-.page-meta {
+/* 底部：时间在左，点赞/评论/分享在右 */
+.page-footer {
 	display: flex;
 	min-width: 0;
 	align-items: center;
-	gap: 0.625rem;
+	justify-content: space-between;
+	gap: 0.75rem;
+	margin-top: 0.75rem;
 }
 
 .page-time {
 	width: fit-content;
 	flex: 0 0 auto;
 	color: var(--content-meta);
-	font-size: 0.78rem;
+	font-size: 0.8rem;
 	line-height: 1.5;
 	text-decoration: none;
 }
@@ -182,56 +380,11 @@ dynamic-feed {
 	color: var(--primary);
 }
 
-.page-location {
-	display: inline-flex;
-	min-width: 0;
-	align-items: center;
-	gap: 0.15rem;
-	color: var(--content-meta);
-	font-size: 0.78rem;
-	line-height: 1.5;
-}
-
-.page-location[hidden] {
-	display: none;
-}
-
-.page-location svg {
-	width: 1rem;
-	height: 1rem;
-	flex: 0 0 auto;
-}
-
-.page-location span {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.page-permalink {
-	width: 2.5rem;
-	height: 2.5rem;
-	flex: 0 0 2.5rem;
-	border-radius: 50%;
-	font-size: 1.25rem;
-}
-
-.page-entry-decoration {
-	display: inline-flex;
-	width: 2.5rem;
-	height: 2.5rem;
-	flex: 0 0 2.5rem;
-	align-items: center;
-	justify-content: center;
-	color: var(--primary);
-	opacity: 0.55;
-	pointer-events: none;
-}
-
 .page-pinned-badge {
 	display: inline-flex;
+	flex: 0 0 auto;
 	align-items: center;
-	margin-left: auto;
+	gap: 0.15rem;
 	font-size: 0.65rem;
 	padding: 0.125rem 0.375rem;
 	border-radius: 0.25rem;
@@ -245,20 +398,15 @@ dynamic-feed {
 	display: none;
 }
 
-.page-entry-decoration svg {
-	width: 1.5rem;
-	height: 1.5rem;
-}
-
 .page-content {
 	box-sizing: border-box;
 	min-width: 0;
 	max-width: 100%;
 	overflow-wrap: anywhere;
-	margin: 0.875rem 0 0 3.75rem;
+	margin: 0.75rem 0 0;
 	color: rgb(0 0 0 / 90%);
-	font-size: 0.98rem;
-	line-height: 1.75;
+	font-size: 1rem;
+	line-height: 1.8;
 }
 
 .page-content > :first-child {
@@ -295,9 +443,9 @@ dynamic-feed {
 	display: block;
 	box-sizing: border-box;
 	min-width: 0;
-	width: min(calc(100% - 3.75rem), 56rem);
+	width: 100%;
 	max-width: 100%;
-	margin: 0.875rem 0 0 3.75rem;
+	margin: 0.75rem 0 0;
 }
 
 .page-gallery[hidden],
@@ -378,7 +526,7 @@ dynamic-feed {
 
 .page-gallery-grid[data-layout="single"] img {
 	width: auto;
-	max-width: min(100%, 36rem);
+	max-width: 100%;
 	max-height: min(32rem, 65vh);
 	height: auto;
 	object-fit: contain;
@@ -427,8 +575,12 @@ dynamic-feed {
 	font-size: 1.15rem;
 }
 
-.page-gallery-counter {
+/* 计数器在左，操作按钮整组靠右 */
+.page-gallery-toolbar .page-gallery-action:first-of-type {
 	margin-left: auto;
+}
+
+.page-gallery-counter {
 	display: inline-flex;
 	align-items: center;
 	min-height: 1.5rem;
@@ -523,9 +675,7 @@ dynamic-feed {
 
 .page-inline-comments {
 	display: block;
-	margin: 0.75rem 0 0 3.75rem;
-	border-top: 1px solid color-mix(in srgb, var(--content-meta) 16%, transparent);
-	padding-top: 0.35rem;
+	margin: 0.25rem 0 0;
 }
 
 .page-comment-toggle {
@@ -557,6 +707,8 @@ dynamic-feed {
 
 .page-comment-panel {
 	margin-top: 0.5rem;
+	padding-top: 0.5rem;
+	border-top: 1px solid color-mix(in srgb, var(--content-meta) 16%, transparent);
 	overflow: hidden;
 }
 
@@ -674,28 +826,16 @@ dynamic-feed {
 	color: var(--primary);
 }
 
-:root.dark .page-search input,
-:root.dark .page-year-select select {
-	background: transparent;
-	color: rgb(255 255 255 / 90%);
-	color-scheme: dark;
-}
-
-:root.dark .page-year-select select option {
-	background: var(--card-bg);
-	color: rgb(255 255 255 / 90%);
-}
-
 /* 透明模式适配 */
-body.wallpaper-transparent .page-search input {
+body.wallpaper-transparent .page-toolbar-search input {
 	background: transparent;
 }
 
-body.wallpaper-transparent .page-year-select select {
+body.wallpaper-transparent .page-toolbar-year select {
 	background: transparent;
 }
 
-body.wallpaper-transparent .page-year-select select option {
+body.wallpaper-transparent .page-toolbar-year select option {
 	background: var(--card-bg);
 }
 
@@ -715,15 +855,6 @@ body.wallpaper-transparent .page-year-select select option {
 }
 
 @media (max-width: 640px) {
-	.page-filter {
-		align-items: stretch;
-		flex-direction: column;
-	}
-
-	.page-year-select select {
-		width: 100%;
-	}
-
 	.page-entry {
 		padding: 1rem;
 	}

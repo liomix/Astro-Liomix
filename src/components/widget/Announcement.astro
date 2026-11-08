@@ -1,5 +1,6 @@
 ---
 import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import SidebarPop from "@/components/widget/SidebarPop.svelte";
 import Welcome from "@/components/widget/Welcome.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -17,33 +18,51 @@ const { class: className, style, widgetConfig } = Astro.props;
 
 const showTitle = widgetConfig?.showTitle !== false;
 
-// 了解更多：整块文字区域可点击跳转
-const showLink = Boolean(config.link && config.link.enable !== false);
+// 整块文字区域可点击：弹出「公告」弹窗查看全文
+const popId = "announcement-pop";
+const popTitle = config.title || i18n(I18nKey.announcement);
+
+// 弹窗展示完整公告；卡片正文在配置了全文时收成 3 行
+const fullContent = config.fullContent?.trim() || "";
+const popContent = fullContent || config.content;
 ---
 
 <!-- 组件显示现在由sidebarLayoutConfig统一控制，无需检查config.enable -->
 <WidgetLayout
-  name={config.title || i18n(I18nKey.announcement)}
+  name={popTitle}
   showTitle={showTitle}
   id="announcement"
   class={className}
   style={style}
 >
   {
-    showLink && config.link ? (
+    config.link && config.link.enable !== false ? (
       <a
         href={config.link.url}
         target={config.link.external ? "_blank" : "_self"}
         rel={config.link.external ? "noopener noreferrer" : undefined}
-        class="announcement-body text-neutral-600 dark:text-neutral-300"
-        aria-label={config.content ? undefined : config.link.text}
+        class:list={[
+          "announcement-body text-neutral-600 dark:text-neutral-300",
+          { "is-clamped": Boolean(fullContent) },
+        ]}
+        data-sidebar-pop={popId}
+        aria-haspopup="dialog"
+        aria-label={config.content ? undefined : popTitle}
       >
         {config.content}
       </a>
     ) : (
-      <div class="announcement-body announcement-body-static text-neutral-600 dark:text-neutral-300">
+      <button
+        type="button"
+        class:list={[
+          "announcement-body text-neutral-600 dark:text-neutral-300",
+          { "is-clamped": Boolean(fullContent) },
+        ]}
+        data-sidebar-pop={popId}
+        aria-haspopup="dialog"
+      >
         {config.content}
-      </div>
+      </button>
     )
   }
 
@@ -51,25 +70,42 @@ const showLink = Boolean(config.link && config.link.enable !== false);
   <Welcome />
 </WidgetLayout>
 
+<!-- 公告全文弹窗，与「更多动态」共用同一套侧栏弹窗 -->
+<!-- 注意：这里只能用 client:idle —— 岛根节点是 display:contents，唯一子节点是关闭态的 dialog（display:none），
+     client:visible 永远等不到交叉观察，导致组件不水合、点击退化成跳转 -->
+<SidebarPop client:idle id={popId} title={popTitle} bodyText={popContent} />
+
 <style>
-  /* 文字区容器：整块可点击跳转到完整公告 */
+  /* 文字区容器：整块可点击打开完整公告弹窗 */
   .announcement-body {
     display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
     line-height: 1.75;
+    text-align: left;
     text-decoration: none;
     border-radius: 0.5rem;
+    cursor: pointer;
     transition: color 0.18s ease;
   }
 
-  .announcement-body-static {
-    cursor: default;
+  /* 配置了全文时，卡片正文收成 3 行，提示还有更多内容 */
+  .announcement-body.is-clamped {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
   }
 
-  a.announcement-body:hover {
+  .announcement-body:hover {
     color: var(--primary);
   }
 
-  a.announcement-body:focus-visible {
+  .announcement-body:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
   }

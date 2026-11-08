@@ -45,6 +45,8 @@ export const zh_TW: Translation = {
 	[Key.dynamicBackToList]: "返回動態列表",
 	[Key.dynamicProfile]: "查看 {name} 的資料",
 	[Key.dynamicPermalink]: "此動態的固定連結",
+	[Key.dynamicLike]: "按讚",
+	[Key.dynamicComment]: "留言",
 	[Key.dynamicCollapseGallery]: "收起",
 	[Key.dynamicViewOriginal]: "查看大圖",
 	[Key.dynamicPreviousImage]: "上一張圖片",

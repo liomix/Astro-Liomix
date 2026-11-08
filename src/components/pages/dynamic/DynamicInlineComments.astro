@@ -5,19 +5,29 @@ import { i18n } from "@/i18n/translation";
 
 interface Props {
 	src: string;
+	/** 是否渲染自带的「评论」切换按钮；为 false 时由外部按钮调用 toggle() */
+	showToggle?: boolean;
 }
 
-const { src } = Astro.props;
+const { src, showToggle = true } = Astro.props;
 ---
 
 <dynamic-inline-comments class="page-inline-comments" data-src={src}>
-	<button type="button" class="page-comment-toggle btn-plain" data-comment-toggle>
-		<Icon name="material-symbols:chat-bubble-outline-rounded" />
-		<span>{i18n(I18nKey.comments)}</span>
-		<Icon
-			name="material-symbols:expand-more-rounded"
-			class="page-comment-chevron"
-		/>
-	</button>
+	{
+		showToggle && (
+			<button
+				type="button"
+				class="page-comment-toggle btn-plain"
+				data-comment-toggle
+			>
+				<Icon name="material-symbols:chat-bubble-outline-rounded" />
+				<span>{i18n(I18nKey.comments)}</span>
+				<Icon
+					name="material-symbols:expand-more-rounded"
+					class="page-comment-chevron"
+				/>
+			</button>
+		)
+	}
 	<div class="page-comment-panel" data-comment-panel hidden></div>
 </dynamic-inline-comments>

@@ -45,6 +45,8 @@ export const en: Translation = {
 	[Key.dynamicBackToList]: "Back to moments",
 	[Key.dynamicProfile]: "View {name}'s profile",
 	[Key.dynamicPermalink]: "Permalink to this moment",
+	[Key.dynamicLike]: "Like",
+	[Key.dynamicComment]: "Comment",
 	[Key.dynamicCollapseGallery]: "Collapse",
 	[Key.dynamicViewOriginal]: "View full size",
 	[Key.dynamicPreviousImage]: "Previous image",

@@ -22,7 +22,6 @@ function getLocale(): string {
 	return LANG_TO_LOCALE[siteConfig.lang || "en"] || "en-US";
 }
 
-
 /**
  * 判断日期是否为纯日期输入（如 YAML 中仅填写 YYYY-MM-DD，解析为 UTC 午夜）。
  * 对于此类纯日历日期，应保留原日期，避免在 UTC 以西时区（如美西/美东）转换后倒退一天。
@@ -153,39 +152,52 @@ export function formatRelativeTime(
 	return null;
 }
 
-export function formatDynamicDate(dateInput: Date | string): string {
+/**
+ * 动态卡片用的日期：统一显示「YYYY-MM-DD HH:mm」。
+ * 纯日期输入（仅 YYYY-MM-DD）保持「YYYY-MM-DD」。
+ */
+export function formatDynamicDate(
+	dateInput: Date | string,
+	timeZone: string = siteConfig.timezone || "UTC",
+): string {
 	if (!dateInput) return "";
 
 	if (typeof dateInput === "string") {
 		const trimmed = dateInput.trim();
-		if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-			return `${trimmed} 00:00:00`;
-		}
+		if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
 	}
 
 	const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
 	if (Number.isNaN(date.getTime())) return "";
 
-	// 纯日期输入保留原日历日期，避免在 UTC 以西时区倒退一天
-	if (isDateOnly(date)) {
-		return `${date.toISOString().substring(0, 10)} 00:00:00`;
-	}
-
-	const options: Intl.DateTimeFormatOptions = {
-		year: "numeric",
-		month: "2-digit",
-		day: "2-digit",
-		hour: "2-digit",
-		minute: "2-digit",
-		second: "2-digit",
-		hourCycle: "h23",
-		timeZone: siteConfig.timezone || "UTC",
+	const format = (value: Date) => {
+		const parts = new Intl.DateTimeFormat("en-CA", {
+			year: "numeric",
+			month: "2-digit",
+			day: "2-digit",
+			hour: "2-digit",
+			minute: "2-digit",
+			hourCycle: "h23",
+			timeZone,
+		}).formatToParts(value);
+		const get = (type: Intl.DateTimeFormatPartTypes) =>
+			parts.find((part) => part.type === type)?.value || "";
+		return {
+			year: get("year"),
+			month: get("month"),
+			day: get("day"),
+			hour: get("hour"),
+			minute: get("minute"),
+		};
 	};
 
-	const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
-	const get = (type: Intl.DateTimeFormatPartTypes) =>
-		parts.find((part) => part.type === type)?.value || "";
-	return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}:${get("second")}`;
+	if (isDateOnly(date)) {
+		const { year, month, day } = format(date);
+		return `${year}-${month}-${day}`;
+	}
+
+	const current = format(date);
+	return `${current.year}-${current.month}-${current.day} ${current.hour}:${current.minute}`;
 }
 
 export function formatTimezoneOffset(

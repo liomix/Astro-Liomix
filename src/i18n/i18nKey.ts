@@ -43,6 +43,8 @@ enum I18nKey {
 	dynamicBackToList = "dynamicBackToList",
 	dynamicProfile = "dynamicProfile",
 	dynamicPermalink = "dynamicPermalink",
+	dynamicLike = "dynamicLike",
+	dynamicComment = "dynamicComment",
 	dynamicCollapseGallery = "dynamicCollapseGallery",
 	dynamicViewOriginal = "dynamicViewOriginal",
 	dynamicPreviousImage = "dynamicPreviousImage",

@@ -3,6 +3,7 @@ import { Icon } from "astro-icon/components";
 import "@/styles/markdown.css";
 import "@/styles/markdown-extend.styl";
 import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import DynamicActions from "@/components/pages/dynamic/DynamicActions.astro";
 import DynamicGallery from "@/components/pages/dynamic/DynamicGallery.astro";
 import DynamicInlineComments from "@/components/pages/dynamic/DynamicInlineComments.astro";
 import { dynamicConfig, profileConfig } from "@/config";
@@ -25,8 +26,8 @@ const profileUrl = url(dynamicConfig.profileUrl || "/about/");
 					<ImageWrapper
 						src={profileConfig.avatar || ""}
 						alt={profileConfig.name}
-						widths={[96]}
-						sizes="48px"
+						widths={[112]}
+						sizes="56px"
 						loading="lazy"
 						fadeIn={false}
 					/>
@@ -35,28 +36,24 @@ const profileUrl = url(dynamicConfig.profileUrl || "/about/");
 					<a href={profileUrl} class="page-author" aria-label={profileLabel}>
 						<strong data-dynamic-author>{profileConfig.name}</strong>
 					</a>
-					<div class="page-meta">
-						<a class="page-time" data-dynamic-permalink>
-							<time data-dynamic-time></time>
-						</a>
-						<span class="page-location" data-dynamic-location hidden>
-							<Icon name="material-symbols:location-on-rounded" />
-							<span data-dynamic-location-text></span>
-						</span>
-					</div>
+					<span class="page-pinned-badge" data-dynamic-pinned hidden>
+						<Icon name="material-symbols:push-pin" class="size-3" />
+						{i18n(I18nKey.pinned)}
+					</span>
 				</div>
-				<span class="page-pinned-badge" data-dynamic-pinned hidden>
-	<Icon name="material-symbols:push-pin" class="size-3" />
-	{i18n(I18nKey.pinned)}
-</span>
-				<span class="page-entry-decoration" aria-hidden="true">
-					<Icon name="material-symbols:format-quote-rounded" />
-				</span>
 			</header>
 
 			<div class="page-content custom-md" data-dynamic-content></div>
 			<DynamicGallery sourceId="dynamic-template-content" />
-			<DynamicInlineComments src="" />
+
+			<footer class="page-footer">
+				<a class="page-time" data-dynamic-permalink>
+					<time data-dynamic-time></time>
+				</a>
+				<DynamicActions />
+			</footer>
+
+			<DynamicInlineComments src="" showToggle={false} />
 		</article>
 	</dynamic-entry>
 </template>

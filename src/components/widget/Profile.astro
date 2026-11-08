@@ -22,7 +22,7 @@ const className = Astro.props.class;
 // 头像形状：circle 时裁成正圆并居中，rect 保持主题默认的圆角矩形铺满宽度
 const isCircleAvatar = (profileConfig.avatarShape ?? "rect") === "circle";
 
-// 卡片底部的三列统计：文章 / 标签 / 分类（原站点统计卡片中的前三项）
+// 卡片底部的三列统计：文章 / 标签 / 分类（原站点统计卡片中的前三项），点击跳到对应列表页
 const showStats = profileConfig.showStats ?? true;
 const profileStats = showStats
 	? [
@@ -30,16 +30,19 @@ const profileStats = showStats
 				id: "posts",
 				label: i18n(I18nKey.siteStatsPostCount),
 				value: (await getSortedPosts()).length,
+				href: url("/archive/"),
 			},
 			{
 				id: "tags",
 				label: i18n(I18nKey.siteStatsTagCount),
 				value: (await getTagList()).length,
+				href: url("/tags/"),
 			},
 			{
 				id: "categories",
 				label: i18n(I18nKey.siteStatsCategoryCount),
 				value: (await getCategoryList()).length,
+				href: url("/categories/"),
 			},
 		]
 	: [];
@@ -84,10 +87,6 @@ const profileStats = showStats
     >
       {profileConfig.name}
     </div>
-    <div
-      class="h-1 w-5 bg-(--primary) mx-auto rounded-full mb-2 transition"
-    >
-    </div>
     <div class="text-center text-neutral-400 mb-1 transition">
       {profileConfig.bio}
     </div>
@@ -96,10 +95,10 @@ const profileStats = showStats
     {showStats && (
       <div class="profile-stats">
         {profileStats.map((stat) => (
-          <div class="profile-stat" data-stat-id={`profile-${stat.id}`}>
+          <a class="profile-stat" data-stat-id={`profile-${stat.id}`} href={stat.href}>
             <span class="profile-stat-value text-90">{stat.value}</span>
             <span class="profile-stat-label text-50">{stat.label}</span>
-          </div>
+          </a>
         ))}
       </div>
     )}
@@ -165,6 +164,19 @@ const profileStats = showStats
     flex-direction: column;
     align-items: center;
     gap: 0.0625rem;
+    border-radius: 0.5rem;
+    color: inherit;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+  }
+
+  .profile-stat:hover {
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
+  }
+
+  .profile-stat:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   /* 列间细分隔线，只占两行文字左右的高度 */

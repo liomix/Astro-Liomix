@@ -21,10 +21,7 @@ const { sourceId } = Astro.props;
 
 	<div class="page-gallery-viewer" data-gallery-viewer hidden>
 		<div class="page-gallery-toolbar">
-			<button type="button" class="btn-plain page-gallery-action" data-gallery-collapse>
-				<Icon name="material-symbols:close-fullscreen-rounded" />
-				<span>{i18n(I18nKey.dynamicCollapseGallery)}</span>
-			</button>
+			<span class="page-gallery-counter" data-gallery-counter aria-live="polite"></span>
 			<button
 				type="button"
 				class="btn-plain page-gallery-action"
@@ -35,7 +32,10 @@ const { sourceId } = Astro.props;
 				<Icon name="material-symbols:zoom-in-rounded" />
 				<span>{i18n(I18nKey.dynamicViewOriginal)}</span>
 			</button>
-			<span class="page-gallery-counter" data-gallery-counter aria-live="polite"></span>
+			<button type="button" class="btn-plain page-gallery-action" data-gallery-collapse>
+				<Icon name="material-symbols:close-fullscreen-rounded" />
+				<span>{i18n(I18nKey.dynamicCollapseGallery)}</span>
+			</button>
 		</div>
 
 		<div class="page-gallery-stage">

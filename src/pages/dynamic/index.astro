@@ -32,39 +32,43 @@ const memos = dynamicConfig.memos;
 <MainGridLayout title={title} description={description}>
 	<section class="page-shell" aria-labelledby="dynamic-page-title">
 		<div>
-			<header class="page-header card-base">
-				<div class="page-heading">
-					<div class="page-icon" aria-hidden="true">
+			<header class="page-hero card-base">
+				<div class="page-hero-main">
+					<div class="page-hero-icon" aria-hidden="true">
 						<Icon name="material-symbols:forum-rounded" />
 					</div>
-					<div>
-						<h2 id="dynamic-page-title">{title}</h2>
-						{description && <p>{description}</p>}
+					<div class="page-hero-text">
+						<h2 id="dynamic-page-title" class="page-hero-title">{title}</h2>
+						{description && <p class="page-hero-sub">{description}</p>}
+					</div>
+					<div class="page-hero-count" aria-label={i18n(I18nKey.dynamic)}>
+						<Icon name="material-symbols:dynamic-feed-rounded" />
+						<strong data-dynamic-page-count>0</strong>
+						<span>{i18n(I18nKey.dynamic)}</span>
 					</div>
 				</div>
-				<div
-					class="page-count"
-					aria-label={i18n(I18nKey.dynamic)}
-				>
-					<Icon name="material-symbols:dynamic-feed-rounded" />
-					<strong data-dynamic-page-count>0</strong>
-					<span>{i18n(I18nKey.dynamic)}</span>
-				</div>
-				<div class="page-filter">
-					<label class="page-search">
-						<Icon name="material-symbols:search-rounded" />
+				<div class="page-toolbar">
+					<label class="page-toolbar-search">
+						<span class="page-toolbar-icon" aria-hidden="true">
+							<Icon name="material-symbols:search-rounded" />
+						</span>
 						<input
 							type="search"
 							data-dynamic-search
+							aria-label={i18n(I18nKey.dynamicSearch)}
 							placeholder={i18n(I18nKey.dynamicSearch)}
 						/>
 					</label>
-					<label class="page-year-select">
-						<Icon name="material-symbols:calendar-month-rounded" />
+					<label class="page-toolbar-year">
+						<span class="page-toolbar-icon" aria-hidden="true">
+							<Icon name="material-symbols:calendar-month-rounded" />
+						</span>
 						<select data-year-select aria-label={i18n(I18nKey.year)}>
 							<option value="all">{i18n(I18nKey.dynamicAllYears)}</option>
 						</select>
-						<Icon name="material-symbols:arrow-drop-down-rounded" />
+						<span class="page-toolbar-caret" aria-hidden="true">
+							<Icon name="material-symbols:expand-more-rounded" />
+						</span>
 					</label>
 				</div>
 			</header>
@@ -78,7 +82,6 @@ const memos = dynamicConfig.memos;
 				noResultsText={i18n(I18nKey.dynamicNoResults)}
 				loadingText={i18n(I18nKey.dynamicLoading)}
 				allYearsText={i18n(I18nKey.dynamicAllYears)}
-				timezone={siteConfig.timezone || "UTC"}
 				{memos}
 			/>
 
