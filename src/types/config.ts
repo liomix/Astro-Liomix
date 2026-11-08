@@ -38,7 +38,6 @@ export type { PlantUMLConfig } from "./plantumlConfig";
 export type { ProfileConfig } from "./profileConfig";
 export type {
 	AdConfig,
-	CalendarConfig,
 	MobileBottomComponentConfig,
 	SidebarLayoutConfig,
 	SiteInfoConfig,

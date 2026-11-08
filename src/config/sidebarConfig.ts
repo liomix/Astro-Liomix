@@ -45,30 +45,30 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			showOnPostPage: true,
 		},
 		{
-			// 组件类型：公告组件
-			type: "announcement",
+			// 组件类型：站点统计组件（从右侧栏移到资料卡下方）
+			type: "stats",
 			// 是否启用该组件
 			enable: true,
 			// 组件位置
 			position: "top",
 			// 是否在文章详情页显示
-			showOnPostPage: true,
+			showOnPostPage: false,
 		},
 		{
-			// 组件类型：音乐播放器
+			// 组件类型：音乐播放器（按需求隐藏，改回 true 即可恢复）
 			type: "music",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 组件位置
 			position: "top",
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 		},
 		{
-			// 组件类型：分类组件
+			// 组件类型：分类组件（按需求隐藏，改回 true 即可恢复）
 			type: "categories",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 组件位置
 			position: "sticky",
 			// 是否在文章详情页显示
@@ -80,10 +80,10 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			},
 		},
 		{
-			// 组件类型：标签组件
+			// 组件类型：标签组件（按需求隐藏，改回 true 即可恢复）
 			type: "tags",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 组件位置
 			position: "sticky",
 			// 是否在文章详情页显示
@@ -98,6 +98,16 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 
 	// 右侧边栏组件配置列表
 	rightComponents: [
+		{
+			// 组件类型：公告组件（从左侧栏移到右侧栏顶端）
+			type: "announcement",
+			// 是否启用该组件
+			enable: true,
+			// 组件位置
+			position: "top",
+			// 是否在文章详情页显示
+			showOnPostPage: true,
+		},
 		{
 			// 组件类型：最新动态组件
 			type: "dynamic",
@@ -116,20 +126,10 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			},
 		},
 		{
-			// 组件类型：站点统计组件
-			type: "stats",
-			// 是否启用该组件
-			enable: true,
-			// 组件位置
-			position: "top",
-			// 是否在文章详情页显示
-			showOnPostPage: false,
-		},
-		{
-			// 组件类型：站点信息组件
+			// 组件类型：站点信息组件（按需求隐藏，改回 true 即可恢复）
 			type: "siteInfo",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 组件位置
 			position: "top",
 			// 是否在文章详情页显示
@@ -143,23 +143,17 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			},
 		},
 		{
-			// 组件类型：日历组件
+			// 组件类型：日历组件（按需求隐藏，改回 true 即可恢复）
+			// 热力图与当月文章列表已并入左侧栏站点统计卡片
 			type: "calendar",
 			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否显示组件标题
 			showTitle: false,
 			// 组件位置
 			position: "sticky",
 			// 是否在文章详情页显示
 			showOnPostPage: false,
-			// 组件专属配置
-			specificConfig: {
-				calendar: {
-					// 是否显示年度文章热力图
-					showHeatmap: true,
-				},
-			},
 		},
 		{
 			// 组件类型：侧边栏目录组件（只在文章详情页显示）

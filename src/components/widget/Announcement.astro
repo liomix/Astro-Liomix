@@ -1,5 +1,4 @@
 ---
-import { Icon } from "astro-icon/components";
 import WidgetLayout from "@/components/common/WidgetLayout.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -16,6 +15,9 @@ interface Props {
 const { class: className, style, widgetConfig } = Astro.props;
 
 const showTitle = widgetConfig?.showTitle !== false;
+
+// 了解更多：整块文字区域可点击跳转
+const showLink = Boolean(config.link && config.link.enable !== false);
 ---
 
 <!-- 组件显示现在由sidebarLayoutConfig统一控制，无需检查config.enable -->
@@ -26,40 +28,45 @@ const showTitle = widgetConfig?.showTitle !== false;
   class={className}
   style={style}
 >
-  <div>
-    <!-- 公告栏内容 -->
-    <div class="text-neutral-600 dark:text-neutral-300 leading-relaxed mb-3">
-      {config.content}
-    </div>
-
-    <!-- 可选链接和关闭按钮 -->
-    <div class="flex items-center justify-between gap-3">
-      <div>
-        {
-          config.link && config.link.enable !== false && (
-            <a
-              href={config.link.url}
-              target={config.link.external ? "_blank" : "_self"}
-              rel={config.link.external ? "noopener noreferrer" : undefined}
-              class="btn-regular rounded-lg px-3 py-1.5 text-sm font-medium active:scale-95 transition-transform"
-            >
-              {config.link.text}
-            </a>
-          )
-        }
+  {
+    showLink && config.link ? (
+      <a
+        href={config.link.url}
+        target={config.link.external ? "_blank" : "_self"}
+        rel={config.link.external ? "noopener noreferrer" : undefined}
+        class="announcement-body text-neutral-600 dark:text-neutral-300"
+        aria-label={config.content ? undefined : config.link.text}
+      >
+        {config.content}
+      </a>
+    ) : (
+      <div class="announcement-body announcement-body-static text-neutral-600 dark:text-neutral-300">
+        {config.content}
       </div>
-
-      {
-        config.closable && (
-          <button
-            class="btn-regular rounded-lg h-8 w-8 text-sm hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            onclick="this.closest('widget-layout').style.display='none'"
-            aria-label={i18n(I18nKey.announcementClose)}
-          >
-            <Icon name="fa7-solid:xmark" class="text-sm" />
-          </button>
-        )
-      }
-    </div>
-  </div>
+    )
+  }
 </WidgetLayout>
+
+<style>
+  /* 文字区容器：整块可点击跳转到完整公告 */
+  .announcement-body {
+    display: block;
+    line-height: 1.75;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    transition: color 0.18s ease;
+  }
+
+  .announcement-body-static {
+    cursor: default;
+  }
+
+  a.announcement-body:hover {
+    color: var(--primary);
+  }
+
+  a.announcement-body:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+</style>

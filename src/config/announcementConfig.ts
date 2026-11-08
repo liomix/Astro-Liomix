@@ -7,8 +7,8 @@ export const announcementConfig: AnnouncementConfig = {
 	// 公告内容
 	content: "欢迎来到我的博客！这是一则示例公告。",
 
-	// 是否允许用户关闭公告
-	closable: true,
+	// 是否允许用户关闭公告（按钮已移除，保留字段以备恢复）
+	closable: false,
 
 	link: {
 		// 启用链接

@@ -8,6 +8,12 @@ export const profileConfig: ProfileConfig = {
 	// 3. 远程 URL："https://example.com/avatar.jpg"
 	avatar: "assets/images/avatar.avif",
 
+	// 头像形状：rect 圆角矩形（主题默认样式，铺满卡片宽度），circle 正圆（居中显示）
+	avatarShape: "circle",
+
+	// 是否在卡片底部显示「文章 / 标签 / 分类」三列统计
+	showStats: true,
+
 	// 名字
 	name: "XiaYe",
 
