@@ -46,9 +46,20 @@ export type FontDefinition = {
 	/** 本地字体的额外选项（如 variants 定义） */
 	options?: {
 		variants?: Array<{
+			/** 字体文件路径：支持相对项目根的路径，或以包名开头的裸标识符（如 @fontsource/inter/files/xxx.woff2） */
 			src: string[];
 			weight?: string | number;
 			style?: string;
+			/**
+			 * 该变体负责的字符区间，每项形如 "U+0000-00FF"（书写时会被逗号拼成 unicode-range）。
+			 * 同一字重存在多个子集文件（latin / cyrillic）时必须声明，
+			 * 否则多个 @font-face 描述符完全相同，后声明的会覆盖前面的。
+			 */
+			unicodeRange?: [string, ...string[]];
+			display?: string;
+			stretch?: string;
+			featureSettings?: string;
+			variationSettings?: string;
 		}>;
 		[key: string]: unknown;
 	};

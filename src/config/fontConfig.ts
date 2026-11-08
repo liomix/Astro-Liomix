@@ -12,16 +12,67 @@
  *
  * 支持的 provider：https://docs.astro.build/en/reference/font-provider-reference/#built-in-providers
  *   "google"     - Google Fonts
- *   "fontsource" - Fontsource
- *   "local"      - 本地字体文件
+ *   "fontsource" - Fontsource（构建时从 cdn.jsdelivr.net 拉取，需要外网）
+ *   "local"      - 本地字体文件（含 node_modules 内的 @fontsource 包，完全离线）
  *   "bunny"      - Bunny Fonts
  *   "fontshare"  - Fontshare
  *   "npm"        - NPM 包（如 @fontsource/*）
+ *
+ * 注意：内置的 "fontsource" / "npm" provider 都会把字体 URL 重写到
+ * cdn.jsdelivr.net（unifont 的 DEFAULT_CDN 硬编码），国内网络下构建会失败。
+ * 因此本站内置字体统一走 "local" provider + @fontsource/* 依赖，构建过程不访问任何 CDN。
  *
  * 本地字体子集化：在 fontConfig.subsetFonts 中添加对应 cssVariable 的配置，
  * 构建时脚本会自动扫描页面字符并生成轻量 woff2 子集。
  */
 import type { FontDefinition, FontSelectionConfig } from "@/types/fontConfig";
+
+// ─── @fontsource 变体生成 ───────────────────────────────────
+// @fontsource 静态包中每个「字重 × 子集」都是一个独立 woff2，
+// 命名规则：<pkg>/files/<pkg>-<subset>-<weight>-normal.woff2
+//
+// 必须显式声明 unicodeRange：不同子集的 @font-face 描述符完全相同，
+// 浏览器只会使用最后一条，导致另一子集的字符回退到系统字体。
+
+/** 基本拉丁字符集（对应 fontsource 的 latin 子集） */
+const UNICODE_RANGE_LATIN =
+	"U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD".split(
+		",",
+	) as [string, ...string[]];
+
+/** 西里尔字符集（对应 fontsource 的 cyrillic 子集） */
+const UNICODE_RANGE_CYRILLIC =
+	"U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116".split(",") as [
+		string,
+		...string[],
+	];
+
+type FontVariant = NonNullable<
+	NonNullable<FontDefinition["options"]>["variants"]
+>[number];
+
+/**
+ * 按 @fontsource 命名规则生成 latin + cyrillic 变体列表。
+ *
+ * @param pkg     @fontsource 下的包名后缀，如 "inter"（需先 `pnpm add @fontsource/inter`）
+ * @param weights 该包实际提供的字重，文件不存在会导致构建失败
+ */
+function fontsourceVariants(pkg: string, weights: string[]): FontVariant[] {
+	return weights.flatMap((weight) => [
+		{
+			src: [`@fontsource/${pkg}/files/${pkg}-latin-${weight}-normal.woff2`],
+			weight,
+			style: "normal",
+			unicodeRange: UNICODE_RANGE_LATIN,
+		},
+		{
+			src: [`@fontsource/${pkg}/files/${pkg}-cyrillic-${weight}-normal.woff2`],
+			weight,
+			style: "normal",
+			unicodeRange: UNICODE_RANGE_CYRILLIC,
+		},
+	]);
+}
 
 // ─── Astro Font API 字体定义 ───────────────────────────────
 // 适用于 Astro Font API 的字体配置，支持自动下载、缓存和优化加载
@@ -30,28 +81,40 @@ export const fontsList: FontDefinition[] = [
 	{
 		name: "Zen Maru Gothic",
 		cssVariable: "--font-zen-maru-gothic",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		// Zen Maru Gothic 上游没有 600 字重（仅 300/400/500/700/900）
+		options: {
+			variants: fontsourceVariants("zen-maru-gothic", [
+				"300",
+				"400",
+				"500",
+				"700",
+			]),
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "Inter",
 		cssVariable: "--font-inter",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: fontsourceVariants("inter", [
+				"300",
+				"400",
+				"500",
+				"600",
+				"700",
+			]),
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "JetBrains Mono",
 		cssVariable: "--font-jetbrains-mono",
-		provider: "fontsource",
-		weights: ["400", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: fontsourceVariants("jetbrains-mono", ["400", "700"]),
+		},
 		fallbacks: [
 			"ui-monospace",
 			"SFMono-Regular",
