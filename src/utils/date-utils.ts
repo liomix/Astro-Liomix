@@ -1,5 +1,28 @@
 import { siteConfig } from "../config";
 
+// 语言代码映射（i18n 的 lang → BCP 47 locale）
+const LANG_TO_LOCALE: Record<string, string> = {
+	zh_CN: "zh-CN",
+	zh_TW: "zh-TW",
+	en: "en-US",
+	ja: "ja-JP",
+	ko: "ko-KR",
+	es: "es-ES",
+	th: "th-TH",
+	vi: "vi-VN",
+	tr: "tr-TR",
+	id: "id-ID",
+	fr: "fr-FR",
+	de: "de-DE",
+	ru: "ru-RU",
+	ar: "ar-SA",
+};
+
+function getLocale(): string {
+	return LANG_TO_LOCALE[siteConfig.lang || "en"] || "en-US";
+}
+
+
 /**
  * 判断日期是否为纯日期输入（如 YAML 中仅填写 YYYY-MM-DD，解析为 UTC 午夜）。
  * 对于此类纯日历日期，应保留原日期，避免在 UTC 以西时区（如美西/美东）转换后倒退一天。
@@ -57,7 +80,6 @@ export function formatDateI18n(
 	includeTime?: boolean,
 ): string {
 	const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-	const lang = siteConfig.lang || "en";
 
 	// 根据语言设置不同的日期格式
 	const options: Intl.DateTimeFormatOptions = {
@@ -78,24 +100,7 @@ export function formatDateI18n(
 	}
 
 	// 语言代码映射
-	const localeMap: Record<string, string> = {
-		zh_CN: "zh-CN",
-		zh_TW: "zh-TW",
-		en: "en-US",
-		ja: "ja-JP",
-		ko: "ko-KR",
-		es: "es-ES",
-		th: "th-TH",
-		vi: "vi-VN",
-		tr: "tr-TR",
-		id: "id-ID",
-		fr: "fr-FR",
-		de: "de-DE",
-		ru: "ru-RU",
-		ar: "ar-SA",
-	};
-
-	const locale = localeMap[lang] || "en-US";
+	const locale = getLocale();
 	return includeTime
 		? date.toLocaleString(locale, options)
 		: date.toLocaleDateString(locale, options);
@@ -104,6 +109,48 @@ export function formatDateI18n(
 // 国际化日期时间格式化函数（带时分秒）
 export function formatDateI18nWithTime(dateInput: Date | string): string {
 	return formatDateI18n(dateInput, true);
+}
+
+/**
+ * 相对时间文案，按分钟/小时/天/月/年逐级递进。
+ * 超过 6 年返回 null，由调用方改为显示具体年月日。
+ * 例：3分钟前 / 5小时前 / 12天前 / 3个月前 / 2年前
+ */
+export function formatRelativeTime(
+	dateInput: Date | string,
+	now: Date | number = Date.now(),
+): string | null {
+	const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+	if (Number.isNaN(date.getTime())) return "";
+
+	const nowMs = now instanceof Date ? now.getTime() : now;
+	const diffMs = nowMs - date.getTime();
+	if (diffMs < 0) return null; // 未来时间不做相对描述
+
+	const rtf = new Intl.RelativeTimeFormat(getLocale(), {
+		numeric: "always",
+	});
+	const MINUTE = 60_000;
+	const HOUR = 60 * MINUTE;
+	const DAY = 24 * HOUR;
+
+	if (diffMs < HOUR) {
+		return rtf.format(-Math.max(1, Math.floor(diffMs / MINUTE)), "minute");
+	}
+	if (diffMs < DAY) {
+		return rtf.format(-Math.floor(diffMs / HOUR), "hour");
+	}
+
+	const days = Math.floor(diffMs / DAY);
+	if (days < 30) return rtf.format(-days, "day");
+
+	const months = Math.floor(days / 30);
+	if (months <= 12) return rtf.format(-Math.max(1, months), "month");
+
+	const years = days / 365.25;
+	if (years <= 6) return rtf.format(-Math.floor(years), "year");
+
+	return null;
 }
 
 export function formatDynamicDate(dateInput: Date | string): string {

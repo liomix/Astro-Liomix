@@ -6,6 +6,12 @@ import CoverImage from "@/components/common/CoverImage.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
 import PostStats from "@/components/layout/PostStats.astro";
 import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import {
+	formatDateToYYYYMMDD,
+	formatRelativeTime,
+} from "@/utils/date-utils";
 import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
 import { getFileDirFromPath, getTagUrl } from "@/utils/url-utils";
 
@@ -31,6 +37,7 @@ const {
 	title,
 	url,
 	published,
+	updated,
 	tags,
 	category,
 	image,
@@ -62,6 +69,13 @@ const descriptionLines = Math.max(
 );
 // 是否显示简介：关闭时用 visibility 占位，卡片高度保持不变
 const showDescription = siteConfig.postListLayout.showDescription ?? true;
+
+// 卡片时间：优先「更新于 x 前」的相对时间；超过 6 年由工具返回 null，回退为年月日
+const cardDate = updated ?? published;
+const relativeTime = formatRelativeTime(cardDate);
+const dateLabel = relativeTime
+	? `${i18n(I18nKey.updatedAt)} ${relativeTime}`
+	: formatDateToYYYYMMDD(cardDate);
 
 // PostMeta 配置
 const metaConfig = siteConfig.postListLayout.meta ?? {};
@@ -114,7 +128,7 @@ const minutes = remarkPluginFrontmatter.minutes;
   ]}
   style={style}
 >
-  <!-- pinned icon -->
+  <!-- 卡片内容区（置顶状态由外层 .pinned 的主题色描边表示） -->
   <div
     class:list={[
       "post-card-content",
@@ -158,7 +172,9 @@ const minutes = remarkPluginFrontmatter.minutes;
       showNoTags={true}
       hideUpdateDate={true}
       category={category || undefined}
-      pinned={pinned}
+      publishedText={dateLabel}
+      publishedIcon="material-symbols:schedule-outline-rounded"
+      categoryIcon="material-symbols:folder-outline-rounded"
       words={words}
       minutes={minutes}
       showWords={metaShowWords}
@@ -185,7 +201,7 @@ const minutes = remarkPluginFrontmatter.minutes;
     {showTagsAtBottom && bottomTags.length > 0 && (
       <div
         class:list={[
-          "post-card-bottom-tags flex flex-wrap items-center mt-auto pt-3",
+          "post-card-bottom-tags flex flex-nowrap items-center mt-auto pt-3",
           bottomTagsAsText ? "gap-x-3 gap-y-1" : "gap-1.5",
         ]}
       >
@@ -269,7 +285,77 @@ const minutes = remarkPluginFrontmatter.minutes;
     text-align: center;
   }
 
-  .description-clamped {
+  /* 卡片元信息：图标不再带底色块，图标与文字合成一组整体；
+   组内文字超长用省略号截断、绝不换行。 */
+:global(.post-card-wrapper .post-meta-root > div) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+:global(.post-card-wrapper .post-meta-root .meta-icon) {
+  width: auto;
+  height: auto;
+  flex: none;
+  margin-right: 0.25rem;
+  background: transparent;
+  line-height: 1;
+}
+
+:global(.post-card-wrapper .post-meta-root .meta-icon svg) {
+  font-size: 1rem;
+}
+
+:global(.post-card-wrapper .post-meta-root > div > div:not(.meta-icon)) {
+  min-width: 0;
+  overflow: hidden;
+}
+
+:global(.post-card-wrapper .post-meta-root > div > span),
+:global(.post-card-wrapper .post-meta-root > div a) {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 网格模式下两组「图标＋文字」作为一个整体在卡片内居中 */
+:global(#post-list-container.grid-mode .post-card-wrapper .post-meta-root) {
+  justify-content: center;
+}
+
+/* 底部标签：整行只排一行，绝不换行。
+   前面的标签保持完整宽度，溢出全部由最后一个标签承担并显示省略号（Wiki-L…），
+   末尾的 +N 提示始终完整保留 */
+.post-card-bottom-tags {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.post-card-bottom-tags > a,
+.post-card-bottom-tags > span {
+  flex: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-card-bottom-tags > a:last-of-type {
+  flex: 0 1 auto;
+}
+
+/* 置顶卡片：不再用「置顶」文字徽章，改用主题色描边标示。
+   outline 不影响布局（卡片高度/瀑布流列位置不变），负 offset 让描边贴在圆角内侧 */
+.post-card-wrapper.pinned {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.description-clamped {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     overflow: hidden;

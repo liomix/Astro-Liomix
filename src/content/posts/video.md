@@ -1,6 +1,6 @@
 ---
 title: 在文章中嵌入视频
-published: 1970-01-01
+published: 2026-02-11T15:50:00+08:00
 description: 这篇文章演示如何在博客文章中嵌入视频。
 tags: [示例, 视频, Firefly]
 category: 文章示例
