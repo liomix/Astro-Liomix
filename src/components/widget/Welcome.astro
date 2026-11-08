@@ -1,0 +1,408 @@
+---
+/**
+ * 访客欢迎信息
+ * 展示：来自 X 的访客，{问候语}，现在是 HH:MM，距站长约 N 公里，IP：x.x.x.x
+ * 数据来自客户端请求（ipwho.is 优先，ipapi.is 兜底），无需服务端
+ */
+import { siteConfig } from "@/config/siteConfig";
+import { welcomeConfig } from "@/config/welcomeConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { url } from "@/utils/url-utils";
+
+const { enable, siteLocation, showIp, showDistance, cacheHours } =
+	welcomeConfig;
+
+const lang = siteConfig.lang || "zh_CN";
+const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
+---
+{
+	enable && (
+		<div class="welcome">
+			<div
+				class="welcome-lottie"
+				data-welcome-lottie
+				data-src={lottieSrc}
+				role="img"
+				aria-label={i18n(I18nKey.welcomeTitle)}
+			/>
+			<div
+				class="welcome-text text-75"
+				data-welcome
+				data-template={i18n(I18nKey.welcomeTemplate)}
+				data-template-no-distance={i18n(I18nKey.welcomeTemplateNoDistance)}
+				data-greeting-late-night={i18n(I18nKey.welcomeGreetingLateNight)}
+				data-greeting-morning={i18n(I18nKey.welcomeGreetingMorning)}
+				data-greeting-afternoon={i18n(I18nKey.welcomeGreetingAfternoon)}
+				data-greeting-evening={i18n(I18nKey.welcomeGreetingEvening)}
+				data-lat={String(siteLocation.latitude)}
+				data-lng={String(siteLocation.longitude)}
+				data-show-ip={showIp ? "1" : "0"}
+				data-show-distance={showDistance ? "1" : "0"}
+				data-cache-hours={String(cacheHours)}
+				data-lang={lang}
+			/>
+		</div>
+	)
+}
+
+<style>
+  /* 与公告正文分隔的圆角信息卡，不画横线 */
+  .welcome {
+    display: block;
+    margin-top: 0.875rem;
+    padding: 0.625rem 0.75rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--primary) 7%, transparent);
+  }
+
+  /* 定位失败时整卡隐藏，不留空壳 */
+  .welcome.is-failed {
+    display: none;
+  }
+
+  /* Lottie 欢迎动画：替代「欢迎信息」标题，固定高度，横向居中留白 */
+  .welcome-lottie {
+    width: 100%;
+    height: 2.75rem;
+    margin: 0 auto 0.25rem;
+  }
+
+  .welcome-lottie :global(svg) {
+    display: block;
+  }
+
+  /* 文案在定位返回前不占位，避免出现一张空卡 */
+  .welcome-text {
+    display: none;
+    font-size: 0.8125rem;
+    line-height: 1.75;
+    text-wrap: pretty;
+    word-break: break-word;
+  }
+
+  .welcome.is-ready .welcome-text {
+    display: block;
+    animation: welcome-fade-in 0.35s ease both;
+  }
+
+  :global(.welcome-accent) {
+    color: var(--primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes welcome-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  interface WelcomeAnim {
+    destroy(): void;
+    totalFrames: number;
+    goToAndStop(value: number, isFrame?: boolean): void;
+    addEventListener(name: string, callback: () => void): void;
+  }
+
+  // 动画第 196 帧写完「Welcome」，第 292 帧开始擦除，停在这之间即完整字形
+  const FULL_FRAME = 288;
+
+  const mounted = new Map<HTMLElement, WelcomeAnim>();
+  let attempts = 0;
+
+  // 提前拉取 lottie（与访客定位请求并行），不等定位结果
+  const lottieModule: Promise<typeof import("lottie-web")> | null = document.querySelector(
+    "[data-welcome-lottie]",
+  )
+    ? import("lottie-web")
+    : null;
+
+  async function mountWelcomeLottie() {
+    if (!lottieModule) return;
+
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-welcome-lottie]"),
+    ).filter((node) => !mounted.has(node) && !!node.dataset.src && node.clientWidth > 0);
+
+    // 容器尚未布局完成（如侧栏还没显示）时短暂重试，最多 10 次
+    if (!nodes.length) {
+      if (attempts++ < 10) setTimeout(mountWelcomeLottie, 200);
+      return;
+    }
+
+    const { default: lottie } = await lottieModule;
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    nodes.forEach((node) => {
+      const animation = lottie.loadAnimation({
+        container: node,
+        renderer: "svg",
+        loop: false,
+        autoplay: !prefersReduce,
+        // 只播到「Welcome」写完的那一帧，不进入擦除，停在完整字形上
+        initialSegment: [0, FULL_FRAME],
+        path: node.dataset.src,
+      }) as unknown as WelcomeAnim;
+
+      if (prefersReduce) {
+        // 无障碍：不播放，直接显示完整「Welcome」
+        animation.addEventListener("DOMLoaded", () => {
+          animation.goToAndStop(FULL_FRAME, true);
+        });
+      }
+
+      mounted.set(node, animation);
+    });
+  }
+
+  function destroyWelcomeLottie() {
+    mounted.forEach((animation) => animation.destroy());
+    mounted.clear();
+    attempts = 0;
+  }
+
+  // DOM 解析完立刻挂载：此时卡片已在布局里，容器宽度不为 0
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mountWelcomeLottie, { once: true });
+  } else {
+    requestAnimationFrame(mountWelcomeLottie);
+  }
+
+  // Swup 切页后重建动画（旧 DOM 已被替换，需先销毁实例）
+  document.addEventListener("swup:contentReplaced", () => {
+    destroyWelcomeLottie();
+    setTimeout(mountWelcomeLottie, 60);
+  });
+</script>
+
+<script is:inline>
+  (function () {
+    const CACHE_KEY = "firefly-welcome-geo";
+    const LANG_MAP = {
+      zh_CN: "zh-CN",
+      zh_TW: "zh-TW",
+      en: "en",
+      ja: "ja",
+      ko: "ko",
+      ru: "ru",
+    };
+    // 这些城市本身带「市」的概念，不再追加
+    const CITY_SUFFIX_EXCLUDE = [
+      "香港",
+      "澳门",
+      "台北",
+      "新北",
+      "桃园",
+      "台中",
+      "台南",
+      "高雄",
+      "基隆",
+      "新竹",
+      "嘉义",
+    ];
+
+    function readCache(hours) {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.geo || !parsed.ts) return null;
+        if (Date.now() - parsed.ts > hours * 3600 * 1000) return null;
+        return parsed.geo;
+      } catch {
+        return null;
+      }
+    }
+
+    function writeCache(geo) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), geo: geo }));
+      } catch {
+        /* localStorage 不可用时忽略 */
+      }
+    }
+
+    async function fetchGeo(lang) {
+      const gl = LANG_MAP[lang] || "en";
+      try {
+        const res = await fetch("https://ipwho.is/?lang=" + encodeURIComponent(gl));
+        const data = await res.json();
+        if (data && data.success !== false && data.ip) {
+          return {
+            ip: data.ip,
+            region: data.region,
+            city: data.city,
+            lat: data.latitude,
+            lon: data.longitude,
+          };
+        }
+      } catch {
+        /* 换下一个数据源 */
+      }
+      try {
+        const res = await fetch("https://api.ipapi.is/");
+        const data = await res.json();
+        if (data && data.ip) {
+          return {
+            ip: data.ip,
+            region: data.region,
+            city: data.city,
+            lat: data.lat,
+            lon: data.lon,
+          };
+        }
+      } catch {
+        /* 全部失败则由调用方兜底 */
+      }
+      return null;
+    }
+
+    function formatLocation(geo, lang) {
+      const region = (geo.region || "").trim();
+      let city = (geo.city || "").trim();
+      if (lang.indexOf("zh") === 0 && city && !/[市州盟旗区县]$/.test(city)) {
+        if (CITY_SUFFIX_EXCLUDE.indexOf(city) === -1) city += "市";
+      }
+      const text = [region, city].filter(Boolean).join(" ");
+      return text || (geo.country || "").trim();
+    }
+
+    function distanceKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const rad = Math.PI / 180;
+      const dLat = (lat2 - lat1) * rad;
+      const dLon = (lon2 - lon1) * rad;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // ip 不可用时，把模板末尾「，IP 地址：{ip}」整段去掉
+    function stripIpClause(template) {
+      return template.replace(/[，,、；;.]?\s*[^，,、；;.{}]*\{ip\}\s*$/, "").trim();
+    }
+
+    function pickGreeting(root, hour) {
+      if (hour < 5) return root.dataset.greetingLateNight;
+      if (hour < 11) return root.dataset.greetingMorning;
+      if (hour < 18) return root.dataset.greetingAfternoon;
+      return root.dataset.greetingEvening;
+    }
+
+    // 按模板拼接节点，占位符用主题色强调，其余保持普通文本
+    function buildFragment(template, values) {
+      const token = /\{(location|greeting|time|distance|ip)\}/g;
+      const fragment = document.createDocumentFragment();
+      let last = 0;
+      let match = token.exec(template);
+      while (match) {
+        if (match.index > last) {
+          fragment.appendChild(document.createTextNode(template.slice(last, match.index)));
+        }
+        const value = values[match[1]];
+        if (value !== undefined && value !== null && value !== "") {
+          const span = document.createElement("span");
+          span.className = "welcome-accent";
+          span.textContent = String(value);
+          fragment.appendChild(span);
+        }
+        last = token.lastIndex;
+        match = token.exec(template);
+      }
+      if (last < template.length) {
+        fragment.appendChild(document.createTextNode(template.slice(last)));
+      }
+      return fragment;
+    }
+
+    function hideCards() {
+      const cards = document.querySelectorAll(".welcome");
+      for (const card of cards) card.classList.add("is-failed");
+    }
+
+    async function initWelcome() {
+      const roots = document.querySelectorAll("[data-welcome]");
+      if (!roots.length) return;
+
+      const first = roots[0];
+      const cacheHours = Number(first.dataset.cacheHours) || 12;
+
+      let geo = window.__welcomeGeo || readCache(cacheHours);
+      if (!geo) {
+        geo = await fetchGeo(first.dataset.lang);
+        if (!geo) {
+          hideCards();
+          return;
+        }
+        window.__welcomeGeo = geo;
+        writeCache(geo);
+      }
+
+      const now = new Date();
+      const hour = now.getHours();
+      const time =
+        String(hour).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      const location = formatLocation(geo, first.dataset.lang);
+
+      if (!location) {
+        hideCards();
+        return;
+      }
+
+      roots.forEach(function (root) {
+        const showDistance = root.dataset.showDistance === "1";
+        const lat = Number.parseFloat(root.dataset.lat);
+        const lng = Number.parseFloat(root.dataset.lng);
+        const geoLat = Number(geo.lat);
+        const geoLon = Number(geo.lon);
+        const hasGeoPoint =
+          Number.isFinite(geoLat) &&
+          Number.isFinite(geoLon) &&
+          Number.isFinite(lat) &&
+          Number.isFinite(lng);
+        const distance =
+          showDistance && hasGeoPoint ? Math.round(distanceKm(lat, lng, geoLat, geoLon)) : null;
+
+        const withDistance = distance !== null;
+        let template = withDistance ? root.dataset.template : root.dataset.templateNoDistance;
+        const values = {
+          location: location,
+          greeting: pickGreeting(root, hour),
+          time: time,
+          distance: withDistance ? distance : null,
+          ip: root.dataset.showIp === "1" && geo.ip ? geo.ip : null,
+        };
+
+        if (!values.ip) template = stripIpClause(template);
+
+        root.textContent = "";
+        root.appendChild(buildFragment(template, values));
+        const card = root.closest(".welcome");
+        if (card) {
+          card.classList.remove("is-failed");
+          card.classList.add("is-ready");
+        }
+      });
+    }
+
+    initWelcome();
+
+    // Swup 切页后重新渲染（只注册一次）
+    if (!window.__welcomeInit) {
+      window.__welcomeInit = true;
+      document.addEventListener("swup:contentReplaced", function () {
+        setTimeout(initWelcome, 100);
+      });
+    }
+  })();
+</script>

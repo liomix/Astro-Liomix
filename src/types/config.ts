@@ -15,7 +15,6 @@ export type { CoverImageConfig } from "./coverImageConfig";
 export type { DisplaySettingsConfig } from "./displaySettingsConfig";
 export type { DynamicConfig } from "./dynamicConfig";
 export type { SakuraConfig } from "./effectsConfig";
-
 export type {
 	ExpressiveCodeConfig,
 	PluginCollapsibleConfig,
@@ -56,6 +55,7 @@ export type {
 	SponsorItem,
 	SponsorMethod,
 } from "./sponsorConfig";
+export type { WelcomeConfig } from "./welcomeConfig";
 
 // 响应式图像布局类型
 export type ResponsiveImageLayout = "constrained" | "full-width" | "none";

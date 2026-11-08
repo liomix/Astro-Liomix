@@ -530,4 +530,15 @@ export const zh_TW: Translation = {
 	[Key.exitImmersiveReading]: "退出沉浸閱讀",
 	[Key.tocExpand]: "展開目錄",
 	[Key.tocCollapse]: "摺疊目錄",
+
+	// 訪客歡迎語（Welcome 組件）
+	[Key.welcomeTitle]: "歡迎資訊",
+	[Key.welcomeTemplate]:
+		"來自 {location} 的訪客，{greeting}，現在是 {time}，您目前距站長約 {distance} 公里，IP 位址：{ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"來自 {location} 的訪客，{greeting}，現在是 {time}，IP 位址：{ip}",
+	[Key.welcomeGreetingLateNight]: "夜深了",
+	[Key.welcomeGreetingMorning]: "早安",
+	[Key.welcomeGreetingAfternoon]: "午安",
+	[Key.welcomeGreetingEvening]: "晚安",
 };

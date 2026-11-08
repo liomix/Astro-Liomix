@@ -538,4 +538,15 @@ export const ja: Translation = {
 	[Key.exitImmersiveReading]: "没入型リーディングを終了する",
 	[Key.tocExpand]: "目錄を開く",
 	[Key.tocCollapse]: "目錄をたたむ",
+
+	// 訪問者ウェルカム（Welcome コンポーネント）
+	[Key.welcomeTitle]: "訪問者情報",
+	[Key.welcomeTemplate]:
+		"{location} からアクセスしています。{greeting}。現在 {time}、サイト管理者まで約 {distance} km、IP アドレス：{ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"{location} からアクセスしています。{greeting}。現在 {time}、IP アドレス：{ip}",
+	[Key.welcomeGreetingLateNight]: "深夜ですね",
+	[Key.welcomeGreetingMorning]: "おはようございます",
+	[Key.welcomeGreetingAfternoon]: "こんにちは",
+	[Key.welcomeGreetingEvening]: "こんばんは",
 };

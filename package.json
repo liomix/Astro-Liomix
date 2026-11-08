@@ -69,6 +69,7 @@
     "hastscript": "^9.0.1",
     "katex": "^0.19.1",
     "l2d-widget": "^0.1.1",
+    "lottie-web": "^5.13.0",
     "marked": "^18.1.1",
     "mdast-util-to-string": "^4.0.0",
     "pagefind": "^1.5.2",

@@ -538,4 +538,15 @@ export const ko: Translation = {
 	[Key.exitImmersiveReading]: "몰입형 읽기 종료",
 	[Key.tocExpand]: "목차 펼치기",
 	[Key.tocCollapse]: "목차 접기",
+
+	// 방문자 환영 (Welcome 컴포넌트)
+	[Key.welcomeTitle]: "방문자 정보",
+	[Key.welcomeTemplate]:
+		"{location}에서 방문하셨습니다. {greeting}. 현재 {time}, 사이트 관리자와 약 {distance} km 떨어져 있습니다. IP: {ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"{location}에서 방문하셨습니다. {greeting}. 현재 {time}. IP: {ip}",
+	[Key.welcomeGreetingLateNight]: "깊은 밤이네요",
+	[Key.welcomeGreetingMorning]: "좋은 아침입니다",
+	[Key.welcomeGreetingAfternoon]: "좋은 오후입니다",
+	[Key.welcomeGreetingEvening]: "좋은 저녁입니다",
 };

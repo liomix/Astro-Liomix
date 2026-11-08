@@ -1,5 +1,6 @@
 ---
 import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import Welcome from "@/components/widget/Welcome.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -45,6 +46,9 @@ const showLink = Boolean(config.link && config.link.enable !== false);
       </div>
     )
   }
+
+  <!-- 访客欢迎信息（位于文字区容器下方） -->
+  <Welcome />
 </WidgetLayout>
 
 <style>

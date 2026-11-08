@@ -528,4 +528,15 @@ export const zh_CN: Translation = {
 	[Key.exitImmersiveReading]: "退出沉浸阅读",
 	[Key.tocExpand]: "展开目录",
 	[Key.tocCollapse]: "折叠目录",
+
+	// 访客欢迎语（Welcome 组件）
+	[Key.welcomeTitle]: "欢迎信息",
+	[Key.welcomeTemplate]:
+		"来自 {location} 的访客，{greeting}，现在是 {time}，你目前距站长约 {distance} 公里，IP 地址：{ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"来自 {location} 的访客，{greeting}，现在是 {time}，IP 地址：{ip}",
+	[Key.welcomeGreetingLateNight]: "夜深了",
+	[Key.welcomeGreetingMorning]: "早上好",
+	[Key.welcomeGreetingAfternoon]: "下午好",
+	[Key.welcomeGreetingEvening]: "晚上好",
 };

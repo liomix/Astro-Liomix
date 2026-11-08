@@ -541,4 +541,15 @@ export const en: Translation = {
 	[Key.exitImmersiveReading]: "Exit Immersive Reading",
 	[Key.tocExpand]: "Expand directory",
 	[Key.tocCollapse]: "Collapse directory",
+
+	// Visitor welcome (Welcome widget)
+	[Key.welcomeTitle]: "Visitor Info",
+	[Key.welcomeTemplate]:
+		"A visitor from {location}. {greeting} — it's {time}, about {distance} km from the site owner. IP: {ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"A visitor from {location}. {greeting} — it's {time}. IP: {ip}",
+	[Key.welcomeGreetingLateNight]: "Late at night",
+	[Key.welcomeGreetingMorning]: "Good morning",
+	[Key.welcomeGreetingAfternoon]: "Good afternoon",
+	[Key.welcomeGreetingEvening]: "Good evening",
 };

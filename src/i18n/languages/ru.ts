@@ -542,4 +542,15 @@ export const ru: Translation = {
 	[Key.exitImmersiveReading]: "Выйти из режима чтения",
 	[Key.tocExpand]: "Развернуть оглавление",
 	[Key.tocCollapse]: "Свернуть оглавление",
+
+	// Приветствие посетителя (компонент Welcome)
+	[Key.welcomeTitle]: "Информация о визите",
+	[Key.welcomeTemplate]:
+		"Вы зашли из {location}. {greeting} — сейчас {time}, около {distance} км от владельца сайта. IP: {ip}",
+	[Key.welcomeTemplateNoDistance]:
+		"Вы зашли из {location}. {greeting} — сейчас {time}. IP: {ip}",
+	[Key.welcomeGreetingLateNight]: "Уже поздняя ночь",
+	[Key.welcomeGreetingMorning]: "Доброе утро",
+	[Key.welcomeGreetingAfternoon]: "Добрый день",
+	[Key.welcomeGreetingEvening]: "Добрый вечер",
 };

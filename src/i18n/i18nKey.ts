@@ -522,6 +522,15 @@ enum I18nKey {
 	exitImmersiveReading = "exitImmersiveReading",
 	tocExpand = "tocExpand",
 	tocCollapse = "tocCollapse",
+
+	// 访客欢迎语（Welcome 组件）
+	welcomeTitle = "welcomeTitle",
+	welcomeTemplate = "welcomeTemplate",
+	welcomeTemplateNoDistance = "welcomeTemplateNoDistance",
+	welcomeGreetingLateNight = "welcomeGreetingLateNight",
+	welcomeGreetingMorning = "welcomeGreetingMorning",
+	welcomeGreetingAfternoon = "welcomeGreetingAfternoon",
+	welcomeGreetingEvening = "welcomeGreetingEvening",
 }
 
 export default I18nKey;
