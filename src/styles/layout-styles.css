@@ -474,7 +474,7 @@ body:not(.is-home) #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicato
 #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicator {
     display: flex;
     position: fixed;
-    bottom: 5rem;
+    bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -493,14 +493,15 @@ body:not(.is-home) #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicato
 
 @media (max-width: 1023px) {
     #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicator {
-        bottom: 10rem;
+        bottom: 3rem;
     }
 }
 
 #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicator .scroll-down-icon {
-    font-size: 5rem;
+    display: block;
+    width: 30px;
+    height: 18px;
     animation: scroll-down-bounce 2s ease-in-out infinite;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 }
 
 #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicator:hover {
@@ -511,7 +512,7 @@ body:not(.is-home) #wallpaper-wrapper.wallpaper-fullscreen .scroll-down-indicato
 html[data-wallpaper-mode="fullscreen"] body.is-home #wallpaper-wrapper .scroll-down-indicator {
     display: flex;
     position: fixed;
-    bottom: 5rem;
+    bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
@@ -527,13 +528,14 @@ html[data-wallpaper-mode="fullscreen"] #wallpaper-wrapper .scroll-down-indicator
 }
 @media (max-width: 1023px) {
     html[data-wallpaper-mode="fullscreen"] #wallpaper-wrapper .scroll-down-indicator {
-        bottom: 10rem;
+        bottom: 3rem;
     }
 }
 html[data-wallpaper-mode="fullscreen"] #wallpaper-wrapper .scroll-down-indicator .scroll-down-icon {
-    font-size: 5rem;
+    display: block;
+    width: 30px;
+    height: 18px;
     animation: scroll-down-bounce 2s ease-in-out infinite;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
 }
 html[data-wallpaper-mode="fullscreen"] #wallpaper-wrapper .scroll-down-indicator:hover {
     color: rgba(255, 255, 255, 1);
@@ -557,17 +559,6 @@ html:not([data-wallpaper-mode="overlay"]):not([data-wallpaper-mode="none"]):not(
 /* static（无固定导航栏）只需 1rem 间距 */
 html:not([data-wallpaper-mode="overlay"]):not([data-wallpaper-mode="none"]):not([data-wallpaper-mode="banner"]) body:not(.sticky-navbar):not(.dynamic-navbar) #main-grid {
     scroll-margin-top: 1rem;
-}
-
-/* 壁纸晕影，仅 banner + fullscreen：边缘压暗、中心保持鲜明（纯静态） */
-html[data-wallpaper-mode="banner"] #wallpaper-wrapper::after,
-html[data-wallpaper-mode="fullscreen"] #wallpaper-wrapper::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 6;
-    pointer-events: none;
-    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.28) 100%);
 }
 
 /* Fullscreen 模式下主内容在壁纸下方，用 relative 定位紧跟壁纸 */
@@ -641,14 +632,14 @@ html[data-wallpaper-mode="fullscreen"][data-fullscreen-layout="classic"] body.is
 html[data-wallpaper-mode="fullscreen"][data-fullscreen-layout="classic"] #wallpaper-wrapper .scroll-down-indicator {
     display: flex !important;
     position: absolute !important;
-    bottom: 5rem !important;
+    bottom: 2rem !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
 }
 
 @media (max-width: 1023px) {
     html[data-wallpaper-mode="fullscreen"][data-fullscreen-layout="classic"] #wallpaper-wrapper .scroll-down-indicator {
-        bottom: 10rem !important;
+        bottom: 3rem !important;
     }
 }
 

@@ -1,5 +1,5 @@
 ---
-import { Icon } from "astro-icon/components";
+// 尺寸/位置对齐 fomal.cn：约 40×24 的圆头细勾，贴视口底部约 3rem
 ---
 
 <div
@@ -7,7 +7,21 @@ import { Icon } from "astro-icon/components";
   class="scroll-down-indicator"
   onclick="document.getElementById('main-grid')?.scrollIntoView({ behavior: 'smooth' })"
 >
-  <Icon name="material-symbols:keyboard-arrow-down-rounded" class="scroll-down-icon" />
+  <svg
+    class="scroll-down-icon"
+    viewBox="0 0 40 24"
+    width="30"
+    height="18"
+    fill="none"
+    aria-hidden="true"
+  >
+    <path
+      d="M4 3 L20 21 L36 3"
+      stroke="currentColor"
+      stroke-width="4.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </svg>
 </div>
 
 <script is:inline>

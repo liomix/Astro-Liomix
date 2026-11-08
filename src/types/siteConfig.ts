@@ -118,6 +118,7 @@ export type SiteConfig = {
 		// 列表模式下封面图的位置："right"=右侧（默认），"left"=左侧。网格模式封面固定在顶部，不受此项影响
 		coverPosition?: "left" | "right";
 		descriptionLines?: number; // 文章简介显示行数，设为 0 则不截断，默认 2
+		showDescription?: boolean; // 是否显示文章简介，默认 true；false 时保留占位高度，卡片高度不变
 		showStatsIcons?: boolean; // 文章卡片底部统计是否显示图标
 		// 标签显示位置："meta"=跟随元数据行（默认），"bottom"=卡片底部独立一行（将替换stats显示，二者只能选其一）
 		tagsPosition?: "meta" | "bottom";
