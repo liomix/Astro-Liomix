@@ -293,21 +293,11 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     --navbar-panel-inset: calc(1rem + max(0px, (100% - 2rem - var(--page-width)) / 2));
 }
 
-#navbar > div #search-panel,
 #navbar > div #display-setting {
     right: var(--navbar-panel-inset);
 }
 
-/* 音乐面板原本比其它面板再往里 3rem（right-16 对 right-4），保持这个相对关系 */
-#navbar > div #music-nav-panel {
-    right: calc(var(--navbar-panel-inset) + 3rem);
-}
-
-@media (max-width: 767px) {
-    #navbar > div #search-panel {
-        left: var(--navbar-panel-inset);
-    }
-}
+/* 搜索已改成居中弹窗（.search-dialog，固定在视口中央），不再跟随导航栏右缘对齐 */
 
 /* ============================================
  * 小于1280px时隐藏导航栏菜单图标
@@ -316,6 +306,355 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
     .navbar-icon {
         display: none !important;
     }
+}
+
+/* ============================================
+ * 悬浮式导航条目（透明覆盖态）
+ * ============================================
+ * 一套 --nav-* 变量同时驱动品牌区、菜单项和图标按钮，
+ * 避免每个子元素各自判断当前是「压在壁纸上」还是「玻璃卡片上」。
+ * 透明态 = 有壁纸且 semifull 尚未滚动（与 navbar.css 上方的透明规则同条件）。
+ * ============================================ */
+#navbar {
+    --nav-fg: rgba(0, 0, 0, 0.78);
+    --nav-fg-hover: var(--primary);
+    --nav-fg-active: var(--title-active);
+    --nav-hover-bg: var(--btn-plain-bg-hover);
+    --nav-active-bg: var(--btn-plain-bg-active);
+    --nav-text-shadow: none;
+}
+
+:root.dark #navbar {
+    --nav-fg: rgba(255, 255, 255, 0.78);
+}
+
+/* 透明覆盖态：文字反白 + 深色投影。
+   条件必须与上方「导航栏底色透明」的规则完全对齐，否则会出现白字压白底：
+   - 桌面端：有壁纸且 semifull 未滚动（banner 全页 / fullscreen 首页）
+   - 移动端：只有首页才有横幅，非首页由基础卡底色接管，保持主题色 */
+@media (min-width: 1024px) {
+    html[data-has-wallpaper] #navbar[data-transparent-mode="semifull"]:not(.scrolled) {
+        --nav-fg: rgba(255, 255, 255, 0.96);
+        --nav-fg-hover: #fff;
+        --nav-fg-active: rgba(255, 255, 255, 0.82);
+        --nav-hover-bg: rgba(255, 255, 255, 0.16);
+        --nav-active-bg: rgba(255, 255, 255, 0.26);
+        --nav-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 2px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    /* 透明阶段没有实体底，卡片边框模式的描边和滚动投影都不该出现，
+       否则会在壁纸上方画出一个空的描边框 */
+    html[data-has-wallpaper] #navbar[data-transparent-mode="semifull"]:not(.scrolled)>div {
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+}
+
+@media (max-width: 1023px) {
+    html[data-has-wallpaper] #navbar[data-transparent-mode="semifull"][data-is-home="true"]:not(.scrolled) {
+        --nav-fg: rgba(255, 255, 255, 0.96);
+        --nav-fg-hover: #fff;
+        --nav-fg-active: rgba(255, 255, 255, 0.82);
+        --nav-hover-bg: rgba(255, 255, 255, 0.16);
+        --nav-active-bg: rgba(255, 255, 255, 0.26);
+        --nav-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 2px 14px rgba(0, 0, 0, 0.35);
+    }
+
+    html[data-has-wallpaper] #navbar[data-transparent-mode="semifull"][data-is-home="true"]:not(.scrolled)>div {
+        border-color: transparent !important;
+        box-shadow: none !important;
+    }
+}
+
+/* 品牌区：左对齐的纯文字 + 徽标，不再有按钮底色 */
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding-inline: 0.5rem;
+    border-radius: 0.75rem;
+    color: var(--nav-fg);
+    text-shadow: var(--nav-text-shadow);
+    transition: color 0.2s var(--ease-standard), transform 0.2s var(--ease-standard);
+}
+
+.navbar-brand:hover {
+    color: var(--nav-fg-hover);
+}
+
+.navbar-brand:active {
+    transform: scale(0.97);
+}
+
+/* siteConfig.navbar.followTheme：品牌区跟随主题色 */
+.navbar-brand.navbar-brand-follow-theme {
+    color: var(--primary);
+}
+
+.navbar-brand-text {
+    font-family: var(--font-navbar-title, inherit);
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.navbar-brand .navbar-logo {
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.28));
+}
+
+/* 菜单项：图标 + 文字，静止时无底色，hover 才浮出一层轻薄底 */
+.nav-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    height: 2.5rem;
+    padding-inline: 0.9rem;
+    border-radius: 0.7rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--nav-fg);
+    text-shadow: var(--nav-text-shadow);
+    transition:
+        color 0.2s var(--ease-standard),
+        background-color 0.2s var(--ease-standard),
+        transform 0.2s var(--ease-standard);
+}
+
+.nav-item:hover {
+    color: var(--nav-fg-hover);
+    background-color: var(--nav-hover-bg);
+}
+
+.nav-item:active {
+    color: var(--nav-fg-active);
+    background-color: var(--nav-active-bg);
+    transform: scale(0.98);
+}
+
+.nav-item[aria-expanded="true"] {
+    color: var(--nav-fg-hover);
+    background-color: var(--nav-hover-bg);
+}
+
+.nav-item-icon {
+    flex: none;
+    font-size: 1.05rem;
+    opacity: 0.9;
+}
+
+.nav-item-caret {
+    flex: none;
+    font-size: 1.05rem;
+    opacity: 0.7;
+    transition: transform 0.22s var(--ease-standard), opacity 0.2s var(--ease-standard);
+}
+
+.nav-item:hover .nav-item-caret,
+.nav-item[aria-expanded="true"] .nav-item-caret {
+    opacity: 1;
+    transform: rotate(180deg);
+}
+
+.nav-item-external {
+    flex: none;
+    font-size: 0.7rem;
+    opacity: 0.55;
+}
+
+/* 右侧图标按钮：统一尺寸的纯图标，hover 轻微上浮 */
+.nav-icon-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.7rem;
+    color: var(--nav-fg);
+    text-shadow: var(--nav-text-shadow);
+    transition:
+        color 0.2s var(--ease-standard),
+        background-color 0.2s var(--ease-standard),
+        transform 0.2s var(--ease-standard);
+}
+
+.nav-icon-btn:hover {
+    color: var(--nav-fg-hover);
+    background-color: var(--nav-hover-bg);
+    transform: translateY(-1px);
+}
+
+.nav-icon-btn:active {
+    background-color: var(--nav-active-bg);
+    transform: scale(0.94);
+}
+
+/* ============================================
+ * 搜索弹窗（参考 Fomalhaut：点图标后页面中央弹出）
+ * ============================================ */
+
+/* 全屏遮罩。z-index:-1 让它在 #top-row（z-80 的层叠上下文）内部落到导航栏之下，
+   于是遮罩盖住页面内容、却不会挡住导航栏上的按钮——再点一次搜索图标即可关闭。 */
+.search-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.34);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s var(--ease-standard);
+}
+
+/* 面板 class 由 floating-panel-utils 维护，这里只做纯 CSS 的联动 */
+body:has(#search-panel:not(.float-panel-closed)) .search-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+#search-panel.search-dialog {
+    position: fixed;
+    top: 13vh;
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: min(92vw, 34rem);
+    max-height: min(72vh, 44rem);
+    padding: 1rem 1.1rem 0.7rem;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+/* 搜索结果要压在壁纸上读，比其它浮动面板再实一点，否则文字对比度不够。
+   纯色背景模式（data-wallpaper-mode="none"）下没有壁纸可透，保持普通卡片底色 */
+html:not([data-wallpaper-mode="none"])[data-has-wallpaper]
+    #navbar
+    #search-panel.search-dialog,
+html:not([data-wallpaper-mode="none"])
+    body.wallpaper-transparent
+    #navbar
+    #search-panel.search-dialog {
+    background: rgba(255, 255, 255, 0.76) !important;
+}
+
+:root.dark:not([data-wallpaper-mode="none"])[data-has-wallpaper]
+    #navbar
+    #search-panel.search-dialog,
+:root.dark:not([data-wallpaper-mode="none"])
+    body.wallpaper-transparent
+    #navbar
+    #search-panel.search-dialog {
+    background: rgba(28, 28, 30, 0.82) !important;
+}
+
+.search-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.15rem;
+}
+
+.search-dialog-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--primary);
+}
+
+.search-dialog-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.6rem;
+    opacity: 0.6;
+    transition:
+        background-color 0.18s var(--ease-standard),
+        opacity 0.18s var(--ease-standard);
+}
+
+.search-dialog-close:hover {
+    background-color: var(--btn-plain-bg-hover);
+    opacity: 1;
+}
+
+/* 输入行：胶囊 + 主题色描边，与参考站一致 */
+.search-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding-inline: 1rem;
+    border: 1.5px solid color-mix(in oklch, var(--primary) 42%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--card-bg) 55%, transparent);
+    transition:
+        border-color 0.18s var(--ease-standard),
+        box-shadow 0.18s var(--ease-standard);
+}
+
+.search-input-row:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 16%, transparent);
+}
+
+.search-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 0.9rem;
+    color: inherit;
+}
+
+/* type="search" 在 Chrome/Edge 会带一个原生清除按钮，和右侧放大镜挨在一起很挤 */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.search-input::placeholder {
+    color: color-mix(in oklch, currentColor 42%, transparent);
+}
+
+.search-input-icon {
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    color: var(--primary);
+    opacity: 0.85;
+}
+
+/* 结果区自行滚动，保证弹窗整体不超出视口 */
+.search-dialog-results {
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 0.15rem;
+}
+
+.search-dialog-results::-webkit-scrollbar {
+    width: 5px;
+}
+
+.search-dialog-results::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: color-mix(in oklch, currentColor 18%, transparent);
+}
+
+.search-hint {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    opacity: 0.55;
 }
 
 /* semi 滚动后加回投影 */

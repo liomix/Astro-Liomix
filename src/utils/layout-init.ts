@@ -37,11 +37,7 @@ export function initLayout(): void {
 	]);
 	// nav-menu-panel 现为全屏抽屉（inset-0），点击外部永不触发且由遮罩点击关闭，
 	// 不再注册 click-outside（见 NavMenuPanel.astro 的 document 委托）。
-	setClickOutsideToClose("search-panel", [
-		"search-panel",
-		"search-bar",
-		"search-switch",
-	]);
+	setClickOutsideToClose("search-panel", ["search-panel", "search-switch"]);
 	setClickOutsideToClose("wallpaper-mode-panel", [
 		"wallpaper-mode-panel",
 		"wallpaper-mode-switch",

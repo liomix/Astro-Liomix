@@ -468,7 +468,7 @@ html {
     }
 
     .dropdown-menu {
-        @apply absolute top-full left-0 pt-2 pointer-events-none z-50;
+        @apply absolute top-full left-1/2 -translate-x-1/2 pt-2 pointer-events-none z-50;
     }
 
     .dropdown-container:hover .dropdown-menu,

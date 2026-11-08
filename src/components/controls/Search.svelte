@@ -9,13 +9,13 @@ import { FLOATING_PANEL_CLOSE_EVENT } from "@/utils/floating-panel-utils";
 import { url as formatUrl, getSearchUrl } from "@/utils/url-utils";
 
 // --- State ---
-let keywordDesktop = "";
-let keywordMobile = "";
+let keyword = "";
 let result: SearchResult[] = [];
 let isSearching = false;
 let initialized = false;
 let debounceTimer: NodeJS.Timeout;
 let searchRequestId = 0;
+let inputEl: HTMLInputElement | undefined;
 
 // --- Mocks for Dev Mode ---
 const fakeResult: SearchResult[] = [
@@ -39,43 +39,38 @@ const requestPagefind = (): void => {
 	window.__loadPagefind?.();
 };
 
-const togglePanel = () => {
+const getPanel = (): HTMLElement | null =>
+	document.getElementById("search-panel");
+
+const isPanelOpen = (): boolean => {
+	const panel = getPanel();
+	return !!panel && !panel.classList.contains("float-panel-closed");
+};
+
+// 弹窗打开后把焦点交给输入框：桌面端不用再点一次，直接打字即可
+const focusInput = (): void => {
+	requestAnimationFrame(() => inputEl?.focus());
+};
+
+const openPanel = (): void => {
 	requestPagefind();
-	document
-		.getElementById("search-panel")
-		?.classList.toggle("float-panel-closed");
+	getPanel()?.classList.remove("float-panel-closed");
+	focusInput();
 };
 
-const handleDesktopFocus = (event: FocusEvent): void => {
-	requestPagefind();
-
-	const input = event.currentTarget;
-	if (
-		input instanceof HTMLElement &&
-		input.hasAttribute("data-floating-panel-focus-return")
-	)
-		return;
-
-	search(keywordDesktop, true);
+const closePanel = (): void => {
+	getPanel()?.classList.add("float-panel-closed");
 };
 
-const setPanelVisibility = (show: boolean, isDesktop: boolean): void => {
-	const panel = document.getElementById("search-panel");
-	if (
-		!panel ||
-		(isDesktop && !keywordDesktop) ||
-		(!isDesktop && !keywordMobile)
-	)
-		return;
-	show
-		? panel.classList.remove("float-panel-closed")
-		: panel.classList.add("float-panel-closed");
+const togglePanel = (): void => {
+	if (isPanelOpen()) closePanel();
+	else openPanel();
 };
 
+// 关闭按钮 / 结果跳转用：连输入内容和结果一起清掉，下次打开是干净的
 const closeSearchPanel = (): void => {
-	document.getElementById("search-panel")?.classList.add("float-panel-closed");
-	keywordDesktop = "";
-	keywordMobile = "";
+	closePanel();
+	keyword = "";
 	result = [];
 };
 
@@ -92,10 +87,9 @@ const handleResultClick = (event: Event, url: string): void => {
 };
 
 // --- Core Search Logic ---
-const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
-	if (!keyword) {
+const search = async (kw: string): Promise<void> => {
+	if (!kw) {
 		cancelPendingSearch();
-		setPanelVisibility(false, isDesktop);
 		result = [];
 		return;
 	}
@@ -110,7 +104,7 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 			let searchResults: SearchResult[] = [];
 
 			if (import.meta.env.PROD && window.pagefind) {
-				const response = await window.pagefind.search(keyword);
+				const response = await window.pagefind.search(kw);
 				searchResults = await Promise.all(
 					response.results.map((item) => item.data()),
 				);
@@ -119,15 +113,12 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 			}
 
 			if (requestId !== searchRequestId) return;
-
 			result = searchResults;
-			setPanelVisibility(true, isDesktop);
 		} catch (error) {
 			if (requestId !== searchRequestId) return;
 
 			console.error("Search error:", error);
 			result = [];
-			setPanelVisibility(false, isDesktop);
 		} finally {
 			if (requestId === searchRequestId) {
 				isSearching = false;
@@ -140,8 +131,7 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 onMount(() => {
 	const initializePagefind = () => {
 		initialized = true;
-		if (keywordDesktop) search(keywordDesktop, true);
-		if (keywordMobile) search(keywordMobile, false);
+		if (keyword) search(keyword);
 	};
 
 	if (import.meta.env.DEV) {
@@ -162,11 +152,18 @@ onMount(() => {
 		}
 	}
 
-	const panel = document.getElementById("search-panel");
-	panel?.addEventListener(FLOATING_PANEL_CLOSE_EVENT, cancelPendingSearch);
+	const panel = getPanel();
+	// 面板的三种关闭路径（点 ×、点遮罩、ESC）最终都会派发这个事件，
+	// 统一在这里清空关键词和结果，保证下次打开是干净的
+	const handlePanelClose = (): void => {
+		cancelPendingSearch();
+		keyword = "";
+		result = [];
+	};
+	panel?.addEventListener(FLOATING_PANEL_CLOSE_EVENT, handlePanelClose);
 
 	return () => {
-		panel?.removeEventListener(FLOATING_PANEL_CLOSE_EVENT, cancelPendingSearch);
+		panel?.removeEventListener(FLOATING_PANEL_CLOSE_EVENT, handlePanelClose);
 		document.removeEventListener("pagefindready", initializePagefind);
 		document.removeEventListener("pagefindloaderror", initializePagefind);
 		cancelPendingSearch();
@@ -174,118 +171,140 @@ onMount(() => {
 });
 
 // --- Reactive Statements ---
-$: if (initialized && (keywordDesktop || keywordDesktop === "")) {
-	search(keywordDesktop, true);
-}
-$: if (initialized && (keywordMobile || keywordMobile === "")) {
-	search(keywordMobile, false);
+$: if (initialized && keyword !== undefined) {
+	search(keyword);
 }
 </script>
 
-<!-- search bar for desktop view -->
-<div id="search-bar" class="hidden lg:flex transition-all items-center h-11 mr-2 rounded-lg
-      bg-black/4 hover:bg-black/6 focus-within:bg-black/6
-      dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10
-">
-    <Icon icon="material-symbols:search"
-          class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
-    <input id="search-input-desktop" placeholder="{i18n(I18nKey.search)}" bind:value={keywordDesktop}
-           aria-controls="search-panel" data-floating-panel-no-expanded
-           on:focus={handleDesktopFocus}
-           class="transition-all pl-10 text-sm bg-transparent outline-0
-         h-full w-40 active:w-60 focus:w-60 text-black/50 dark:text-white/50"
-    >
-</div>
-
-<!-- toggle btn for phone/tablet view -->
-<button on:click={togglePanel} aria-label="Search Panel" aria-controls="search-panel" aria-expanded="false" id="search-switch"
-		class="btn-plain scale-animation lg:hidden! rounded-lg w-11 h-11 active:scale-90">
-    <Icon icon="material-symbols:search" class="text-[1.25rem]"></Icon>
+<!-- 搜索入口：与主题切换按钮同规格的纯图标按钮 -->
+<button
+	type="button"
+	on:click={togglePanel}
+	aria-label={i18n(I18nKey.search)}
+	aria-controls="search-panel"
+	aria-expanded="false"
+	class="nav-icon-btn"
+	id="search-switch"
+>
+	<Icon icon="material-symbols:search" class="text-[1.25rem]"></Icon>
 </button>
 
-<!-- search panel -->
-<div id="search-panel" class="float-panel float-panel-closed search-panel absolute md:w-120
-top-20 left-4 md:left-[unset] right-4 shadow-2xl rounded-2xl p-2"
-     data-floating-panel data-floating-panel-trigger="search-switch search-input-desktop" inert aria-hidden="true">
+<!-- 弹窗打开时的全屏遮罩（点它即关闭，走全局 click-outside） -->
+<div class="search-backdrop" aria-hidden="true"></div>
 
-    <!-- search bar inside panel for phone/tablet -->
-    <div id="search-bar-inside" class="flex relative lg:hidden transition-all items-center h-11 rounded-xl
-      bg-black/4 hover:bg-black/6 focus-within:bg-black/6
-      dark:bg-white/5 dark:hover:bg-white/10 dark:focus-within:bg-white/10
-  ">
-        <Icon icon="material-symbols:search"
-              class="absolute text-[1.25rem] pointer-events-none ml-3 transition my-auto text-black/30 dark:text-white/30"></Icon>
-        <input placeholder={i18n(I18nKey.search)} bind:value={keywordMobile}
-               on:focus={requestPagefind}
-               class="pl-10 absolute inset-0 text-sm bg-transparent outline-0
-               focus:w-60 text-black/50 dark:text-white/50"
-        >
-    </div>
+<!-- 搜索弹窗 -->
+<div
+	id="search-panel"
+	class="float-panel float-panel-closed search-panel search-dialog"
+	data-floating-panel
+	data-floating-panel-trigger="search-switch"
+	inert
+	aria-hidden="true"
+>
+	<div class="search-dialog-head">
+		<span class="search-dialog-title">{i18n(I18nKey.search)}</span>
+		<button
+			type="button"
+			class="search-dialog-close"
+			aria-label="Close search"
+			on:click={closeSearchPanel}
+		>
+			<Icon icon="material-symbols:close" class="text-[1.3rem]"></Icon>
+		</button>
+	</div>
 
-    <!-- search results -->
-    {#if isSearching}
-        <div class="transition first-of-type:mt-2 lg:first-of-type:mt-0 block rounded-xl text-lg px-3 py-2 text-50">
-            {i18n(I18nKey.searchLoading)}
-        </div>
-    {:else if result.length > 0}
-        {#each result.slice(0, 5) as item}
-            <a href={item.url}
-               on:click={(e) => handleResultClick(e, item.url)}
-               class="transition first-of-type:mt-2 lg:first-of-type:mt-0 group block
-           rounded-xl text-lg px-3 py-2 hover:bg-(--btn-plain-bg-hover) active:bg-(--btn-plain-bg-active)">
-                <div class="transition text-90 inline-flex font-bold group-hover:text-(--primary)">
-                    {@html item.meta.title}
-                    <Icon icon="fa7-solid:chevron-right"
-                          class="transition text-[0.75rem] translate-x-1 my-auto text-(--primary)"></Icon>
-                </div>
-                {#if item.excerpt.includes('<mark>')}
-                    <div class="transition text-sm text-50" style="display: flex; align-items: flex-start; margin-top: 0.1rem">
-                        <div>
-                            {@html item.excerpt}
-                        </div>
-                    </div>
-                {/if}
+	<div class="search-input-row">
+		<input
+			id="search-input"
+			bind:this={inputEl}
+			bind:value={keyword}
+			type="search"
+			autocomplete="off"
+			class="search-input"
+			aria-label={i18n(I18nKey.search)}
+		/>
+		<Icon icon="material-symbols:search" class="search-input-icon"></Icon>
+	</div>
 
-                {#if item.content && item.content.includes('<mark>')}
-                    <div class="transition text-sm text-30" style="display: flex; align-items: flex-start; margin-top: 0.1rem">
-                        <span style="display: inline-block; background-color: var(--btn-plain-bg-active); color: var(--primary); padding: 0.1em 0.4em; border-radius: 5px; font-size: 0.75em; font-weight: 600; margin-right: 0.5em; shrink: 0;">
-                            {i18n(I18nKey.searchContent)}
-                        </span>
-                        <div>
-                            {@html item.content}
-                        </div>
-                    </div>
-                {/if}
-            </a>
-        {/each}
-        {#if result.length > 5}
-            <a href={getSearchUrl(keywordDesktop || keywordMobile)}
-               on:click={(e) => handleResultClick(e, getSearchUrl(keywordDesktop || keywordMobile))}
-               class="transition first-of-type:mt-2 lg:first-of-type:mt-0 group block rounded-xl text-lg px-3 py-2 hover:bg-(--btn-plain-bg-hover) active:bg-(--btn-plain-bg-active) text-(--primary) font-bold text-center">
-                <span class="inline-flex items-center">
-                    {i18n(I18nKey.searchViewMore).replace('{count}', (result.length - 5).toString())}
-                    <Icon icon="fa7-solid:arrow-right" class="transition text-[0.75rem] ml-1"></Icon>
-                </span>
-            </a>
-        {/if}
-    {:else if result.length === 0}
-        <div class="transition first-of-type:mt-2 lg:first-of-type:mt-0 block rounded-xl text-lg px-3 py-2 text-50">
-            {i18n(I18nKey.searchNoResults)}
-        </div>
-    {:else if keywordDesktop || keywordMobile}
-        <div class="transition first-of-type:mt-2 lg:first-of-type:mt-0 block rounded-xl text-lg px-3 py-2 text-50">
-            {i18n(I18nKey.searchTypeSomething)}
-        </div>
-    {/if}
+	<div class="search-dialog-results">
+		{#if isSearching}
+			<div class="search-hint">{i18n(I18nKey.searchLoading)}</div>
+		{:else if result.length > 0}
+			{#each result.slice(0, 5) as item}
+				<a
+					href={item.url}
+					on:click={(e) => handleResultClick(e, item.url)}
+					class="transition group block rounded-xl text-lg px-3 py-2 hover:bg-(--btn-plain-bg-hover) active:bg-(--btn-plain-bg-active)"
+				>
+					<div
+						class="transition text-90 inline-flex font-bold group-hover:text-(--primary)"
+					>
+						{@html item.meta.title}
+						<Icon
+							icon="fa7-solid:chevron-right"
+							class="transition text-[0.75rem] translate-x-1 my-auto text-(--primary)"
+						></Icon>
+					</div>
+					{#if item.excerpt.includes("<mark>")}
+						<div class="search-excerpt text-sm text-50">
+							<div>
+								{@html item.excerpt}
+							</div>
+						</div>
+					{/if}
+
+					{#if item.content && item.content.includes("<mark>")}
+						<div class="search-excerpt text-sm text-30">
+							<span class="search-content-tag">
+								{i18n(I18nKey.searchContent)}
+							</span>
+							<div>
+								{@html item.content}
+							</div>
+						</div>
+					{/if}
+				</a>
+			{/each}
+			{#if result.length > 5}
+				<a
+					href={getSearchUrl(keyword)}
+					on:click={(e) => handleResultClick(e, getSearchUrl(keyword))}
+					class="transition group block rounded-xl text-lg px-3 py-2 hover:bg-(--btn-plain-bg-hover) active:bg-(--btn-plain-bg-active) text-(--primary) font-bold text-center"
+				>
+					<span class="inline-flex items-center">
+						{i18n(I18nKey.searchViewMore).replace(
+							"{count}",
+							(result.length - 5).toString(),
+						)}
+						<Icon
+							icon="fa7-solid:arrow-right"
+							class="transition text-[0.75rem] ml-1"
+						></Icon>
+					</span>
+				</a>
+			{/if}
+		{:else if keyword}
+			<div class="search-hint">{i18n(I18nKey.searchNoResults)}</div>
+		{/if}
+	</div>
 </div>
 
 <style>
-    input:focus {
-        outline: 0;
-    }
+	.search-excerpt {
+		display: flex;
+		align-items: flex-start;
+		margin-top: 0.1rem;
+	}
 
-    .search-panel {
-        max-height: calc(100vh - 100px);
-        overflow-y: auto;
-    }
+	.search-content-tag {
+		display: inline-block;
+		flex-shrink: 0;
+		margin-right: 0.5em;
+		padding: 0.1em 0.4em;
+		border-radius: 5px;
+		background-color: var(--btn-plain-bg-active);
+		color: var(--primary);
+		font-size: 0.75em;
+		font-weight: 600;
+	}
 </style>

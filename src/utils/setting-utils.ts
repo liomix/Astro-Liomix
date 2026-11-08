@@ -422,10 +422,10 @@ export function updateNavbarTransparency(mode: WALLPAPER_MODE): void {
 		transparentMode = fsMode === "semifull" && isHomePage ? "semifull" : "semi";
 		blurAmount = glassBlur;
 	} else {
-		// Banner模式：semifull 仅首页动态，非首页与 fullscreen 一致为半透明
-		const isHomePage = checkIsHomePage(window.location.pathname);
-		const tMode = backgroundWallpaper.banner?.navbar?.transparentMode || "semi";
-		transparentMode = tMode === "semifull" && !isHomePage ? "semi" : tMode;
+		// Banner模式：不再按首页/非首页降级成 semi —— 桌面端非首页也有 45vh 横幅，
+		// 导航栏要一直悬在壁纸上；移动端非首页没有横幅，由 navbar.css 的 [data-is-home] 条件回落到卡底色
+		transparentMode =
+			backgroundWallpaper.banner?.navbar?.transparentMode || "semi";
 		blurAmount = backgroundWallpaper.banner?.navbar?.blur ?? 20;
 	}
 
