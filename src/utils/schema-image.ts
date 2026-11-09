@@ -3,6 +3,7 @@ import type { ImageMetadata } from "astro";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import { defaultFavicons } from "@/constants/icon";
+import { hasVideoExtension } from "@/utils/image-animation";
 import { url } from "./url-utils";
 
 // 构建期一次性收集 src 下的图片资源，用于把 src 相对路径解析成 Astro 构建后的真实 URL。
@@ -92,7 +93,12 @@ async function getLocalImageInfo(
  * 固定用 profileConfig.avatar + basePath=""（相对 src/）。
  */
 export async function getAuthorAvatarUrl(): Promise<string | null> {
-	return toAbsoluteImageUrl(profileConfig.avatar, "", siteConfig.site_url);
+	// 结构化数据只吃静态图：视频头像换用封面图，避免这里解析失败后 Person.image 直接缺失
+	const avatar = profileConfig.avatar ?? "";
+	const src = hasVideoExtension(avatar)
+		? (profileConfig.avatarPoster ?? avatar)
+		: avatar;
+	return toAbsoluteImageUrl(src, "", siteConfig.site_url);
 }
 
 // 解析 favicon 的 sizes（如 "192x192"）为宽高

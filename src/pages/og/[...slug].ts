@@ -6,9 +6,16 @@ import type { FontDetails } from "takumi-js";
 import { ImageResponse } from "takumi-js/response";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
+import { hasVideoExtension, isAnimatedImageBuffer } from "@/utils/image-animation";
 import { removeFileExtension } from "@/utils/url-utils";
 
 export const prerender = true;
+
+// OG 图渲染器只吃静态图，视频头像用封面图代替
+const avatarFile = profileConfig.avatar ?? "";
+const avatarStill = hasVideoExtension(avatarFile)
+	? (profileConfig.avatarPoster ?? avatarFile)
+	: avatarFile;
 
 export const getStaticPaths: GetStaticPaths = async () => {
 	if (!siteConfig.post.generateOgImages) {
@@ -191,6 +198,13 @@ const loadImageAsArrayBuffer = async (
 		}
 
 		const detectedFormat = detectImageFormat(buffer);
+
+		// 动图（GIF/APNG/动态 WebP）在 OG 图里只用得到第一帧，先压平成 PNG，
+		// 否则多帧数据交给渲染器可能直接解码失败
+		if (isAnimatedImageBuffer(buffer)) {
+			const sharp = await getSharp();
+			buffer = Buffer.from(await sharp(buffer).png().toBuffer());
+		}
 
 		if (!detectedFormat || !SUPPORTED_FORMATS.has(detectedFormat)) {
 			const sharp = await getSharp();
@@ -445,7 +459,7 @@ export async function GET({
 				sources: [
 					{
 						src: "og-avatar",
-						data: () => loadImageAsArrayBuffer(profileConfig.avatar ?? ""),
+						data: () => loadImageAsArrayBuffer(avatarStill),
 					},
 					{
 						src: "og-icon",

@@ -313,6 +313,7 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
         if (value !== undefined && value !== null && value !== "") {
           const span = document.createElement("span");
           span.className = "welcome-accent";
+          span.dataset.welcomeField = match[1];
           span.textContent = String(value);
           fragment.appendChild(span);
         }
@@ -328,6 +329,41 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
     function hideCards() {
       const cards = document.querySelectorAll(".welcome");
       for (const card of cards) card.classList.add("is-failed");
+    }
+
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    // 实时刷新时间与问候语：只改已渲染的两个 span，不重建整段文案（避免闪烁与动画重放）
+    function updateClock() {
+      if (document.hidden) return;
+      const roots = document.querySelectorAll("[data-welcome]");
+      if (!roots.length) return;
+
+      const now = new Date();
+      const hour = now.getHours();
+      const time = pad2(hour) + ":" + pad2(now.getMinutes());
+
+      roots.forEach(function (root) {
+        const timeEl = root.querySelector('[data-welcome-field="time"]');
+        if (timeEl && timeEl.textContent !== time) timeEl.textContent = time;
+
+        const greetingEl = root.querySelector('[data-welcome-field="greeting"]');
+        if (greetingEl) {
+          const greeting = pickGreeting(root, hour);
+          if (greeting && greetingEl.textContent !== greeting) {
+            greetingEl.textContent = greeting;
+          }
+        }
+      });
+    }
+
+    // 单例定时器与监听：Swup 切页会重新执行本脚本，重复注册会叠加
+    if (!window.__welcomeClock) {
+      window.__welcomeClock = window.setInterval(updateClock, 1000);
+      // 从后台切回前台立即纠正一次，不用等下一个整秒
+      document.addEventListener("visibilitychange", updateClock);
     }
 
     async function initWelcome() {

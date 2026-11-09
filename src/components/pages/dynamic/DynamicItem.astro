@@ -1,13 +1,14 @@
 ---
 import { type CollectionEntry, render } from "astro:content";
 import { Icon } from "astro-icon/components";
-import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import AvatarImage from "@/components/common/AvatarImage.astro";
 import DynamicActions from "@/components/pages/dynamic/DynamicActions.astro";
 import DynamicGallery from "@/components/pages/dynamic/DynamicGallery.astro";
 import DynamicInlineComments from "@/components/pages/dynamic/DynamicInlineComments.astro";
 import { dynamicConfig, profileConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import { avatarMotionOverride } from "@/utils/avatar-utils";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { url } from "@/utils/url-utils";
@@ -46,12 +47,14 @@ const profileUrl = url(dynamicConfig.profileUrl || "/about/");
 	<article aria-labelledby={`${anchorId}-author`}>
 		<header class="page-entry-header">
 			<a href={profileUrl} class="page-avatar" aria-label={profileLabel}>
-				<ImageWrapper
+				<AvatarImage
 					src={profileConfig.avatar || ""}
 					alt={profileConfig.name}
 					widths={[112]}
 					sizes="56px"
 					loading="lazy"
+					animated={avatarMotionOverride()}
+					poster={profileConfig.avatarPoster}
 				/>
 			</a>
 			<div class="page-identity">

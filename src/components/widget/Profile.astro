@@ -1,9 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
-import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import AvatarImage from "@/components/common/AvatarImage.astro";
 import { profileConfig } from "@/config/profileConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import { avatarMotionOverride } from "@/utils/avatar-utils";
 import {
 	getCategoryList,
 	getSortedPosts,
@@ -71,7 +72,7 @@ const profileStats = showStats
         ]}
       />
     </div>
-    <ImageWrapper
+    <AvatarImage
       src={profileConfig.avatar || ""}
       alt="Profile Image of the Author"
       class={`profile-avatar-image ${isCircleAvatar ? "w-full aspect-square" : "mx-auto lg:w-full h-full lg:mt-0"}`}
@@ -79,6 +80,8 @@ const profileStats = showStats
       fetchpriority="high"
       widths={[350]}
       sizes="350px"
+      animated={avatarMotionOverride()}
+      poster={profileConfig.avatarPoster}
     />
   </a>
   <div class="px-2">

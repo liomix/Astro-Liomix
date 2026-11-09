@@ -1,0 +1,91 @@
+---
+/**
+ * 头像图片，支持多种格式：
+ * - 静态图片（png/jpg/webp/avif）：走 ImageWrapper 的响应式优化
+ * - 动图（gif/apng/动态 webp/avif）：识别后直出原文件，保留动画
+ * - 视频（mp4/webm/mov/m4v）：渲染为静音自动循环播放的 <video>
+ */
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import {
+	isDynamicAvatar,
+	isVideoAvatar,
+	resolveRawAvatarUrl,
+} from "@/utils/avatar-utils";
+
+interface Props {
+	src: string;
+	alt?: string;
+	widths?: number[];
+	sizes?: string;
+	loading?: "lazy" | "eager";
+	fetchpriority?: "high" | "low" | "auto";
+	fadeIn?: boolean;
+	/** 覆盖自动识别结果：true 强制当动态资源直出原文件，false 强制当静态图；不传则自动嗅探 */
+	animated?: boolean;
+	/** 视频封面（可选）：首帧加载出来前显示，不传则由浏览器直接拉流 */
+	poster?: string;
+}
+
+const {
+	src,
+	alt = "",
+	widths,
+	sizes,
+	loading = "lazy",
+	fetchpriority = "auto",
+	fadeIn = true,
+	animated,
+	poster,
+} = Astro.props;
+const className = Astro.props.class;
+
+const isVideo = isVideoAvatar(src);
+const isAnimated = animated ?? isDynamicAvatar(src);
+// 原始文件解析失败时退回静态管线，避免头像直接不显示
+const rawSrc = isAnimated ? resolveRawAvatarUrl(src) : "";
+// 封面同样可能是 src 资源，需要换成最终 URL
+const posterSrc = poster ? resolveRawAvatarUrl(poster) : undefined;
+const useRaw = Boolean(rawSrc) && !isVideo;
+const useVideo = Boolean(rawSrc) && isVideo;
+---
+
+{useVideo ? (
+	<div class:list={[className, "overflow-hidden relative"]}>
+		<video
+			src={rawSrc}
+			class="w-full h-full object-cover"
+			poster={posterSrc}
+			autoplay
+			muted
+			loop
+			playsinline
+			preload="auto"
+			disablepictureinpicture
+			aria-label={alt || "Avatar"}
+			data-avatar-motion
+		/>
+	</div>
+) : useRaw ? (
+	<div class:list={[className, "overflow-hidden relative"]}>
+		<img
+			src={rawSrc}
+			alt={alt}
+			class="w-full h-full object-cover"
+			loading={loading}
+			fetchpriority={fetchpriority}
+			decoding="async"
+			data-avatar-motion
+		/>
+	</div>
+) : (
+	<ImageWrapper
+		src={src}
+		alt={alt}
+		class={className}
+		widths={widths}
+		sizes={sizes}
+		loading={loading}
+		fetchpriority={fetchpriority}
+		fadeIn={fadeIn}
+	/>
+)}

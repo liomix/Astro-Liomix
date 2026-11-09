@@ -15,6 +15,7 @@ import {
 import SidebarPop from "@/components/widget/SidebarPop.svelte";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { fetchWithDedup } from "@/utils/fetch-dedup";
+import { hasVideoExtension } from "@/utils/image-animation";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { url } from "@/utils/url-utils";
 
@@ -42,10 +43,22 @@ interface Props {
 	profileName: string;
 	profileUrl: string;
 	avatarUrl?: string;
+	/** 视频头像的封面图 URL */
+	avatarPosterUrl?: string;
 }
 
-let { apiUrl, limit, memos, profileName, profileUrl, avatarUrl }: Props =
-	$props();
+let {
+	apiUrl,
+	limit,
+	memos,
+	profileName,
+	profileUrl,
+	avatarUrl,
+	avatarPosterUrl,
+}: Props = $props();
+
+// 弹窗里头像可能是视频（mp4/webm…），需要渲染成静音循环的 <video>
+const avatarIsVideo = Boolean(avatarUrl) && hasVideoExtension(avatarUrl ?? "");
 
 let allEntries: DynamicEntry[] = $state([]);
 let totalCount = $state(0);
@@ -207,7 +220,22 @@ function visibleImages(entry: DynamicEntry) {
 			<header class="pop-head">
 				<a class="pop-avatar" href={profileUrl} aria-label={profileName}>
 					{#if avatarUrl}
-						<img src={avatarUrl} alt={profileName} loading="lazy" decoding="async" />
+						{#if avatarIsVideo}
+							<video
+								src={avatarUrl}
+								poster={avatarPosterUrl || undefined}
+								autoplay
+								muted
+								loop
+								playsinline
+								preload="auto"
+								disablepictureinpicture
+								aria-label={profileName}
+								data-avatar-motion
+							></video>
+						{:else}
+							<img src={avatarUrl} alt={profileName} loading="lazy" decoding="async" />
+						{/if}
 					{/if}
 				</a>
 				<a class="pop-author" href={profileUrl}>{profileName}</a>
@@ -335,6 +363,13 @@ function visibleImages(entry: DynamicEntry) {
 	}
 
 	.pop-avatar img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.pop-avatar video {
 		display: block;
 		width: 100%;
 		height: 100%;

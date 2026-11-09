@@ -8,6 +8,11 @@ import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { WidgetComponentConfig } from "@/types/config";
+import {
+	avatarMotionOverride,
+	isDynamicAvatar,
+	resolveRawAvatarUrl,
+} from "@/utils/avatar-utils";
 import { url } from "@/utils/url-utils";
 
 interface Props {
@@ -31,6 +36,10 @@ const profileUrl = url(dynamicConfig.profileUrl || "/about/");
 // 弹窗条目需要头像的最终 URL，这里把本地资源先交给 Astro 生成一次
 async function resolveAvatar(src: string): Promise<string> {
 	if (!src) return "";
+	// 动图/视频必须直出原始文件，getImage 只会保留第一帧
+	if (avatarMotionOverride() ?? isDynamicAvatar(src)) {
+		return resolveRawAvatarUrl(src);
+	}
 	if (
 		src.startsWith("/") ||
 		src.startsWith("http://") ||
@@ -55,6 +64,10 @@ async function resolveAvatar(src: string): Promise<string> {
 }
 
 const avatarUrl = await resolveAvatar(profileConfig.avatar || "");
+// 视频头像在弹窗里用 <video> 渲染，封面先顶上避免闪一下空白
+const avatarPosterUrl = profileConfig.avatarPoster
+	? resolveRawAvatarUrl(profileConfig.avatarPoster)
+	: "";
 ---
 
 {
@@ -74,6 +87,7 @@ const avatarUrl = await resolveAvatar(profileConfig.avatar || "");
 				profileName={profileConfig.name}
 				{profileUrl}
 				{avatarUrl}
+				avatarPosterUrl={avatarPosterUrl}
 			/>
 		</WidgetLayout>
 	)
