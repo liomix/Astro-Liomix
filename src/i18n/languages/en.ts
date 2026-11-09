@@ -559,4 +559,18 @@ export const en: Translation = {
 	[Key.welcomeGreetingMorning]: "Good morning",
 	[Key.welcomeGreetingAfternoon]: "Good afternoon",
 	[Key.welcomeGreetingEvening]: "Good evening",
+
+	// Tab bar
+	[Key.tabBarLabel]: "Page tabs",
+	[Key.tabClose]: "Close",
+	[Key.tabRefresh]: "Refresh",
+	[Key.tabCloseCurrent]: "Close current",
+	[Key.tabCloseOthers]: "Close others",
+	[Key.tabCloseAll]: "Close all",
+	[Key.tabCloseLeft]: "Close to the left",
+	[Key.tabCloseRight]: "Close to the right",
+	[Key.tabPin]: "Pin tab",
+	[Key.tabUnpin]: "Unpin tab",
+	[Key.tabUntitled]: "Untitled",
+	[Key.tabClear]: "Clear tabs",
 };

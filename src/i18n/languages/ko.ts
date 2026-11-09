@@ -556,4 +556,18 @@ export const ko: Translation = {
 	[Key.welcomeGreetingMorning]: "좋은 아침입니다",
 	[Key.welcomeGreetingAfternoon]: "좋은 오후입니다",
 	[Key.welcomeGreetingEvening]: "좋은 저녁입니다",
+
+	// 탭 표시줄
+	[Key.tabBarLabel]: "페이지 탭",
+	[Key.tabClose]: "닫기",
+	[Key.tabRefresh]: "새로고침",
+	[Key.tabCloseCurrent]: "현재 탭 닫기",
+	[Key.tabCloseOthers]: "다른 탭 닫기",
+	[Key.tabCloseAll]: "모두 닫기",
+	[Key.tabCloseLeft]: "왼쪽 탭 닫기",
+	[Key.tabCloseRight]: "오른쪽 탭 닫기",
+	[Key.tabPin]: "탭 고정",
+	[Key.tabUnpin]: "고정 해제",
+	[Key.tabUntitled]: "제목 없음",
+	[Key.tabClear]: "탭 비우기",
 };

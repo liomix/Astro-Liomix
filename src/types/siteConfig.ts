@@ -101,8 +101,8 @@ export type SiteConfig = {
 		projects: boolean; // 项目展示页开关
 	};
 
-	// 分类导航栏开关
-	categoryBar?: boolean;
+	// 多标签导航栏开关
+	tabBar?: boolean;
 
 	// 分类导航栏按钮样式："pill"=胶囊，"rectangle"=矩形（配色同胶囊）
 	categoryStyle?: "pill" | "rectangle";

@@ -81,8 +81,8 @@ declare global {
 		__fireflyLayoutInit?: boolean;
 		/** 打字机特效监听器守卫,确保只注册一次 */
 		__typewriterTextInit?: boolean;
-		/** 分类栏监听器守卫,确保只注册一次 */
-		__categoryBarInit?: boolean;
+		/** 多标签栏监听器守卫,确保只注册一次 */
+		__tabBarInit?: boolean;
 		/** 侧边栏目录监听器守卫,确保只注册一次 */
 		__sidebarTOCInit?: boolean;
 		/** 文章封面图监听器守卫,确保只注册一次 */

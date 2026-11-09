@@ -556,4 +556,18 @@ export const ja: Translation = {
 	[Key.welcomeGreetingMorning]: "おはようございます",
 	[Key.welcomeGreetingAfternoon]: "こんにちは",
 	[Key.welcomeGreetingEvening]: "こんばんは",
+
+	// タブバー
+	[Key.tabBarLabel]: "ページタブ",
+	[Key.tabClose]: "閉じる",
+	[Key.tabRefresh]: "再読み込み",
+	[Key.tabCloseCurrent]: "現在のタブを閉じる",
+	[Key.tabCloseOthers]: "他のタブを閉じる",
+	[Key.tabCloseAll]: "すべて閉じる",
+	[Key.tabCloseLeft]: "左側を閉じる",
+	[Key.tabCloseRight]: "右側を閉じる",
+	[Key.tabPin]: "タブを固定",
+	[Key.tabUnpin]: "固定を解除",
+	[Key.tabUntitled]: "無題",
+	[Key.tabClear]: "タブをクリア",
 };

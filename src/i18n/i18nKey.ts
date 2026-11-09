@@ -538,6 +538,20 @@ enum I18nKey {
 	welcomeGreetingMorning = "welcomeGreetingMorning",
 	welcomeGreetingAfternoon = "welcomeGreetingAfternoon",
 	welcomeGreetingEvening = "welcomeGreetingEvening",
+
+	// 多标签导航栏 (tab bar)
+	tabBarLabel = "tabBarLabel",
+	tabClose = "tabClose",
+	tabRefresh = "tabRefresh",
+	tabCloseCurrent = "tabCloseCurrent",
+	tabCloseOthers = "tabCloseOthers",
+	tabCloseAll = "tabCloseAll",
+	tabCloseLeft = "tabCloseLeft",
+	tabCloseRight = "tabCloseRight",
+	tabPin = "tabPin",
+	tabUnpin = "tabUnpin",
+	tabUntitled = "tabUntitled",
+	tabClear = "tabClear",
 }
 
 export default I18nKey;

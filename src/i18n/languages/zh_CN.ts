@@ -546,4 +546,18 @@ export const zh_CN: Translation = {
 	[Key.welcomeGreetingMorning]: "早上好",
 	[Key.welcomeGreetingAfternoon]: "下午好",
 	[Key.welcomeGreetingEvening]: "晚上好",
+
+	// 多标签导航栏
+	[Key.tabBarLabel]: "页面标签栏",
+	[Key.tabClose]: "关闭",
+	[Key.tabRefresh]: "刷新",
+	[Key.tabCloseCurrent]: "关闭当前",
+	[Key.tabCloseOthers]: "关闭其他",
+	[Key.tabCloseAll]: "关闭全部",
+	[Key.tabCloseLeft]: "关闭左侧",
+	[Key.tabCloseRight]: "关闭右侧",
+	[Key.tabPin]: "固定标签",
+	[Key.tabUnpin]: "取消固定",
+	[Key.tabUntitled]: "未命名",
+	[Key.tabClear]: "清空标签",
 };

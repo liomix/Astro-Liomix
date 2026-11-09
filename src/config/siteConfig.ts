@@ -140,8 +140,8 @@ export const siteConfig: SiteConfig = {
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404并自动隐藏对应的导航栏菜单项
 
-	// 分类导航栏开关，在首页和归档页顶部显示分类快捷导航
-	categoryBar: true,
+	// 多标签导航栏开关：在主内容区顶部显示 home + 页面标签页
+	tabBar: true,
 
 	// 分类导航栏按钮样式
 	// "pill"：胶囊，主题色浅底圆角

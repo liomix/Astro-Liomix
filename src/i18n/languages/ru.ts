@@ -560,4 +560,18 @@ export const ru: Translation = {
 	[Key.welcomeGreetingMorning]: "Доброе утро",
 	[Key.welcomeGreetingAfternoon]: "Добрый день",
 	[Key.welcomeGreetingEvening]: "Добрый вечер",
+
+	// Панель вкладок
+	[Key.tabBarLabel]: "Вкладки страниц",
+	[Key.tabClose]: "Закрыть",
+	[Key.tabRefresh]: "Обновить",
+	[Key.tabCloseCurrent]: "Закрыть текущую",
+	[Key.tabCloseOthers]: "Закрыть остальные",
+	[Key.tabCloseAll]: "Закрыть все",
+	[Key.tabCloseLeft]: "Закрыть слева",
+	[Key.tabCloseRight]: "Закрыть справа",
+	[Key.tabPin]: "Закрепить вкладку",
+	[Key.tabUnpin]: "Открепить вкладку",
+	[Key.tabUntitled]: "Без названия",
+	[Key.tabClear]: "Очистить вкладки",
 };
