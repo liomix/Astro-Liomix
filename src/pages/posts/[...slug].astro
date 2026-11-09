@@ -29,6 +29,8 @@ import PostMetadata from "@/components/layout/PostMeta.astro";
 import RecommendedPost from "@/components/misc/RecommendedPost.astro";
 import SeriesNav from "@/components/misc/SeriesNav.astro";
 import SharePoster from "@/components/misc/SharePoster.svelte";
+import SponsorCoin from "@/components/misc/SponsorCoin.astro";
+import TipPop from "@/components/misc/TipPop.svelte";
 import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
@@ -49,9 +51,12 @@ import {
 } from "@/utils/schema-utils";
 import { url } from "@/utils/url-utils";
 
-const showSponsorButton =
-	sponsorConfig.showButtonInPost && siteConfig.pages.sponsor;
+const tipPopQr = sponsorConfig.tipQrCode?.trim() || "";
+// 打赏入口：开关打开且配了收款码才显示。弹窗是唯一入口，站点没有独立的打赏页
+const showSponsorButton = sponsorConfig.showButtonInPost && tipPopQr.length > 0;
 const showPostActionCard = siteConfig.post.share || showSponsorButton;
+
+const TIP_POP_ID = "post-tip";
 
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
@@ -373,8 +378,7 @@ const seriesData = await getSeriesPosts(entry);
                     <div class="flex items-center gap-3 flex-1">
                       <div class="h-12 w-12 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
                         <Icon
-                          name={sponsorConfig.showButtonInPost &&
-                          siteConfig.pages.sponsor
+                          name={showSponsorButton
                             ? "material-symbols:favorite"
                             : "material-symbols:share"}
                           class="text-2xl"
@@ -383,14 +387,14 @@ const seriesData = await getSeriesPosts(entry);
                       <div>
                         <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
                           {
-                            sponsorConfig.showButtonInPost && siteConfig.pages.sponsor
+                            showSponsorButton
                               ? i18n(I18nKey.sponsorButton)
                               : i18n(I18nKey.shareOnSocial)
                           }
                         </h3>
                         <p class="text-sm text-neutral-600 dark:text-neutral-400">
                           {
-                            sponsorConfig.showButtonInPost && siteConfig.pages.sponsor
+                            showSponsorButton
                               ? i18n(I18nKey.sponsorButtonText)
                               : i18n(I18nKey.shareOnSocialDescription)
                           }
@@ -417,13 +421,7 @@ const seriesData = await getSeriesPosts(entry);
                       }
                       {
                         showSponsorButton && (
-                          <a
-                            href={url("/sponsor/")}
-                            class="inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white dark:text-black/70 rounded-lg font-medium hover:bg-(--primary)/80 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                          >
-                            <span>{i18n(I18nKey.sponsor)}</span>
-                            <Icon name="fa7-solid:arrow-right" class="text-sm" />
-                          </a>
+                          <SponsorCoin popId={TIP_POP_ID} />
                         )
                       }
                     </div>
@@ -463,8 +461,7 @@ const seriesData = await getSeriesPosts(entry);
                     <div class="flex items-center gap-3 flex-1">
                       <div class="h-12 w-12 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
                         <Icon
-                          name={sponsorConfig.showButtonInPost &&
-                          siteConfig.pages.sponsor
+                          name={showSponsorButton
                             ? "material-symbols:favorite"
                             : "material-symbols:share"}
                           class="text-2xl"
@@ -473,14 +470,14 @@ const seriesData = await getSeriesPosts(entry);
                       <div>
                         <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
                           {
-                            sponsorConfig.showButtonInPost && siteConfig.pages.sponsor
+                            showSponsorButton
                               ? i18n(I18nKey.sponsorButton)
                               : i18n(I18nKey.shareOnSocial)
                           }
                         </h3>
                         <p class="text-sm text-neutral-600 dark:text-neutral-400">
                           {
-                            sponsorConfig.showButtonInPost && siteConfig.pages.sponsor
+                            showSponsorButton
                               ? i18n(I18nKey.sponsorButtonText)
                               : i18n(I18nKey.shareOnSocialDescription)
                           }
@@ -507,13 +504,7 @@ const seriesData = await getSeriesPosts(entry);
                       }
                       {
                         showSponsorButton && (
-                          <a
-                            href={url("/sponsor/")}
-                            class="inline-flex items-center gap-2 px-6 py-3 bg-(--primary) text-white dark:text-black/70 rounded-lg font-medium hover:bg-(--primary)/80 hover:scale-105 active:scale-95 transition-all whitespace-nowrap"
-                          >
-                            <span>{i18n(I18nKey.sponsor)}</span>
-                            <Icon name="fa7-solid:arrow-right" class="text-sm" />
-                          </a>
+                          <SponsorCoin popId={TIP_POP_ID} />
                         )
                       }
                     </div>
@@ -662,4 +653,17 @@ const seriesData = await getSeriesPosts(entry);
 
   <!-- 评论 -->
   {entry.data.comment && !entry.data.password && <Comment post={entry} />}
+
+  <!-- 打赏弹窗：由底部的金币按钮通过 data-tip-pop 触发 -->
+  {
+    showSponsorButton && (
+      <TipPop
+        client:idle
+        id={TIP_POP_ID}
+        qrCode={tipPopQr}
+        qrLabel={sponsorConfig.tipQrLabel}
+        usage={sponsorConfig.usage}
+      />
+    )
+  }
 </MainGridLayout>

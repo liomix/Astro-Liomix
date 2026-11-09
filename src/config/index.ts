@@ -43,8 +43,6 @@ export type {
 	SidebarLayoutConfig,
 	SiteConfig,
 	SponsorConfig,
-	SponsorItem,
-	SponsorMethod,
 	WidgetComponentConfig,
 	WidgetComponentType,
 	WidgetSpecificConfig,

@@ -50,11 +50,7 @@ export type {
 	SiteConfig,
 	WALLPAPER_MODE,
 } from "./siteConfig";
-export type {
-	SponsorConfig,
-	SponsorItem,
-	SponsorMethod,
-} from "./sponsorConfig";
+export type { SponsorConfig } from "./sponsorConfig";
 export type { WelcomeConfig } from "./welcomeConfig";
 
 // 响应式图像布局类型

@@ -600,13 +600,115 @@ function closeModal() {
 }
 
 let copied = false;
-function copyLink() {
+let copiedKey: string | null = null;
+function copyLink(key = "copy") {
 	navigator.clipboard.writeText(url);
 	copied = true;
+	copiedKey = key;
 	setTimeout(() => {
 		copied = false;
+		copiedKey = null;
 	}, 2000);
 }
+
+// ── 分享按钮：圆形主按钮 + 点击后绕圆周展开的 8 个分享入口 ──
+let dockOpen = false;
+let dockEl: HTMLDivElement | undefined;
+
+function toggleDock() {
+	dockOpen = !dockOpen;
+}
+
+function closeDock() {
+	dockOpen = false;
+}
+
+const encodedUrl = encodeURIComponent(url);
+const encodedTitle = encodeURIComponent(title);
+
+// 位移取参考实现的原始数值：正向 70px、对角 47px，8 个入口绕主按钮排一圈
+const shareTargets = [
+	{
+		key: "weibo",
+		label: "分享到微博",
+		icon: "simple-icons:sinaweibo",
+		tx: 70,
+		ty: 0,
+		href: `https://service.weibo.com/share/share.php?url=${encodedUrl}&title=${encodedTitle}`,
+	},
+	{
+		key: "wechat",
+		label: "微信：复制链接",
+		icon: "simple-icons:wechat",
+		tx: 47,
+		ty: -47,
+		href: null,
+	},
+	{
+		key: "qq",
+		label: "分享到 QQ",
+		icon: "simple-icons:qq",
+		tx: 0,
+		ty: -70,
+		href: `https://connect.qq.com/widget/shareqq/index.html?url=${encodedUrl}&title=${encodedTitle}`,
+	},
+	{
+		key: "douban",
+		label: "分享到豆瓣",
+		icon: "simple-icons:douban",
+		tx: -47,
+		ty: -47,
+		href: `https://www.douban.com/share/service?href=${encodedUrl}&name=${encodedTitle}`,
+	},
+	{
+		key: "x",
+		label: "分享到 X",
+		icon: "simple-icons:x",
+		tx: -70,
+		ty: 0,
+		href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+	},
+	{
+		key: "telegram",
+		label: "分享到 Telegram",
+		icon: "simple-icons:telegram",
+		tx: -47,
+		ty: 47,
+		href: `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`,
+	},
+	{
+		key: "copy",
+		label: i18n(I18nKey.copyLink),
+		icon: "material-symbols:link",
+		tx: 0,
+		ty: 70,
+		href: null,
+	},
+	{
+		key: "poster",
+		label: i18n(I18nKey.savePoster),
+		icon: "material-symbols:qr-code",
+		tx: 47,
+		ty: 47,
+		href: null,
+	},
+];
+
+onMount(() => {
+	// 点击空白处或按 Esc 收起
+	const onDocClick = (e: MouseEvent) => {
+		if (dockOpen && dockEl && !dockEl.contains(e.target as Node)) dockOpen = false;
+	};
+	const onKeydown = (e: KeyboardEvent) => {
+		if (e.key === "Escape") dockOpen = false;
+	};
+	document.addEventListener("click", onDocClick);
+	document.addEventListener("keydown", onKeydown);
+	return () => {
+		document.removeEventListener("click", onDocClick);
+		document.removeEventListener("keydown", onKeydown);
+	};
+});
 
 function portal(node: HTMLElement) {
 	document.body.appendChild(node);
@@ -620,15 +722,69 @@ function portal(node: HTMLElement) {
 }
 </script>
 
-<!-- Trigger Button -->
-<button 
-  class="btn-regular rounded-lg h-12 px-6 gap-2 hover:scale-105 active:scale-95 whitespace-nowrap"
-  on:click={generatePoster}
-  aria-label="Generate Share Poster"
+<!-- Trigger: 圆形分享按钮，点击展开/收起 8 个分享入口并按阶梯延迟向四周弹出 -->
+<div
+  class="share-dock"
+  class:is-open={dockOpen}
+  bind:this={dockEl}
+  style="--dock-count:{shareTargets.length}"
 >
-  <Icon icon="material-symbols:share" />
-  <span>{i18n(I18nKey.shareArticle)}</span>
-</button>
+  <button
+    class="share-dock-main"
+    type="button"
+    aria-haspopup="true"
+    aria-expanded={dockOpen}
+    aria-label={i18n(I18nKey.shareArticle)}
+    title={i18n(I18nKey.shareArticle)}
+    on:click={toggleDock}
+  >
+    <Icon icon="material-symbols:share" class="share-dock-icon" />
+  </button>
+
+  {#each shareTargets as item, i}
+    {#if item.href}
+      <a
+        class="share-dock-item"
+        data-key={item.key}
+        style="--tx:{item.tx}px;--ty:{item.ty}px;--i:{i}"
+        href={item.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        tabindex={dockOpen ? 0 : -1}
+        title={item.label}
+        aria-label={item.label}
+        on:click={closeDock}
+      >
+        <Icon icon={item.icon} class="share-dock-icon" />
+      </a>
+    {:else}
+      <button
+        class="share-dock-item"
+        data-key={item.key}
+        type="button"
+        style="--tx:{item.tx}px;--ty:{item.ty}px;--i:{i}"
+        tabindex={dockOpen ? 0 : -1}
+        title={item.label}
+        aria-label={item.label}
+        on:click={() => {
+          if (item.key === "poster") {
+            closeDock();
+            generatePoster();
+          } else {
+            copyLink(item.key);
+          }
+        }}
+      >
+        <Icon
+          icon={item.key !== "poster" && copiedKey === item.key
+            ? "material-symbols:check"
+            : item.icon}
+          class="share-dock-icon"
+        />
+      </button>
+    {/if}
+  {/each}
+</div>
 
 
 
@@ -653,7 +809,7 @@ function portal(node: HTMLElement) {
       <div class="p-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-3">
         <button 
           class="py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-          on:click={copyLink}
+          on:click={() => copyLink()}
         >
           {#if copied}
             <Icon icon="material-symbols:check" />
@@ -676,3 +832,141 @@ function portal(node: HTMLElement) {
     </div>
   </div>
 {/if}
+
+<style>
+  /* ── 圆形分享按钮（动效移植自 csozi 的 neumorphic share button）──
+     结构：容器 grid 居中 → 主按钮 z-index 100 + 8 个绝对定位子按钮（叠在主按钮下面）
+     展开：子按钮按 0.1s 阶梯延迟逐个 translate 到指定坐标，同时浮出 neumorphic 阴影 */
+  .share-dock {
+    --dock-bg: var(--btn-regular-bg);
+    --dock-icon: #4b5563;
+    --dock-shadow-dark: #cbcbcb;
+    --dock-shadow-light: #ffffff;
+
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: fit-content;
+    height: fit-content;
+    border-radius: 50%;
+    transition: 0.3s;
+    z-index: var(--z-content);
+  }
+
+  :global(.dark) .share-dock {
+    --dock-icon: #d4d4d4;
+    --dock-shadow-dark: rgba(0, 0, 0, 0.65);
+    --dock-shadow-light: rgba(255, 255, 255, 0.08);
+  }
+
+  /* 展开时抬高层级：子按钮允许盖在打赏等相邻按钮之上 */
+  .share-dock.is-open {
+    z-index: calc(var(--z-content) + 10);
+  }
+
+  .share-dock-main {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    border: none;
+    border-radius: 50%;
+    background: var(--dock-bg);
+    color: var(--dock-icon);
+    box-shadow:
+      5px 5px 12px var(--dock-shadow-dark),
+      -5px -5px 12px var(--dock-shadow-light);
+    cursor: pointer;
+    transition: 0.2s;
+    z-index: 100;
+  }
+
+  .share-dock-item {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    border: none;
+    border-radius: 50%;
+    background: var(--dock-bg);
+    color: var(--dock-icon);
+    /* 收起时阴影透明，展开时浮出，对应参考实现的 box-shadow 过渡 */
+    box-shadow: 5px 5px 12px transparent, -5px -5px 12px transparent;
+    cursor: pointer;
+    transition:
+      translate 0.3s ease 0s,
+      background-color 0.3s ease 0s,
+      box-shadow 0.3s ease 0s,
+      color 0.3s ease 0s;
+    /* 收起时按倒序回收：最后弹出去的先回来，和展开形成镜像；
+       序号最大的 --i 延迟 0s，最小的最后收，总时长与展开一致 */
+    transition-delay:
+      calc((var(--dock-count) - 1 - var(--i)) * 0.1s), 0s,
+      calc((var(--dock-count) - 1 - var(--i)) * 0.1s), 0s;
+    z-index: 1;
+  }
+
+  .share-dock.is-open .share-dock-item {
+    translate: var(--tx) var(--ty);
+    box-shadow:
+      5px 5px 12px var(--dock-shadow-dark),
+      -5px -5px 12px var(--dock-shadow-light);
+    /* 位移与阴影按序号阶梯延迟，变色保持即时 */
+    transition-delay:
+      calc(var(--i) * 0.1s), 0s, calc(var(--i) * 0.1s), 0s;
+  }
+
+  .share-dock :global(.share-dock-icon) {
+    width: 1.75rem;
+    height: 1.75rem;
+    pointer-events: none;
+  }
+
+  .share-dock-item[data-key="weibo"]:hover {
+    background-color: #e6162d;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="x"]:hover {
+    background-color: #111;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="telegram"]:hover {
+    background-color: #26a5e4;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="qq"]:hover {
+    background-color: #12b7f5;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="wechat"]:hover {
+    background-color: #07c160;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="douban"]:hover {
+    background-color: #2d963d;
+    color: #fff;
+  }
+
+  .share-dock-item[data-key="copy"]:hover,
+  .share-dock-item[data-key="poster"]:hover {
+    background-color: var(--primary);
+    color: #fff;
+  }
+
+  .share-dock-main:focus-visible,
+  .share-dock-item:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .share-dock-item {
+      transition-duration: 1ms;
+    }
+  }
+</style>

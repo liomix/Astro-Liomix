@@ -29,7 +29,6 @@ const NAVBAR_DEFAULT_NAMES: Record<string, I18nKey> = {
 	书签导航: I18nKey.booknav,
 	哔哩哔哩: I18nKey.bilibili,
 	番组计划: I18nKey.bangumi,
-	打赏: I18nKey.sponsor,
 	关于我: I18nKey.about,
 };
 
