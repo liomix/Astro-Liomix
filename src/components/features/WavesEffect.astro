@@ -42,6 +42,8 @@
 		private boundHandleResize: (() => void) | null = null;
 		private boundHandleVisibility: (() => void) | null = null;
 		private boundHandleTheme: (() => void) | null = null;
+		private boundHandleRevealStart: (() => void) | null = null;
+		private boundHandleRevealEnd: (() => void) | null = null;
 		private boundHandleReducedMotion:
 			| ((e: MediaQueryListEvent) => void)
 			| null = null;
@@ -249,6 +251,21 @@
 				attributeFilter: ["class", "data-theme", "style"],
 			});
 
+			// 主题切换的圆形揭示期间停止逐帧重绘:
+			// 那 500~600ms 里页面只剩两张静止快照，canvas 画了也没人看，
+			// 却在和揭示动画抢 GPU/主线程。事件由 light-dark-switch.ts 派发。
+			const onRevealStart = () => this.cancelAnimation();
+			const onRevealEnd = () => {
+				if (this.reducedMotion || this.lastVisibilityHidden) return;
+				// 先补一帧新配色再续上 rAF,免得揭示结束的瞬间露出旧色
+				this.renderer?.draw(performance.now(), this.startTime);
+				this.startAnimation();
+			};
+			this.boundHandleRevealStart = onRevealStart;
+			this.boundHandleRevealEnd = onRevealEnd;
+			window.addEventListener("theme-reveal-start", onRevealStart);
+			window.addEventListener("theme-reveal-end", onRevealEnd);
+
 			// prefers-reduced-motion
 			const onReducedMotion = (e: MediaQueryListEvent) => {
 				this.applyReducedMotion(e.matches);
@@ -289,6 +306,14 @@
 			}
 			this.themeObserver?.disconnect();
 			this.themeObserver = null;
+			const onRevealStart = this.boundHandleRevealStart;
+			if (onRevealStart) {
+				window.removeEventListener("theme-reveal-start", onRevealStart);
+			}
+			const onRevealEnd = this.boundHandleRevealEnd;
+			if (onRevealEnd) {
+				window.removeEventListener("theme-reveal-end", onRevealEnd);
+			}
 			const onReducedMotion = this.boundHandleReducedMotion;
 			if (onReducedMotion) {
 				this.reducedMotionQuery?.removeEventListener(
@@ -300,6 +325,8 @@
 			this.boundHandleResize = null;
 			this.boundHandleVisibility = null;
 			this.boundHandleTheme = null;
+			this.boundHandleRevealStart = null;
+			this.boundHandleRevealEnd = null;
 			this.boundHandleReducedMotion = null;
 			this.renderer = null;
 			this.ctx = null;

@@ -1,0 +1,50 @@
+/**
+ * 主题切换的圆形揭示（View Transitions API 快照层样式）。
+ *
+ * 扩散/收敛动画由 src/utils/light-dark-switch.ts 用 Web Animations 直接打在两层的
+ * 伪元素上，这里只做两件事：
+ *   1. 关掉浏览器默认的交叉淡入，否则会和圆形揭示叠在一起变糊
+ *      （对应 tweb 的 `.no-view-transition` 规则）；
+ *   2. 变暗时把「旧」快照层抬到最上面，亮色圆才能缩回去露出下面的暗色
+ *      （对应 tweb 的 `.reverse::view-transition-old(root) { z-index: 2 }`）。
+ */
+
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* 默认 auto：新层排在后面、后绘制，自然盖住旧层；
+   变暗时由 JS 把 --theme-vt-old-z 设为 2，旧层才会浮到上面。 */
+::view-transition-old(root) {
+  z-index: var(--theme-vt-old-z, auto);
+}
+
+/**
+ * 性能：揭示期间把真实页面上所有过渡掐掉。
+ *
+ * 主题一换，[class*="transition"] / [class*="border"] 那类通配规则会让近两百个
+ * 元素同时跑 0.15s 的 color/background/border 过渡。它们全在快照层底下，一帧都
+ * 看不见，却要逐帧重绘、和揭示动画抢主线程与 GPU。
+ *
+ * 只掐 transition、不碰 animation —— transition 只是「从旧值滑到新值」的过程，
+ * 掐掉后最终值不变，两张快照看起来完全一样；而 animation 有可能是元素本身的外观
+ * （转圈、呼吸灯），掐了会让快照跳到静止态。
+ */
+html.theme-reveal,
+html.theme-reveal *,
+html.theme-reveal *::before,
+html.theme-reveal *::after {
+  transition: none !important;
+}
+
+/* 提示浏览器这两层要做裁剪合成，别每帧回退成整屏重绘。
+   这两个伪元素只在过渡期间存在，所以不必再加类名限定
+   （::view-transition-* 只能挂在根元素上，用后代选择器是选不中的）。 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  will-change: clip-path;
+}
+

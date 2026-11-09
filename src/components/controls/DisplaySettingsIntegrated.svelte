@@ -57,6 +57,7 @@ import {
 	setWallpaperMode,
 	setWavesEnabled,
 } from "@utils/setting-utils";
+import { originFromElement } from "@utils/light-dark-switch";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import {
@@ -244,9 +245,10 @@ let themeSettingsIsDefault = $derived(
 		scheduleNightStart === DEFAULT_THEME_SCHEDULE.nightStart,
 );
 
-function selectThemeMode(nextMode: LIGHT_DARK_MODE) {
+function selectThemeMode(nextMode: LIGHT_DARK_MODE, event?: MouseEvent) {
 	themeMode = nextMode;
-	setTheme(nextMode);
+	const target = event?.currentTarget;
+	setTheme(nextMode, originFromElement(target instanceof Element ? target : null));
 }
 
 function applyThemeSchedule() {
@@ -1170,7 +1172,7 @@ onMount(() => {
 						class="btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
 						class:opacity-60={themeMode !== option.key}
 						class:bg-(--btn-regular-bg-hover)={themeMode === option.key}
-						onclick={() => selectThemeMode(option.key)}
+						onclick={(event) => selectThemeMode(option.key, event)}
 						title={option.label}
 					>
 						<Icon icon={option.icon} class="text-[1.25rem] shrink-0"></Icon>

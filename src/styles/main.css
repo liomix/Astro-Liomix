@@ -7,6 +7,7 @@
 @import './custom-scrollbar.css';
 @import './tags.css';
 @import './display-settings.css';
+@import './light-dark-switch.css';
 @import './categories.css';
 @import './layout-base.css';
 
@@ -76,56 +77,9 @@ html {
 }
 
 @layer components {
-    /* View Transitions API 主题切换动画 */
-    /* 为整个文档根元素设置视图过渡 */
-    ::view-transition-old(root),
-    ::view-transition-new(root) {
-        animation-duration: 0.5s;
-        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-        /* 使用混合模式使颜色过渡更平滑 */
-        mix-blend-mode: normal;
-    }
-    
-    /* 视图过渡组 - 使用交叉淡化效果 */
-    ::view-transition-group(root) {
-        animation-duration: 0.5s;
-        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    /* 淡出旧视图 - 使用更平滑的曲线 */
-    ::view-transition-old(root) {
-        animation-name: theme-fade-out;
-        /* 确保背景色同步切换 */
-        z-index: 2;
-    }
-    
-    /* 淡入新视图 - 使用更平滑的曲线 */
-    ::view-transition-new(root) {
-        animation-name: theme-fade-in;
-        /* 确保新视图在上层 */
-        z-index: 1;
-    }
-    
-    /* 定义淡出动画 - 使用更平滑的缓动函数 */
-    @keyframes theme-fade-out {
-        0% {
-            opacity: 1;
-        }
-        100% {
-            opacity: 0;
-        }
-    }
-    
-    /* 定义淡入动画 - 从下层淡入 */
-    @keyframes theme-fade-in {
-        0% {
-            opacity: 0;
-        }
-        100% {
-            opacity: 1;
-        }
-    }
-    
+    /* 主题切换的圆形揭示由 src/styles/light-dark-switch.css 与
+       src/utils/light-dark-switch.ts 负责（前者不分层，优先级高于这里）。
+       旧的交叉淡入规则与写死的 z-index 已移除，否则会盖掉揭示动画的层级控制。 */
     /* 确保边框和分隔线元素在主题切换时有更明确的过渡时长 */
     .transition,
     [class*="border"],

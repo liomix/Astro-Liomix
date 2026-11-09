@@ -22,6 +22,7 @@ import {
 	siteConfig,
 } from "../config";
 import { isHomePage as checkIsHomePage } from "./layout-utils";
+import { runThemeReveal, type ThemeTransitionOrigin } from "./light-dark-switch";
 
 // Declare global functions
 declare global {
@@ -247,7 +248,10 @@ let systemThemeListener:
 	| ((e: MediaQueryListEvent | MediaQueryList) => void)
 	| null = null;
 
-export function setTheme(theme: LIGHT_DARK_MODE): void {
+export function setTheme(
+	theme: LIGHT_DARK_MODE,
+	origin?: ThemeTransitionOrigin,
+): void {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
@@ -256,31 +260,44 @@ export function setTheme(theme: LIGHT_DARK_MODE): void {
 		return;
 	}
 
-	// 先应用主题
-	applyThemeToDocument(theme);
+	const apply = () => {
+		// 先应用主题
+		applyThemeToDocument(theme);
 
-	// 保存到localStorage
-	localStorage.setItem("theme", theme);
+		// 保存到localStorage
+		localStorage.setItem("theme", theme);
 
-	// 如果切换到 system 模式，需要监听系统主题变化
-	if (theme === SYSTEM_MODE) {
-		setupSystemThemeListener();
-	} else {
-		// 如果切换其他模式，移除系统主题监听
-		cleanupSystemThemeListener();
+		// 如果切换到 system 模式，需要监听系统主题变化
+		if (theme === SYSTEM_MODE) {
+			setupSystemThemeListener();
+		} else {
+			// 如果切换其他模式，移除系统主题监听
+			cleanupSystemThemeListener();
+		}
+
+		// 定时模式：启动/停止按时间段轮询
+		if (theme === SCHEDULED_MODE) {
+			setupScheduledThemeListener();
+		} else {
+			cleanupScheduledThemeListener();
+		}
+
+		// 通知其他组件主题已变更（导航栏图标、主题弹窗选中项、波浪效果等）
+		if (typeof window !== "undefined") {
+			window.dispatchEvent(new CustomEvent("theme-change"));
+		}
+	};
+
+	// 没有点击位置（定时/跟随系统触发）或明暗实际没变时不做圆形揭示，
+	// 省掉一次全屏快照，直接应用。
+	const currentIsDark = document.documentElement.classList.contains("dark");
+	const nextIsDark = resolveTheme(theme) === DARK_MODE;
+	if (!origin || currentIsDark === nextIsDark) {
+		apply();
+		return;
 	}
 
-	// 定时模式：启动/停止按时间段轮询
-	if (theme === SCHEDULED_MODE) {
-		setupScheduledThemeListener();
-	} else {
-		cleanupScheduledThemeListener();
-	}
-
-	// 通知其他组件主题已变更（导航栏图标、主题弹窗选中项、波浪效果等）
-	if (typeof window !== "undefined") {
-		window.dispatchEvent(new CustomEvent("theme-change"));
-	}
+	runThemeReveal(apply, { origin, toDark: nextIsDark });
 }
 
 // 设置系统主题监听器
