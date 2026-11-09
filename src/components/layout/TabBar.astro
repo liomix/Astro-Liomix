@@ -70,7 +70,7 @@ const labels = {
 />
 
 <script>
-  import { initHomeEntryLinks } from "@/utils/home-entry";
+  import { goHomeFromEntry, initHomeEntryLinks } from "@/utils/home-entry";
 
   type Tab = { key: string; title: string; pinned: boolean };
   type Snapshot = {
@@ -277,16 +277,23 @@ const labels = {
       return;
     }
 
+    // 回首页统一走「回首页入口」逻辑：落到内容区，而不是 hero 顶部
+    if (key === HOME_KEY) {
+      activeKey = "";
+      save();
+      render();
+      goHomeFromEntry();
+      return;
+    }
+
     // 路由去重防抖：短时间内连点同一个目标只跳一次
     const now = Date.now();
     if (key === lastNav.key && now - lastNav.at < 200) return;
     lastNav = { key, at: now };
 
     // 先高亮，跳转（含网络等待）期间就能看到目标标签被选中
-    if (key !== HOME_KEY) {
-      activeKey = key;
-      render();
-    }
+    activeKey = key;
+    render();
 
     const href = new URL(key, location.origin).href;
     const swup = (window as TabBarWindow).swup;
