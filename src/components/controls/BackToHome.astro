@@ -16,17 +16,6 @@ import { url } from "@/utils/url-utils";
 
 
 
-<script is:raw is:inline define:vars={{ homeUrl: url("/")}}>
-  window.backToHome = function() {
-    const url = homeUrl;
-    if (window.swup) {
-      window.swup.navigate(url);
-    } else {
-      window.location.href = url;
-    }
-  };
-</script>
-
 <script is:inline define:vars={{ homeUrl: url("/") }}>
   function updateBackToHomeVisibility() {
     const btn = document.getElementById("back-to-home-btn");
@@ -51,4 +40,14 @@ import { url } from "@/utils/url-utils";
     document.addEventListener("astro:page-load", updateBackToHomeVisibility);
     document.addEventListener("swup:contentReplaced", updateBackToHomeVisibility);
   }
+</script>
+
+<script>
+  import { goHomeFromEntry, initHomeEntryLinks } from "@/utils/home-entry";
+
+  // 分类栏的房子图标等 data-home-entry 入口统一走这里（含落地后定位到内容区）
+  initHomeEntryLinks();
+
+  // FloatingButton 的 onclick 是字符串属性，这里补一个全局函数给它调用
+  (window as Window & { backToHome?: () => void }).backToHome = goHomeFromEntry;
 </script>
