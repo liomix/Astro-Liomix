@@ -2,6 +2,7 @@ import {
 	DARK_MODE,
 	DEFAULT_THEME,
 	LIGHT_MODE,
+	SCHEDULED_MODE,
 	SYSTEM_MODE,
 	WALLPAPER_BANNER,
 	WALLPAPER_FULLSCREEN,
@@ -56,10 +57,100 @@ export function getSystemTheme(): LIGHT_DARK_MODE {
 		: LIGHT_MODE;
 }
 
-// 解析主题（如果是system模式，则获取系统主题）
+/**
+ * 主题定时切换配置。
+ * dayStart 起（含）至 nightStart 前为日间；nightStart 起至次日 dayStart 前为夜间。
+ * 允许跨零点，例如 dayStart 18:00 / nightStart 07:00 表示「18:00 开始日间」。
+ */
+export interface ThemeSchedule {
+	dayStart: string;
+	nightStart: string;
+}
+
+const THEME_SCHEDULE_KEY = "themeSchedule";
+export const DEFAULT_THEME_SCHEDULE: ThemeSchedule = {
+	dayStart: "07:00",
+	nightStart: "18:00",
+};
+
+const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function normalizeTime(value: unknown, fallback: string): string {
+	return typeof value === "string" && TIME_PATTERN.test(value) ? value : fallback;
+}
+
+function toMinutes(value: string): number {
+	const [hours, minutes] = value.split(":");
+	return Number(hours) * 60 + Number(minutes);
+}
+
+export function getThemeSchedule(): ThemeSchedule {
+	if (typeof localStorage === "undefined") {
+		return { ...DEFAULT_THEME_SCHEDULE };
+	}
+	try {
+		const raw = localStorage.getItem(THEME_SCHEDULE_KEY);
+		if (!raw) return { ...DEFAULT_THEME_SCHEDULE };
+		const parsed = JSON.parse(raw) as Partial<ThemeSchedule>;
+		return {
+			dayStart: normalizeTime(
+				parsed.dayStart,
+				DEFAULT_THEME_SCHEDULE.dayStart,
+			),
+			nightStart: normalizeTime(
+				parsed.nightStart,
+				DEFAULT_THEME_SCHEDULE.nightStart,
+			),
+		};
+	} catch {
+		return { ...DEFAULT_THEME_SCHEDULE };
+	}
+}
+
+export function setThemeSchedule(dayStart: string, nightStart: string): void {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.setItem !== "function"
+	) {
+		return;
+	}
+	const schedule: ThemeSchedule = {
+		dayStart: normalizeTime(dayStart, DEFAULT_THEME_SCHEDULE.dayStart),
+		nightStart: normalizeTime(nightStart, DEFAULT_THEME_SCHEDULE.nightStart),
+	};
+	localStorage.setItem(THEME_SCHEDULE_KEY, JSON.stringify(schedule));
+	// 定时模式下改时间段要立刻重算一次，否则要等下一个 tick
+	if (getStoredTheme() === SCHEDULED_MODE) {
+		applyThemeToDocument(SCHEDULED_MODE);
+		setupScheduledThemeListener();
+		// 通知导航栏图标等外部监听者刷新显示
+		window.dispatchEvent(new CustomEvent("theme-change"));
+	}
+}
+
+/** 当前时刻是否处于日间时段（支持跨零点的时间段） */
+export function isDayTime(
+	schedule: ThemeSchedule = getThemeSchedule(),
+	now: Date = new Date(),
+): boolean {
+	const minutes = now.getHours() * 60 + now.getMinutes();
+	const dayStart = toMinutes(schedule.dayStart);
+	const nightStart = toMinutes(schedule.nightStart);
+	// 起止时间相同视为全天日间，避免出现「永不天亮」
+	if (dayStart === nightStart) return true;
+	if (dayStart < nightStart) {
+		return minutes >= dayStart && minutes < nightStart;
+	}
+	return minutes >= dayStart || minutes < nightStart;
+}
+
+// 解析主题（system 取系统主题，scheduled 按时间段取日间/夜间）
 export function resolveTheme(theme: LIGHT_DARK_MODE): LIGHT_DARK_MODE {
 	if (theme === SYSTEM_MODE) {
 		return getSystemTheme();
+	}
+	if (theme === SCHEDULED_MODE) {
+		return isDayTime() ? LIGHT_MODE : DARK_MODE;
 	}
 	return theme;
 }
@@ -178,6 +269,18 @@ export function setTheme(theme: LIGHT_DARK_MODE): void {
 		// 如果切换其他模式，移除系统主题监听
 		cleanupSystemThemeListener();
 	}
+
+	// 定时模式：启动/停止按时间段轮询
+	if (theme === SCHEDULED_MODE) {
+		setupScheduledThemeListener();
+	} else {
+		cleanupScheduledThemeListener();
+	}
+
+	// 通知其他组件主题已变更（导航栏图标、主题弹窗选中项、波浪效果等）
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("theme-change"));
+	}
 }
 
 // 设置系统主题监听器
@@ -250,6 +353,60 @@ function cleanupSystemThemeListener() {
 	systemThemeListener = null;
 }
 
+// 定时切换的轮询计时器（30s 一次，跨过边界后最多半分钟内生效）
+let scheduledThemeTimer: ReturnType<typeof setInterval> | null = null;
+
+/** 定时模式下检查一次当前时段，主题不符就切换并广播 theme-change */
+function applyScheduledThemeTick(): void {
+	if (typeof document === "undefined") return;
+	if (getStoredTheme() !== SCHEDULED_MODE) return;
+
+	const targetIsDark = !isDayTime();
+	const currentIsDark = document.documentElement.classList.contains("dark");
+	if (targetIsDark === currentIsDark) return;
+
+	document.documentElement.classList.toggle("dark", targetIsDark);
+	document.documentElement.setAttribute(
+		"data-theme",
+		targetIsDark
+			? expressiveCodeConfig.darkTheme
+			: expressiveCodeConfig.lightTheme,
+	);
+	window.dispatchEvent(new CustomEvent("theme-change"));
+}
+
+function handleScheduledVisibilityChange(): void {
+	// 后台标签页的定时器会被节流，回到前台时立刻校正一次
+	if (document.visibilityState === "visible") applyScheduledThemeTick();
+}
+
+/** 启动定时切换：立即校正一次，之后每 30 秒检查一次 */
+export function setupScheduledThemeListener(): void {
+	cleanupScheduledThemeListener();
+
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	applyScheduledThemeTick();
+	scheduledThemeTimer = setInterval(applyScheduledThemeTick, 30_000);
+	document.addEventListener("visibilitychange", handleScheduledVisibilityChange);
+}
+
+function cleanupScheduledThemeListener(): void {
+	if (typeof window === "undefined") {
+		return;
+	}
+	if (scheduledThemeTimer !== null) {
+		clearInterval(scheduledThemeTimer);
+		scheduledThemeTimer = null;
+	}
+	document.removeEventListener(
+		"visibilitychange",
+		handleScheduledVisibilityChange,
+	);
+}
+
 export function getStoredTheme(): LIGHT_DARK_MODE {
 	// 检查是否在浏览器环境中
 	if (
@@ -277,6 +434,11 @@ export function initThemeListener(): void {
 	// 如果主题是 system 模式，需要监听系统主题变化
 	if (theme === SYSTEM_MODE) {
 		setupSystemThemeListener();
+	}
+
+	// 定时模式：页面加载后启动时段轮询
+	if (theme === SCHEDULED_MODE) {
+		setupScheduledThemeListener();
 	}
 }
 

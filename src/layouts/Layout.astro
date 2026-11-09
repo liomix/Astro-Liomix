@@ -357,6 +357,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
       const LIGHT_MODE = "light";
       const DARK_MODE = "dark";
       const SYSTEM_MODE = "system";
+      const SCHEDULED_MODE = "scheduled";
 
       // 获取存储的主题，如果没有则使用默认值
       const theme = localStorage.getItem("theme") || defaultMode;
@@ -368,10 +369,43 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
           : LIGHT_MODE;
       }
 
-      // 解析主题（如果是system模式，则获取系统主题）
+      // 定时切换配置：dayStart 起（含）至 nightStart 前为日间，支持跨零点
+      function readThemeSchedule() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem("themeSchedule") || "null");
+          const timePattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
+          return {
+            dayStart: parsed && timePattern.test(parsed.dayStart) ? parsed.dayStart : "07:00",
+            nightStart: parsed && timePattern.test(parsed.nightStart) ? parsed.nightStart : "18:00",
+          };
+        } catch {
+          return { dayStart: "07:00", nightStart: "18:00" };
+        }
+      }
+
+      function isDayTime() {
+        const { dayStart, nightStart } = readThemeSchedule();
+        const toMinutes = (value) => {
+          const [hours, minutes] = value.split(":");
+          return Number(hours) * 60 + Number(minutes);
+        };
+        const now = new Date();
+        const current = now.getHours() * 60 + now.getMinutes();
+        const start = toMinutes(dayStart);
+        const end = toMinutes(nightStart);
+        if (start === end) return true;
+        return start < end
+          ? current >= start && current < end
+          : current >= start || current < end;
+      }
+
+      // 解析主题（system 取系统主题，scheduled 按时间段取日间/夜间）
       function resolveTheme(themeValue) {
         if (themeValue === SYSTEM_MODE) {
           return getSystemTheme();
+        }
+        if (themeValue === SCHEDULED_MODE) {
+          return isDayTime() ? LIGHT_MODE : DARK_MODE;
         }
         return themeValue;
       }

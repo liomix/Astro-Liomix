@@ -122,9 +122,13 @@ export const ru: Translation = {
 
 	[Key.themeColor]: "Цвет темы",
 
-	[Key.lightMode]: "Светлая",
-	[Key.darkMode]: "Тёмная",
+	[Key.lightMode]: "День",
+	[Key.darkMode]: "Ночь",
 	[Key.systemMode]: "Система",
+	[Key.scheduledMode]: "По расписанию",
+	[Key.themeMode]: "День и ночь",
+	[Key.scheduleDayStart]: "Начало дня",
+	[Key.scheduleNightStart]: "Начало ночи",
 
 	[Key.more]: "Ещё",
 	[Key.collapse]: "Свернуть",
@@ -402,7 +406,7 @@ export const ru: Translation = {
 	[Key.wavesAnimation]: "Анимация волн",
 	[Key.gradientTransition]: "Градиентный переход",
 	[Key.sakuraEffect]: "Эффект сакуры",
-	[Key.effectsSettings]: "Настройки эффектов",
+	[Key.effectsSettings]: "Эффекты",
 	[Key.overlaySettings]: "Настройки прозрачности",
 	[Key.overlayOpacity]: "Прозрачность обоев",
 	[Key.overlayBlur]: "Размытие фона",
@@ -412,6 +416,7 @@ export const ru: Translation = {
 	[Key.settingsTabAppearance]: "Оформление",
 	[Key.settingsTabWallpaper]: "Обои",
 	[Key.settingsTabEffects]: "Эффекты",
+	[Key.settingsTabBackground]: "Фон",
 
 	// Стиль карточек
 	[Key.cardSettings]: "Стиль карточек",

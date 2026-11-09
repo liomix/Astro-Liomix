@@ -100,6 +100,10 @@ enum I18nKey {
 	lightMode = "lightMode",
 	darkMode = "darkMode",
 	systemMode = "systemMode",
+	scheduledMode = "scheduledMode",
+	scheduleDayStart = "scheduleDayStart",
+	scheduleNightStart = "scheduleNightStart",
+	themeMode = "themeMode",
 
 	more = "more",
 	collapse = "collapse",
@@ -397,6 +401,7 @@ enum I18nKey {
 	settingsTabAppearance = "settingsTabAppearance",
 	settingsTabWallpaper = "settingsTabWallpaper",
 	settingsTabEffects = "settingsTabEffects",
+	settingsTabBackground = "settingsTabBackground",
 
 	// 卡片样式
 	cardSettings = "cardSettings",

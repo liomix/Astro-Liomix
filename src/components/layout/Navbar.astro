@@ -52,13 +52,8 @@ const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 const navbarMenuAlign = siteConfig.navbar.menuAlign ?? "center";
 const isNavbarMenuCentered = navbarMenuAlign === "center";
 
-// 检查是否有任何显示设置可用（总开关关闭时下方各项均为 false）
+// 显示设置总开关：面板本身仍在本组件内渲染，入口只有右下角悬浮按钮
 const isDisplaySettingsEnabled = displaySettingsConfig.enable;
-const showThemeColor = displaySettingsConfig.themeColorSwitchable;
-const isWallpaperSwitchable = displaySettingsConfig.wallpaperModeSwitchable;
-const allowLayoutSwitch = displaySettingsConfig.layoutSwitchable;
-const hasDisplaySettings =
-	showThemeColor || isWallpaperSwitchable || allowLayoutSwitch;
 
 // 解析导航栏链接（按 siteConfig.pages 过滤 + i18n 名称），桌面下拉与移动抽屉共用
 const links: NavBarLink[] = resolveNavMenuLinks();
@@ -202,11 +197,7 @@ const logoVariants = await Promise.all(
                 <Search
                     client:load
                 />
-                {hasDisplaySettings && (
-                        <button aria-label="Display Settings" aria-controls="display-setting" aria-expanded="false" class="nav-icon-btn" id="display-settings-switch">
-                            <Icon name="material-symbols:palette-outline" class="text-[1.25rem]"></Icon>
-                        </button>
-                )}
+                {/* 主题（显示设置）入口只在右下角悬浮按钮，导航栏不再放置调色板按钮 */}
                 {/* @ts-ignore */}
                 <LightDarkSwitch client:load></LightDarkSwitch>
                 <button aria-label="Menu" aria-controls="nav-menu-panel" aria-expanded="false" name="Nav Menu" class="nav-icon-btn lg:hidden!" id="nav-menu-switch">
@@ -220,15 +211,8 @@ const logoVariants = await Promise.all(
 
 <script>
 function loadButtonScript() {
-    let settingBtn = document.getElementById("display-settings-switch");
-    if (settingBtn) {
-        settingBtn.onclick = function () {
-            let settingPanel = document.getElementById("display-setting");
-            if (settingPanel) {
-                settingPanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
+    // 主题设置面板的开关在右下角悬浮按钮（ThemeSettingsButton）里，
+    // 日夜切换按钮（LightDarkSwitch）自己处理点击，两者都不在这里绑定。
 
     let menuBtn = document.getElementById("nav-menu-switch");
     if (menuBtn) {
@@ -239,33 +223,6 @@ function loadButtonScript() {
             }
         };
     }
-
-    let themeSwitchBtn = document.getElementById("scheme-switch");
-    if (themeSwitchBtn) {
-        themeSwitchBtn.onclick = function () {
-            let themePanel = document.getElementById("theme-mode-panel");
-            if (themePanel) {
-                themePanel.classList.toggle("float-panel-closed");
-            }
-        };
-    }
-
-    document.addEventListener("click", function(event) {
-        // nav-menu-panel 不再走点击外部关闭：面板现在覆盖全屏（inset-0），任意点击都在面板内，
-        // 该监听永不触发；关闭由抽屉自己的遮罩点击/Document 委托负责。
-        const panels = ["display-setting", "theme-mode-panel"];
-        const buttons = ["display-settings-switch", "scheme-switch"];
-
-        panels.forEach((id, index) => {
-            const panel = document.getElementById(id);
-            const button = document.getElementById(buttons[index]);
-            if (panel && button && !panel.classList.contains("float-panel-closed")) {
-                if (event.target instanceof Node && !panel.contains(event.target) && !button.contains(event.target)) {
-                    panel.classList.add("float-panel-closed");
-                }
-            }
-        });
-    });
 }
 
 loadButtonScript();

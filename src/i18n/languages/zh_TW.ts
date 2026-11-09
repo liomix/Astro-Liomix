@@ -119,9 +119,13 @@ export const zh_TW: Translation = {
 
 	[Key.themeColor]: "主題色相",
 
-	[Key.lightMode]: "亮色",
-	[Key.darkMode]: "暗色",
+	[Key.lightMode]: "日間",
+	[Key.darkMode]: "夜間",
 	[Key.systemMode]: "跟隨系統",
+	[Key.scheduledMode]: "定時",
+	[Key.themeMode]: "日夜",
+	[Key.scheduleDayStart]: "日間開始",
+	[Key.scheduleNightStart]: "夜間開始",
 
 	[Key.more]: "更多",
 	[Key.collapse]: "收起",
@@ -393,7 +397,7 @@ export const zh_TW: Translation = {
 	[Key.wavesAnimation]: "水波紋動畫",
 	[Key.gradientTransition]: "漸變過渡",
 	[Key.sakuraEffect]: "櫻花特效",
-	[Key.effectsSettings]: "特效設定",
+	[Key.effectsSettings]: "特效",
 	[Key.overlaySettings]: "透明設定",
 	[Key.overlayOpacity]: "桌布透明度",
 	[Key.overlayBlur]: "背景模糊度",
@@ -403,6 +407,7 @@ export const zh_TW: Translation = {
 	[Key.settingsTabAppearance]: "外觀",
 	[Key.settingsTabWallpaper]: "壁紙",
 	[Key.settingsTabEffects]: "特效",
+	[Key.settingsTabBackground]: "背景",
 
 	// 卡片樣式
 	[Key.cardSettings]: "卡片樣式",

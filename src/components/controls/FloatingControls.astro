@@ -1,9 +1,10 @@
 ---
 import type { MarkdownHeading } from "astro";
-import { siteConfig } from "@/config";
+import { displaySettingsConfig, siteConfig } from "@/config";
 import BackToComment from "./BackToComment.astro";
 import BackToHome from "./BackToHome.astro";
 import BackToTop from "./BackToTop.astro";
+import ThemeSettingsButton from "./ThemeSettingsButton.astro";
 import FloatingTOC from "./FloatingTOC.astro";
 import ImmersiveReading from "./ImmersiveReading.astro";
 import ImmersiveTOC from "./ImmersiveTOC.astro";
@@ -16,6 +17,8 @@ interface Props {
 const { headings, encrypted } = Astro.props;
 const immersiveReadingEnabled =
 	siteConfig.post.immersiveReading?.enable !== false;
+// 「背景」Tab 里始终有日夜切换，所以只要总开关开着就显示入口
+const hasDisplaySettings = displaySettingsConfig.enable;
 ---
 
 <div class="floating-controls-container">
@@ -28,6 +31,7 @@ const immersiveReadingEnabled =
   )}
   <BackToComment />
   <BackToHome />
+  {hasDisplaySettings && <ThemeSettingsButton />}
   <BackToTop />
 </div>
 

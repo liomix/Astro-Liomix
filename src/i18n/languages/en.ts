@@ -122,9 +122,13 @@ export const en: Translation = {
 
 	[Key.themeColor]: "Theme Color",
 
-	[Key.lightMode]: "Light",
-	[Key.darkMode]: "Dark",
+	[Key.lightMode]: "Day",
+	[Key.darkMode]: "Night",
 	[Key.systemMode]: "System",
+	[Key.scheduledMode]: "Scheduled",
+	[Key.themeMode]: "Day & Night",
+	[Key.scheduleDayStart]: "Day starts",
+	[Key.scheduleNightStart]: "Night starts",
 
 	[Key.more]: "More",
 	[Key.collapse]: "Collapse",
@@ -401,7 +405,7 @@ export const en: Translation = {
 	[Key.wavesAnimation]: "Waves Animation",
 	[Key.gradientTransition]: "Gradient Transition",
 	[Key.sakuraEffect]: "Sakura Effect",
-	[Key.effectsSettings]: "Effects Settings",
+	[Key.effectsSettings]: "Effects",
 	[Key.overlaySettings]: "Transparency Settings",
 	[Key.overlayOpacity]: "Wallpaper Opacity",
 	[Key.overlayBlur]: "Background Blur",
@@ -411,6 +415,7 @@ export const en: Translation = {
 	[Key.settingsTabAppearance]: "Appearance",
 	[Key.settingsTabWallpaper]: "Wallpaper",
 	[Key.settingsTabEffects]: "Effects",
+	[Key.settingsTabBackground]: "Background",
 
 	// Card Style
 	[Key.cardSettings]: "Card Style",

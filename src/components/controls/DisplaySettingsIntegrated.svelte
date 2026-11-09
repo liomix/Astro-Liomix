@@ -1,5 +1,9 @@
 <script lang="ts">
 import {
+	DARK_MODE,
+	LIGHT_MODE,
+	SCHEDULED_MODE,
+	SYSTEM_MODE,
 	WALLPAPER_BANNER,
 	WALLPAPER_FULLSCREEN,
 	WALLPAPER_NONE,
@@ -8,6 +12,7 @@ import {
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
+	DEFAULT_THEME_SCHEDULE,
 	getDefaultBannerCarouselEnabled,
 	getDefaultBannerTitleEnabled,
 	getDefaultCardBorderEnabled,
@@ -19,6 +24,7 @@ import {
 	getDefaultOverlayCardOpacity,
 	getDefaultOverlayOpacity,
 	getDefaultSakuraEnabled,
+	getDefaultTheme,
 	getDefaultWavesEnabled,
 	getHue,
 	getStoredBannerCarouselEnabled,
@@ -31,8 +37,10 @@ import {
 	getStoredOverlayCardOpacity,
 	getStoredOverlayOpacity,
 	getStoredSakuraEnabled,
+	getStoredTheme,
 	getStoredWallpaperMode,
 	getStoredWavesEnabled,
+	getThemeSchedule,
 	setBannerCarouselEnabled,
 	setBannerTitleEnabled,
 	setCardBorderEnabled,
@@ -44,6 +52,8 @@ import {
 	setOverlayCardOpacity,
 	setOverlayOpacity,
 	setSakuraEnabled,
+	setTheme,
+	setThemeSchedule,
 	setWallpaperMode,
 	setWavesEnabled,
 } from "@utils/setting-utils";
@@ -54,7 +64,11 @@ import {
 	displaySettingsConfig,
 	siteConfig,
 } from "@/config";
-import type { FullscreenWallpaperLayout, WALLPAPER_MODE } from "@/types/config";
+import type {
+	FullscreenWallpaperLayout,
+	LIGHT_DARK_MODE,
+	WALLPAPER_MODE,
+} from "@/types/config";
 
 type OverlaySliderItem = {
 	key: "opacity" | "blur" | "cardOpacity";
@@ -69,7 +83,7 @@ type OverlaySliderItem = {
 	onValueChange: (value: number) => void;
 };
 
-type TabKey = "appearance" | "wallpaper" | "effects";
+type TabKey = "appearance" | "wallpaper" | "background";
 
 let hue = $state(getHue());
 const defaultHue = getDefaultHue();
@@ -115,6 +129,12 @@ const defaultCardBorderEnabled = getDefaultCardBorderEnabled();
 let cardFollowThemeEnabled = $state(false);
 const defaultCardFollowThemeEnabled = getDefaultCardFollowThemeEnabled();
 
+// 日夜模式：日间 / 夜间 / 跟随系统 / 定时
+let themeMode: LIGHT_DARK_MODE = $state(getDefaultTheme());
+const defaultThemeMode = getDefaultTheme();
+let scheduleDayStart = $state(DEFAULT_THEME_SCHEDULE.dayStart);
+let scheduleNightStart = $state(DEFAULT_THEME_SCHEDULE.nightStart);
+
 const isWallpaperSwitchable = displaySettingsConfig.wallpaperModeSwitchable;
 const isFullscreenLayoutSwitchable = $derived(
 	displaySettingsConfig.fullscreenLayoutSwitchable &&
@@ -138,6 +158,8 @@ const isSakuraSwitchable = displaySettingsConfig.sakuraSwitchable;
 const isCardBorderSwitchable = displaySettingsConfig.cardBorderSwitchable;
 const isCardFollowThemeSwitchable =
 	displaySettingsConfig.cardFollowThemeSwitchable;
+// 日夜切换（日间/夜间/跟随系统/定时）始终可用，不受各项功能开关控制
+const hasThemeModeSettings = true;
 // 是否有任何横幅设置可显示（后续添加新设置时在此处添加条件）
 const hasBannerSettings =
 	isWavesSwitchable ||
@@ -192,8 +214,56 @@ let cardSettingsIsDefault = $derived(
 			cardFollowThemeEnabled === defaultCardFollowThemeEnabled),
 );
 
+// --- 日夜模式（背景 Tab 第一段） ---
+const themeModeOptions = $derived([
+	{
+		key: LIGHT_MODE,
+		icon: "material-symbols:wb-sunny-outline-rounded",
+		label: i18n(I18nKey.lightMode),
+	},
+	{
+		key: DARK_MODE,
+		icon: "material-symbols:dark-mode-outline-rounded",
+		label: i18n(I18nKey.darkMode),
+	},
+	{
+		key: SYSTEM_MODE,
+		icon: "material-symbols:brightness-auto-outline-rounded",
+		label: i18n(I18nKey.systemMode),
+	},
+	{
+		key: SCHEDULED_MODE,
+		icon: "material-symbols:schedule-rounded",
+		label: i18n(I18nKey.scheduledMode),
+	},
+] as { key: LIGHT_DARK_MODE; icon: string; label: string }[]);
+
+let themeSettingsIsDefault = $derived(
+	themeMode === defaultThemeMode &&
+		scheduleDayStart === DEFAULT_THEME_SCHEDULE.dayStart &&
+		scheduleNightStart === DEFAULT_THEME_SCHEDULE.nightStart,
+);
+
+function selectThemeMode(nextMode: LIGHT_DARK_MODE) {
+	themeMode = nextMode;
+	setTheme(nextMode);
+}
+
+function applyThemeSchedule() {
+	setThemeSchedule(scheduleDayStart, scheduleNightStart);
+}
+
+function resetThemeSettings() {
+	scheduleDayStart = DEFAULT_THEME_SCHEDULE.dayStart;
+	scheduleNightStart = DEFAULT_THEME_SCHEDULE.nightStart;
+	setThemeSchedule(scheduleDayStart, scheduleNightStart);
+	themeMode = defaultThemeMode;
+	setTheme(defaultThemeMode);
+}
+
 const hasAnyContent = $derived(
-	showThemeColor ||
+	hasThemeModeSettings ||
+		showThemeColor ||
 		isWallpaperSwitchable ||
 		isFullscreenLayoutSwitchable ||
 		allowLayoutSwitch ||
@@ -219,7 +289,7 @@ const hasWallpaperTab = $derived(
 			wallpaperMode === WALLPAPER_FULLSCREEN) &&
 			hasBannerSettings),
 );
-const hasEffectsTab = $derived(isSakuraSwitchable);
+const hasBackgroundTab = $derived(hasThemeModeSettings || isSakuraSwitchable);
 
 let visibleTabs = $derived.by(() => {
 	const tabs: { key: TabKey; icon: string; label: string }[] = [];
@@ -235,17 +305,19 @@ let visibleTabs = $derived.by(() => {
 			icon: "material-symbols:wallpaper",
 			label: i18n(I18nKey.settingsTabWallpaper),
 		});
-	if (hasEffectsTab)
+	if (hasBackgroundTab)
 		tabs.push({
-			key: "effects",
-			icon: "mdi:flower-poppy",
-			label: i18n(I18nKey.settingsTabEffects),
+			key: "background",
+			icon: "material-symbols:contrast",
+			label: i18n(I18nKey.settingsTabBackground),
 		});
 	return tabs;
 });
 
 let showTabBar = $derived(visibleTabs.length > 1);
 let activeTab = $state<TabKey>("appearance");
+// Tab 内容区：只有这块滚动，Tab 栏固定在顶部
+let contentEl = $state<HTMLDivElement>();
 
 // Auto-switch active tab if it becomes invisible
 $effect(() => {
@@ -559,6 +631,12 @@ onMount(() => {
 	overlayBlur = getStoredOverlayBlur();
 	overlayCardOpacity = getStoredOverlayCardOpacity();
 
+	// 读取当前日夜模式与定时时间段
+	themeMode = getStoredTheme();
+	const schedule = getThemeSchedule();
+	scheduleDayStart = schedule.dayStart;
+	scheduleNightStart = schedule.nightStart;
+
 	// 从localStorage读取用户偏好布局
 	const savedLayout = localStorage.getItem("postListLayout");
 	if (savedLayout && (savedLayout === "list" || savedLayout === "grid")) {
@@ -587,6 +665,19 @@ onMount(() => {
 
 	return () => {
 		window.removeEventListener("layoutChange", handleCustomEvent);
+	};
+});
+
+// 导航栏日夜按钮等外部入口改了主题时，同步面板里的选中项
+onMount(() => {
+	const handleThemeChange = () => {
+		themeMode = getStoredTheme();
+	};
+
+	window.addEventListener("theme-change", handleThemeChange);
+
+	return () => {
+		window.removeEventListener("theme-change", handleThemeChange);
 	};
 });
 
@@ -653,19 +744,45 @@ $effect(() => {
 	}
 });
 
-// Tab 切换后刷新滑块进度（overlay 滑块在 DOM 中才生效）
+// Tab 切换后：内容区回到顶部，并刷新滑块进度（overlay 滑块在 DOM 中才生效）
 $effect(() => {
 	// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 	activeTab;
+	if (contentEl) contentEl.scrollTop = 0;
 	requestAnimationFrame(refreshAllRangeProgress);
+});
+
+// 面板移到 <body> 直接子级：导航栏外层容器会带 translate（滚动显隐），
+// 那会成为 position: fixed 的包含块，top/left 50% 就相对导航栏而不是视口，
+// 弹窗跑到屏幕上方。挂到 body 后无论在哪个页面都相对视口居中。
+let panelEl: HTMLDivElement | undefined;
+let panelAnchor: Comment | null = null;
+
+onMount(() => {
+	if (!panelEl || panelEl.parentNode === document.body) return;
+
+	panelAnchor = document.createComment("display-setting-anchor");
+	panelEl.parentNode?.insertBefore(panelAnchor, panelEl);
+	document.body.appendChild(panelEl);
+
+	return () => {
+		// 卸载前放回锚点，避免 island 卸载后 body 下残留孤儿节点
+		if (panelEl && panelEl.parentNode === document.body) {
+			if (panelAnchor?.parentNode) {
+				panelAnchor.parentNode.insertBefore(panelEl, panelAnchor);
+			}
+			panelAnchor?.remove();
+			panelAnchor = null;
+		}
+	};
 });
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 right-4 px-3 pt-0 pb-3 max-h-[80vh] overflow-y-auto hide-scrollbar" data-floating-panel data-floating-panel-trigger="display-settings-switch" inert aria-hidden="true">
-	<!-- Tab Bar -->
+<div id="display-setting" bind:this={panelEl} class="float-panel float-panel-closed absolute transition-all overflow-hidden hide-scrollbar flex flex-col" data-floating-panel data-floating-panel-trigger="display-settings-floating" inert aria-hidden="true">
+	<!-- Tab Bar（固定在顶部，不随内容滚动） -->
 	{#if showTabBar}
-	<div class="flex gap-1 border-b border-black/5 dark:border-white/10 pt-3 pb-1 mb-3">
+	<div class="shrink-0 flex gap-1 border-b border-black/5 dark:border-white/10 px-3 pt-3 pb-1">
 		{#each visibleTabs as tab (tab.key)}
 			<button
 				class="focus-ring-inset flex-1 flex flex-col items-center justify-center gap-1.5 py-2 px-2 text-xs font-medium transition-colors rounded-lg min-w-0
@@ -680,6 +797,9 @@ $effect(() => {
 		{/each}
 	</div>
 	{/if}
+
+	<!-- Tab 内容区（只有这一块滚动） -->
+	<div bind:this={contentEl} class="flex-1 min-h-0 overflow-y-auto hide-scrollbar px-3 pb-3 {showTabBar ? 'pt-2' : 'pt-3'}">
 
 	<!-- Appearance Tab: Theme Color + Layout -->
 	{#if activeTab === "appearance"}
@@ -1027,8 +1147,62 @@ $effect(() => {
 		{/if}
 	{/if}
 
-	<!-- Effects Tab: Sakura -->
-	{#if activeTab === "effects"}
+	<!-- Background Tab: Day/Night + Effects -->
+	{#if activeTab === "background"}
+		<!-- Day/Night Section -->
+		<div class="">
+			<div class="section-title">
+				{i18n(I18nKey.themeMode)}
+				<button aria-label="Reset to Default" class="btn-regular rounded-md active:scale-90"
+						class:opacity-0={themeSettingsIsDefault} class:pointer-events-none={themeSettingsIsDefault}
+						disabled={themeSettingsIsDefault} aria-hidden={themeSettingsIsDefault ? "true" : undefined}
+						onclick={resetThemeSettings}>
+					<div class="text-(--btn-content)">
+						<Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.75rem]"></Icon>
+					</div>
+				</button>
+			</div>
+			<div class="grid grid-cols-2 gap-2">
+				{#each themeModeOptions as option (option.key)}
+					<button
+						aria-label={option.label}
+						aria-pressed={themeMode === option.key}
+						class="btn-regular rounded-md py-2 px-3 flex items-center justify-center gap-2 active:scale-95 transition-all relative overflow-hidden"
+						class:opacity-60={themeMode !== option.key}
+						class:bg-(--btn-regular-bg-hover)={themeMode === option.key}
+						onclick={() => selectThemeMode(option.key)}
+						title={option.label}
+					>
+						<Icon icon={option.icon} class="text-[1.25rem] shrink-0"></Icon>
+						<span class="text-xs font-medium truncate">{option.label}</span>
+					</button>
+				{/each}
+			</div>
+			{#if themeMode === SCHEDULED_MODE}
+				<div class="mt-2 flex flex-col gap-1.5 rounded-md bg-(--btn-regular-bg) px-3 py-2">
+					<label class="flex items-center gap-2">
+						<span class="flex-1 text-xs text-(--btn-content)">{i18n(I18nKey.scheduleDayStart)}</span>
+						<input
+							type="time"
+							class="rounded-md border border-(--line-divider) bg-(--card-bg) px-2 py-1 text-xs text-(--deep-text) [color-scheme:light] dark:[color-scheme:dark]"
+							bind:value={scheduleDayStart}
+							onchange={applyThemeSchedule}
+						/>
+					</label>
+					<label class="flex items-center gap-2">
+						<span class="flex-1 text-xs text-(--btn-content)">{i18n(I18nKey.scheduleNightStart)}</span>
+						<input
+							type="time"
+							class="rounded-md border border-(--line-divider) bg-(--card-bg) px-2 py-1 text-xs text-(--deep-text) [color-scheme:light] dark:[color-scheme:dark]"
+							bind:value={scheduleNightStart}
+							onchange={applyThemeSchedule}
+						/>
+					</label>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Effects Section: Sakura -->
 		{#if isSakuraSwitchable}
 		<div class="">
 			<div class="section-title">
@@ -1060,5 +1234,8 @@ $effect(() => {
 		</div>
 		{/if}
 	{/if}
+
+	</div>
+	<!-- /Tab 内容区 -->
 </div>
 {/if}

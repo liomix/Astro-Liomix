@@ -121,9 +121,13 @@ export const ja: Translation = {
 
 	[Key.themeColor]: "テーマカラー",
 
-	[Key.lightMode]: "ライト",
-	[Key.darkMode]: "ダーク",
+	[Key.lightMode]: "日中",
+	[Key.darkMode]: "夜間",
 	[Key.systemMode]: "システム",
+	[Key.scheduledMode]: "タイマー",
+	[Key.themeMode]: "昼夜",
+	[Key.scheduleDayStart]: "日中開始",
+	[Key.scheduleNightStart]: "夜間開始",
 
 	[Key.more]: "もっと",
 	[Key.collapse]: "折りたたむ",
@@ -398,7 +402,7 @@ export const ja: Translation = {
 	[Key.wavesAnimation]: "波アニメーション",
 	[Key.gradientTransition]: "グラデーション遷移",
 	[Key.sakuraEffect]: "桜エフェクト",
-	[Key.effectsSettings]: "エフェクト設定",
+	[Key.effectsSettings]: "エフェクト",
 	[Key.overlaySettings]: "透明設定",
 	[Key.overlayOpacity]: "壁紙の透明度",
 	[Key.overlayBlur]: "背景ぼかし",
@@ -408,6 +412,7 @@ export const ja: Translation = {
 	[Key.settingsTabAppearance]: "外観",
 	[Key.settingsTabWallpaper]: "壁紙",
 	[Key.settingsTabEffects]: "エフェクト",
+	[Key.settingsTabBackground]: "背景",
 
 	// カードスタイル
 	[Key.cardSettings]: "カードスタイル",

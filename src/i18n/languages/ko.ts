@@ -121,9 +121,13 @@ export const ko: Translation = {
 
 	[Key.themeColor]: "테마 색상",
 
-	[Key.lightMode]: "라이트",
-	[Key.darkMode]: "다크",
+	[Key.lightMode]: "주간",
+	[Key.darkMode]: "야간",
 	[Key.systemMode]: "시스템",
+	[Key.scheduledMode]: "예약",
+	[Key.themeMode]: "주간/야간",
+	[Key.scheduleDayStart]: "주간 시작",
+	[Key.scheduleNightStart]: "야간 시작",
 
 	[Key.more]: "더 보기",
 	[Key.collapse]: "접기",
@@ -399,7 +403,7 @@ export const ko: Translation = {
 	[Key.wavesAnimation]: "파도 애니메이션",
 	[Key.gradientTransition]: "그라디언트 전환",
 	[Key.sakuraEffect]: "벚꽃 효과",
-	[Key.effectsSettings]: "효과 설정",
+	[Key.effectsSettings]: "효과",
 	[Key.overlaySettings]: "투명도 설정",
 	[Key.overlayOpacity]: "배경화면 불투명도",
 	[Key.overlayBlur]: "배경 흐림",
@@ -409,6 +413,7 @@ export const ko: Translation = {
 	[Key.settingsTabAppearance]: "외형",
 	[Key.settingsTabWallpaper]: "배경화면",
 	[Key.settingsTabEffects]: "효과",
+	[Key.settingsTabBackground]: "배경",
 
 	// 카드 스타일
 	[Key.cardSettings]: "카드 스타일",

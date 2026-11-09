@@ -698,3 +698,27 @@ body::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
+
+/* 显示设置面板：贴在右下角主题按钮旁边弹出（右边缘与按钮右边缘对齐、向上展开）。
+   面板已由组件在挂载时移到 <body> 下（导航栏外壳带 translate，会成为 fixed 的包含块），
+   精确位置由 ThemeSettingsButton 在打开时按按钮实际 rect 写入 right/bottom；
+   这里的 right/bottom 只是 JS 未生效时的兜底值。 */
+#display-setting {
+  position: fixed;
+  right: 1rem;
+  bottom: 5.25rem;
+  left: auto;
+  top: auto;
+  width: 20rem;
+  height: min(72vh, 34rem);
+  max-width: calc(100vw - 2rem);
+  max-height: min(80vh, 42rem);
+  z-index: 1100;
+}
+
+/* 关闭态沿用原来的淡出收缩，从原位置轻轻上移消失 */
+#display-setting.float-panel-closed {
+  translate: 0 -0.25rem;
+  opacity: 0;
+}
+
