@@ -173,7 +173,7 @@ const minutes = remarkPluginFrontmatter.minutes;
       hideUpdateDate={true}
       category={category || undefined}
       publishedText={dateLabel}
-      publishedIcon="material-symbols:schedule-outline-rounded"
+      publishedIcon="material-symbols:edit-calendar-outline-rounded"
       categoryIcon="material-symbols:folder-outline-rounded"
       words={words}
       minutes={minutes}
@@ -319,6 +319,24 @@ const minutes = remarkPluginFrontmatter.minutes;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 元信息各组之间的横向间距：默认 gap-4（1rem）时「更新于 x 天前」和分类贴得太近，
+   两组图标混在一起不易区分。间距用变量统一定义，断点只覆盖变量。
+   上限由最窄的卡片决定（从截图实测：无封面卡片内容宽约 307px，两组「图标＋文字」合计约 249px，
+   余量只有约 58px ≈ 3.6rem），超过就会折行、把卡片撑高导致瀑布流重排 */
+:global(.post-card-wrapper) {
+  --post-meta-gap: 2.5rem;
+}
+
+:global(.post-card-wrapper .post-card-content .post-meta-root) {
+  column-gap: var(--post-meta-gap);
+}
+
+@media (max-width: 767px) {
+  :global(.post-card-wrapper) {
+    --post-meta-gap: 2rem;
+  }
 }
 
 /* 网格模式下两组「图标＋文字」作为一个整体在卡片内居中 */

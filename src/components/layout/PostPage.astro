@@ -407,9 +407,10 @@ const coverPositionClass =
     display: none !important;
   }
 
+  /* 网格模式只调外边距；组间间距由 PostCard.astro 的 --post-meta-gap 统一控制，
+     这里不能再写 gap（带 !important 会盖掉卡片里的设置） */
   #post-list-container.grid-mode :global(.post-meta) {
     margin-bottom: 0.5rem !important;
-    gap: 1rem !important;
   }
 
   #post-list-container.grid-mode :global(.post-meta .text-xl) {

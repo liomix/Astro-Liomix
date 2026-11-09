@@ -1,0 +1,332 @@
+---
+import { Icon } from "astro-icon/components";
+import { commentConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { formatDateToYYYYMMDD, formatRelativeTime } from "@/utils/date-utils";
+import { formatCompactNumber } from "@/utils/number-utils";
+import { getCategoryUrl, getTagUrl } from "@/utils/url-utils";
+
+export interface Props {
+	title: string;
+	published: Date;
+	updated?: Date;
+	category?: string;
+	tags?: string[];
+	words?: number;
+	minutes?: number;
+	id?: string;
+	password?: boolean;
+}
+
+const {
+	title,
+	published,
+	updated,
+	category,
+	tags,
+	words,
+	minutes,
+	id,
+	password,
+} = Astro.props;
+
+type MetaNode =
+	| { kind: "text"; icon: string; text: string }
+	| { kind: "link"; icon: string; text: string; href: string; label: string }
+	| { kind: "views"; icon: string }
+	| { kind: "password"; icon: string };
+
+const visibleTags = tags?.filter((tag) => tag.trim().length > 0) ?? [];
+const path = id ? `/posts/${id}` : "";
+// 阅读量：与 PostMeta 一致，仅在启用带访问量统计的评论系统时显示
+const showViews =
+	!!id &&
+	((commentConfig.type === "twikoo" && commentConfig.twikoo?.visitorCount) ||
+		(commentConfig.type === "waline" && commentConfig.waline?.visitorCount) ||
+		(commentConfig.type === "artalk" && commentConfig.artalk?.visitorCount));
+
+// 时间只显示一条：优先「更新于 相对时间」，与 PostCard 用同一套工具
+// formatRelativeTime 超过 6 年返回 null，此时回退成「更新于 YYYY-MM-DD」
+const displayDate = updated ?? published;
+const relativeTime = formatRelativeTime(displayDate);
+const dateText = `${i18n(I18nKey.updatedAt)} ${
+	relativeTime ?? formatDateToYYYYMMDD(displayDate)
+}`;
+
+const categoryText = category || i18n(I18nKey.uncategorized);
+
+// 元信息按行组织：条目与分隔线都由数据生成，增删/条件渲染不会留下多余分隔符
+const metaRows: MetaNode[][] = [
+	[
+		{ kind: "text", icon: "material-symbols:edit-calendar-outline-rounded", text: dateText },
+		{
+			kind: "link",
+			icon: "material-symbols:folder-outline-rounded",
+			text: categoryText,
+			href: getCategoryUrl(category || ""),
+			label: `View all posts in the ${categoryText} category`,
+		},
+	],
+];
+
+const statsRow: MetaNode[] = [];
+
+if (typeof words === "number") {
+	statsRow.push({
+		kind: "text",
+		icon: "material-symbols:text-fields-rounded",
+		text: `${formatCompactNumber(words)} ${i18n(words === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}`,
+	});
+}
+
+if (typeof minutes === "number") {
+	statsRow.push({
+		kind: "text",
+		icon: "material-symbols:schedule-outline-rounded",
+		text: `${i18n(I18nKey.readTime)} ${minutes} ${i18n(minutes === 1 ? I18nKey.minuteCount : I18nKey.minutesCount)}`,
+	});
+}
+
+if (showViews) {
+	statsRow.push({ kind: "views", icon: "material-symbols:visibility-outline-rounded" });
+}
+
+if (password) {
+	statsRow.push({ kind: "password", icon: "material-symbols:lock-outline" });
+}
+
+if (statsRow.length > 0) {
+	metaRows.push(statsRow);
+}
+---
+
+<header class="post-header onload-animation">
+  <h1
+    class="post-header-title"
+    data-pagefind-body
+    data-pagefind-weight="10"
+    data-pagefind-meta="title"
+  >
+    {title}
+  </h1>
+
+  {
+    metaRows.map((row) => (
+      <div class="post-header-meta">
+        {row.map((node, index) => (
+          <>
+            {index > 0 && <span class="post-header-sep" aria-hidden="true" />}
+            <span class="post-header-item">
+              <Icon name={node.icon} class="post-header-icon" />
+              {node.kind === "text" && <span>{node.text}</span>}
+              {node.kind === "link" && (
+                <a href={node.href} class="post-header-link" aria-label={node.label}>
+                  {node.text}
+                </a>
+              )}
+              {node.kind === "views" && (
+                <>
+                  <span>{i18n(I18nKey.pageViews)}</span>
+                  {commentConfig.type === "twikoo" && (
+                    <span class="waline-pageview-count-text" id="twikoo_visitors">
+                      {i18n(I18nKey.pageViewsLoading)}
+                    </span>
+                  )}
+                  {commentConfig.type === "waline" && (
+                    <span class="waline-pageview-count" data-path={path}>
+                      {i18n(I18nKey.pageViewsLoading)}
+                    </span>
+                  )}
+                  {commentConfig.type === "artalk" && (
+                    <span class="artalk-pv-count" data-path={path}>
+                      {i18n(I18nKey.pageViewsLoading)}
+                    </span>
+                  )}
+                </>
+              )}
+              {node.kind === "password" && <span>{i18n(I18nKey.postEncrypted)}</span>}
+            </span>
+          </>
+        ))}
+      </div>
+    ))
+  }
+
+  {
+    visibleTags.length > 0 && (
+      <div class="post-header-tags">
+        {visibleTags.map((tag) => (
+          <a
+            href={getTagUrl(tag)}
+            class="post-header-tag"
+            aria-label={`View all posts with the ${tag.trim()} tag`}
+          >
+            {tag.trim()}
+          </a>
+        ))}
+      </div>
+    )
+  }
+</header>
+
+<style>
+  .post-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .post-header-title {
+    max-width: 46rem;
+    margin: 0 auto 1.15rem;
+    font-size: clamp(1.9rem, 3.8vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1.28;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+    color: rgb(0 0 0 / 0.9);
+    text-shadow: 0 0 20px
+      color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+
+  :global(html.dark) .post-header-title {
+    color: rgb(255 255 255 / 0.95);
+    text-shadow:
+      0 0 6px color-mix(in oklch, var(--primary) 65%, transparent),
+      0 0 22px color-mix(in oklch, var(--primary) 42%, transparent),
+      0 0 44px color-mix(in oklch, var(--primary) 24%, transparent),
+      0 2px 20px rgb(0 0 0 / 0.5);
+  }
+
+  /* 一行元信息：间距全部由 gap 控制，条目自身不带外边距 */
+  .post-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    column-gap: 0.55rem;
+    row-gap: 0.35rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgb(0 0 0 / 0.58);
+  }
+
+  :global(html.dark) .post-header-meta {
+    color: rgb(255 255 255 / 0.76);
+  }
+
+  .post-header-meta + .post-header-meta {
+    margin-top: 0.35rem;
+  }
+
+  .post-header-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .post-header-icon {
+    flex-shrink: 0;
+    font-size: 1.15em;
+    color: color-mix(in oklch, var(--primary) 88%, transparent);
+  }
+
+  /* 分隔线：1px 竖条，随 align-items: center 与文字垂直居中，不再靠字形基线对齐 */
+  .post-header-sep {
+    flex: none;
+    width: 1px;
+    height: 0.9em;
+    border-radius: 1px;
+    background: currentColor;
+    opacity: 0.32;
+  }
+
+  .post-header-link {
+    transition: color 0.2s ease;
+  }
+
+  .post-header-link:hover {
+    color: var(--primary);
+  }
+
+  /* 标签独立成行：flex 里自带换行属性，宽度收在标题同宽范围内居中 */
+  .post-header-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    max-width: 46rem;
+    margin-top: 1.05rem;
+    font-size: 0.82rem;
+  }
+
+  /* 胶囊样式：底色/文字色复用站内按钮变量，随主题色相与亮暗自动变化 */
+  .post-header-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.9rem;
+    border-radius: 9999px;
+    background: var(--btn-regular-bg);
+    color: var(--btn-content);
+    line-height: 1.5;
+    white-space: nowrap;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .post-header-tag:hover {
+    background: var(--btn-regular-bg-hover);
+    color: var(--btn-content);
+    transform: translateY(-1px);
+  }
+
+  .post-header-tag:active {
+    background: var(--btn-regular-bg-active);
+    transform: translateY(0);
+  }
+
+  @media (max-width: 640px) {
+    .post-header {
+      margin-bottom: 1.35rem;
+    }
+
+    .post-header-title {
+      margin-bottom: 0.75rem;
+      font-size: 1.6rem;
+    }
+
+    .post-header-meta {
+      column-gap: 0.45rem;
+      font-size: 0.8rem;
+    }
+
+    .post-header-tags {
+      gap: 0.45rem;
+      margin-top: 0.8rem;
+      font-size: 0.78rem;
+    }
+
+    .post-header-tag {
+      padding: 0.22rem 0.75rem;
+    }
+  }
+
+  @media (max-width: 420px) {
+    /* 窄屏元信息会折行，分隔条若跟到行首会显得突兀，改为纯 gap 分隔 */
+    .post-header-sep {
+      display: none;
+    }
+
+    .post-header-meta {
+      column-gap: 0.85rem;
+    }
+  }
+</style>
