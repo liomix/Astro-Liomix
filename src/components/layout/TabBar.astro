@@ -73,6 +73,13 @@ const labels = {
   import { goHomeFromEntry, initHomeEntryLinks } from "@/utils/home-entry";
 
   type Tab = { key: string; title: string; pinned: boolean };
+  type TabNode = {
+    item: HTMLElement;
+    link: HTMLAnchorElement;
+    close: HTMLButtonElement;
+    /** 上次写入的标题，用来跳过无变化的 DOM 写入 */
+    title: string;
+  };
   type Snapshot = {
     y: number;
     fields: { value: string; checked: boolean }[];
@@ -123,6 +130,11 @@ const labels = {
   let lastNav = { key: "", at: 0 };
   let suppressClick = false;
 
+  /** key → 已创建的 DOM 节点。切页只做状态/顺序更新，不再整条重建 */
+  const tabNodes = new Map<string, TabNode>();
+  /** 固定组与普通组之间的竖线，常驻复用 */
+  let pinDivider: HTMLElement | null = null;
+
   function keyOfLocation(): string {
     return normalizeKey(new URL(location.href));
   }
@@ -155,15 +167,25 @@ const labels = {
     }
   }
 
+  /**
+   * 同一轮事件里可能连续触发多次保存（关闭标签 → 高亮 → 跳转），
+   * 用微任务合并成一次 JSON + localStorage 写入，减少同步 IO。
+   */
+  let saveScheduled = false;
   function save(): void {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ tabs, active: activeKey }),
-      );
-    } catch {
-      /* 隐私模式下可能抛错 */
-    }
+    if (saveScheduled) return;
+    saveScheduled = true;
+    queueMicrotask(() => {
+      saveScheduled = false;
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ tabs, active: activeKey }),
+        );
+      } catch {
+        /* 隐私模式下可能抛错 */
+      }
+    });
   }
 
   /** 页面标题：优先用主内容里的 h1（带参路由由页面自己填），退回 document.title */
@@ -179,65 +201,117 @@ const labels = {
     return cut || labels.untitled || "Untitled";
   }
 
+  /** 创建一个标签节点（每个 key 只建一次，固定/普通共用同一套子节点，靠 CSS 切换形态） */
+  function createTabNode(tab: Tab): TabNode {
+    const item = document.createElement("div");
+    item.className = "tab-item";
+    item.dataset.key = tab.key;
+    item.draggable = false;
+    item.setAttribute("role", "tab");
+
+    const pin = document.createElement("span");
+    pin.className = "tab-pin";
+    pin.innerHTML = PIN_SVG;
+    item.appendChild(pin);
+
+    const link = document.createElement("a");
+    link.className = "tab-link";
+    link.href = tab.key;
+    link.draggable = false;
+    item.appendChild(link);
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "tab-close";
+    close.dataset.tabClose = "";
+    close.setAttribute("aria-label", labels.close || "Close");
+    close.innerHTML = CLOSE_SVG;
+    item.appendChild(close);
+
+    const node: TabNode = { item, link, close, title: "" };
+    applyNodeState(node, tab);
+    return node;
+  }
+
+  /** 只写变化的属性，避免每次渲染都碰一遍 DOM */
+  function applyNodeState(node: TabNode, tab: Tab): void {
+    if (node.title !== tab.title) {
+      node.title = tab.title;
+      node.link.textContent = tab.title;
+      node.link.title = tab.title;
+      node.item.title = tab.title;
+    }
+
+    const pinned = tab.pinned;
+    if (pinned !== node.item.hasAttribute("data-pinned")) {
+      if (pinned) node.item.dataset.pinned = "";
+      else node.item.removeAttribute("data-pinned");
+    }
+
+    const active = tab.key === activeKey;
+    if (active !== node.item.hasAttribute("data-active")) {
+      if (active) node.item.dataset.active = "";
+      else node.item.removeAttribute("data-active");
+    }
+  }
+
   function render(): void {
     if (!strip) return;
 
-    const frag = document.createDocumentFragment();
-    let lastPinned: HTMLElement | null = null;
+    const desired: HTMLElement[] = [];
+    let lastPinned = -1;
 
     for (const tab of tabs) {
-      const item = document.createElement("div");
-      item.className = "tab-item";
-      item.dataset.key = tab.key;
-      item.draggable = false;
-      item.setAttribute("role", "tab");
-      if (tab.key === activeKey) item.dataset.active = "";
-      if (tab.pinned) item.dataset.pinned = "";
-
-      if (tab.pinned) {
-        const pin = document.createElement("span");
-        pin.className = "tab-pin";
-        pin.innerHTML = PIN_SVG;
-        item.appendChild(pin);
-        // 固定标签只留图标（正方形），名字放 title 里
-        item.title = tab.title;
+      let node = tabNodes.get(tab.key);
+      if (node) applyNodeState(node, tab);
+      else {
+        node = createTabNode(tab);
+        tabNodes.set(tab.key, node);
       }
-
-      const link = document.createElement("a");
-      link.className = "tab-link";
-      link.href = tab.key;
-      link.textContent = tab.title;
-      link.title = tab.title;
-      link.draggable = false;
-      item.appendChild(link);
-
-      const close = document.createElement("button");
-      close.type = "button";
-      close.className = "tab-close";
-      close.dataset.tabClose = "";
-      close.setAttribute("aria-label", labels.close || "Close");
-      close.innerHTML = CLOSE_SVG;
-      item.appendChild(close);
-
-      frag.appendChild(item);
-      if (tab.pinned) lastPinned = item;
+      if (tab.pinned) lastPinned = desired.length;
+      desired.push(node.item);
     }
 
-    // 固定组与普通组之间的竖线（样式与 home 右侧那条一致）
-    if (lastPinned) {
-      const divider = document.createElement("div");
-      divider.className = "tab-pin-divider";
-      divider.setAttribute("aria-hidden", "true");
-      lastPinned.after(divider);
+    if (lastPinned >= 0) {
+      let divider = pinDivider;
+      if (!divider) {
+        divider = document.createElement("div");
+        divider.className = "tab-pin-divider";
+        divider.setAttribute("aria-hidden", "true");
+        pinDivider = divider;
+      }
+      desired.splice(lastPinned + 1, 0, divider);
     }
 
-    strip.replaceChildren(frag);
+    // 最小移动：只有位置不对的节点才 insertBefore，全对时零 DOM 操作
+    for (let i = 0; i < desired.length; i++) {
+      const want = desired[i];
+      if (!want) continue;
+      const current = strip.children[i];
+      if (current !== want) strip.insertBefore(want, current ?? null);
+    }
+    while (strip.children.length > desired.length) {
+      strip.lastElementChild?.remove();
+    }
+
+    // 回收已关闭标签的节点与缓存
+    if (tabNodes.size !== tabs.length) {
+      const alive = new Set(tabs.map((tab) => tab.key));
+      for (const [key, node] of tabNodes) {
+        if (alive.has(key)) continue;
+        node.item.remove();
+        tabNodes.delete(key);
+      }
+    }
+
     syncHomeState();
   }
 
   function syncHomeState(): void {
     if (!homeBtn) return;
-    if (keyOfLocation() === HOME_KEY) homeBtn.dataset.active = "";
+    const isHome = keyOfLocation() === HOME_KEY;
+    if (isHome === homeBtn.hasAttribute("data-active")) return;
+    if (isHome) homeBtn.dataset.active = "";
     else homeBtn.removeAttribute("data-active");
   }
 
@@ -566,7 +640,15 @@ const labels = {
       startX: number;
       startY: number;
       active: boolean;
+      /** 拖动期间标签集合固定，按下时取一次就够，别每帧再查 DOM */
+      items: HTMLElement[];
+      /** 指针相对标签左边界的偏移，拖动时保持这个抓取点跟手 */
+      grab: number;
     } | null = null;
+
+    // 一帧只量一次布局：pointermove 高频触发，直接在里面量会疯狂强制重排
+    let frame = 0;
+    let pendingX = 0;
 
     // <a> 默认是原生 draggable，长按会触发浏览器拖拽并 pointercancel 掉我们自己的拖拽
     strip.addEventListener("dragstart", (event) => event.preventDefault());
@@ -577,12 +659,14 @@ const labels = {
     /**
      * FLIP：先量视觉位置 → 取消进行中的动画 → 改 DOM → 量新位置 → 用 WAAPI 补间。
      * 位移差值用「视觉位 - 布局位」，所以连续快速拖动时也能从当前画面接着滑，不会跳。
+     * `skip` 是被拖着的那个标签：它由 transform 跟手，不参与补间。
      */
-    function reorder(apply: () => void): void {
+    function reorder(
+      items: HTMLElement[],
+      skip: HTMLElement | null,
+      apply: () => void,
+    ): void {
       if (!strip) return;
-      const items = Array.from(
-        strip.querySelectorAll<HTMLElement>(".tab-item"),
-      );
       const first = items.map((el) => el.getBoundingClientRect());
       for (const el of items) {
         for (const anim of el.getAnimations()) {
@@ -596,6 +680,7 @@ const labels = {
       apply();
 
       items.forEach((el, index) => {
+        if (el === skip) return;
         const from = first[index];
         if (!from) return;
         const now = el.getBoundingClientRect();
@@ -613,31 +698,51 @@ const labels = {
       if (!drag || !strip) return;
       const el = drag.el;
       const pinned = el.hasAttribute("data-pinned");
-      const siblings = Array.from(
-        strip.querySelectorAll<HTMLElement>(".tab-item"),
-      ).filter((item) => item !== el && sameGroup(item, pinned));
-      if (!siblings.length) return;
+      const siblings = drag.items.filter(
+        (item) => item !== el && sameGroup(item, pinned),
+      );
 
       // 用 offsetLeft/offsetWidth 而不是 getBoundingClientRect：
       // 后者含正在跑的补间位移，拿它算中线会在动画期间来回抖。
       const pointer = x - strip.getBoundingClientRect().left;
+      // 标签当前应该出现在哪儿：抓取点贴着指针
+      const offset = pointer - (el.offsetLeft + drag.grab);
+      // 换位判定用「标签视觉中心」，这样抓左边缘还是右边缘手感一致
+      const center = el.offsetLeft + el.offsetWidth / 2 + offset;
 
-      let ref: HTMLElement | null = null;
-      for (const sibling of siblings) {
-        if (pointer < sibling.offsetLeft + sibling.offsetWidth / 2) {
-          ref = sibling;
-          break;
+      if (siblings.length) {
+        let ref: HTMLElement | null = null;
+        for (const sibling of siblings) {
+          if (center < sibling.offsetLeft + sibling.offsetWidth / 2) {
+            ref = sibling;
+            break;
+          }
+        }
+
+        if (ref) {
+          if (el.nextElementSibling !== ref)
+            reorder(drag.items, el, () => strip?.insertBefore(el, ref));
+        } else {
+          // 落在同组最后一个之后：插到它后面（固定组后面还跟着分隔线，会被顺势推开）
+          const last = siblings[siblings.length - 1];
+          if (last && last.nextElementSibling !== el)
+            reorder(drag.items, el, () => last.after(el));
         }
       }
 
-      if (ref) {
-        if (el.nextElementSibling === ref) return;
-        reorder(() => strip?.insertBefore(el, ref));
-        return;
-      }
-      // 落在同组最后一个之后：插到它后面（固定组后面还跟着分隔线，会被顺势推开）
-      const last = siblings[siblings.length - 1];
-      if (last && last.nextElementSibling !== el) reorder(() => last.after(el));
+      // 换位后 offsetLeft 变了，重算一次，让标签始终贴着指针、不闪跳
+      el.style.transform = `translate3d(${
+        pointer - (el.offsetLeft + drag.grab)
+      }px, 0, 0)`;
+    }
+
+    function scheduleMove(x: number): void {
+      pendingX = x;
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        moveTo(pendingX);
+      });
     }
 
     strip.addEventListener("pointerdown", (event) => {
@@ -652,6 +757,8 @@ const labels = {
         startX: event.clientX,
         startY: event.clientY,
         active: false,
+        items: Array.from(strip.querySelectorAll<HTMLElement>(".tab-item")),
+        grab: event.clientX - item.getBoundingClientRect().left,
       };
       // 这里不能 preventDefault：触屏下取消 pointerdown 会连带吞掉 click。
       // 原生拖拽交给 draggable=false + dragstart 拦截，选中交给 user-select: none。
@@ -677,7 +784,7 @@ const labels = {
       }
 
       event.preventDefault();
-      moveTo(event.clientX);
+      scheduleMove(event.clientX);
     });
 
     const finish = (event: PointerEvent) => {
@@ -685,6 +792,26 @@ const labels = {
       const el = drag.el;
       const active = drag.active;
       drag = null;
+
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+
+      if (active) {
+        // 松手：让标签从指针位置滑回它自己的槽位，别直接瞬移
+        const visual = el.getBoundingClientRect();
+        el.style.transform = "";
+        const dx = visual.left - el.getBoundingClientRect().left;
+        if (Math.abs(dx) > 0.5) {
+          el.animate(
+            [{ transform: `translate(${dx}px, 0)` }, { transform: "none" }],
+            { duration: 170, easing: "cubic-bezier(0.2, 0, 0, 1)" },
+          );
+        }
+      } else {
+        el.style.transform = "";
+      }
 
       el.classList.remove("tab-dragging");
       strip?.classList.remove("tab-sorting");
@@ -922,14 +1049,17 @@ const labels = {
     background: color-mix(in srgb, var(--primary) 16%, transparent);
     border-color: color-mix(in srgb, var(--primary) 30%, transparent);
   }
-  /* 拖动中：只做描边/底色强调，不加 box-shadow（在卡片上会显成一团黑影） */
+  /* 拖动中的标签会浮在其它标签上方（跟手位移由 JS 写 transform）。
+     底色必须是不透明的混合色，否则会透出下面被压住的标签。 */
   :global(.tab-item.tab-dragging) {
-    opacity: 0.9;
-    z-index: 2;
+    position: relative;
+    z-index: 5;
     cursor: grabbing;
     color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 14%, transparent);
-    border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    background: color-mix(in srgb, var(--primary) 16%, var(--card-bg));
+    border-color: color-mix(in srgb, var(--primary) 38%, transparent);
+    /* 用主色而不是黑色投影，避免浅色卡片上显成一团黑影 */
+    box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--primary) 40%, transparent);
   }
   /* 拖动期间才提层，平时不加避免白白占用合成层 */
   :global(.tab-strip.tab-sorting .tab-item) {
@@ -968,6 +1098,7 @@ const labels = {
     display: none;
   }
   :global(.tab-item[data-pinned] .tab-pin) {
+    display: grid;
     font-size: 1.1rem;
     opacity: 0.85;
   }
@@ -989,7 +1120,8 @@ const labels = {
     opacity: 0.5;
   }
   :global(.tab-pin) {
-    display: grid;
+    /* 每个标签节点都带一个 pin，普通标签靠 display 关掉，节点结构才稳定可复用 */
+    display: none;
     place-items: center;
     flex: 0 0 auto;
     font-size: 0.75rem;

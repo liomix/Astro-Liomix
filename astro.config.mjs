@@ -72,6 +72,9 @@ export default defineConfig({
 	base: "/",
 	trailingSlash: "always",
 
+	// 开发服务器端口：Astro 7 的 dev 会用它去 listen（vite.server.port 会被这里覆盖）
+	server: { port: 2077 },
+
 	// 关闭开发模式下的 Astro 工具条浮层（仅影响 astro dev，不影响构建产物）
 	devToolbar: { enabled: false },
 

@@ -10,7 +10,7 @@ Firefly is a feature-rich static blog theme built on **Astro 7** with **Svelte 5
 
 | Command | Purpose |
 |---|---|
-| `pnpm dev` | Dev server at `localhost:4321` |
+| `pnpm dev` | Dev server at `localhost:2077` |
 | `pnpm build` | Production build (LQIPs → VNDB covers → Astro build → pio asset pruning → font subsetting → Pagefind indexing) |
 | `pnpm preview` | Preview production build |
 | `pnpm check` | `astro check` for type/error checking |

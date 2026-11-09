@@ -32,10 +32,10 @@ export const profileConfig: ProfileConfig = {
 	showStats: true,
 
 	// 名字
-	name: "XiaYe",
+	name: "liomix",
 
 	// 个人签名
-	bio: "Hello, I'm XiaYe.",
+	bio: "Binary ghosts of illusion and shadow",
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons
@@ -45,27 +45,28 @@ export const profileConfig: ProfileConfig = {
 	// showName: true 时显示图标和名称，false 时只显示图标
 	links: [
 		{
-			name: "GitHub",
-			icon: "fa7-brands:github",
-			url: "https://github.com/CuteLeaf",
+			name: "Discord",
+			icon: "fa7-brands:discord",
+			url: "https://discord.com/",
 			showName: false,
 		},
 		{
+			name: "Instagram",
+			icon: "fa7-brands:instagram",
+			url: "https://www.instagram.com/",
+			showName: false,
+		},
+		{
+			name: "Tiktok",
+			icon: "fa7-brands:tiktok",
+			url: "https://www.tiktok.com/",
+			showName: false,
+		},
+		{
+			// mailto: 开头的链接会自动走 base64 防爬处理（见 Profile.astro）
 			name: "Email",
 			icon: "fa7-solid:envelope",
 			url: "mailto:xiaye@msn.com",
-			showName: false,
-		},
-		{
-			name: "RSS",
-			icon: "fa7-solid:rss",
-			url: "/rss/",
-			showName: false,
-		},
-		{
-			name: "Atom",
-			icon: "fa7-solid:atom",
-			url: "/atom/",
 			showName: false,
 		},
 	],

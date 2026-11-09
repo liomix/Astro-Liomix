@@ -132,6 +132,24 @@ export const fontsList: FontDefinition[] = [
 	// 2. 参考下方配置填写正确的字体信息
 	// 3. 在 fontConfig.selected 或区域字段中引用 cssVariable
 	{
+		// 霞鹜文楷 Lite（字体内部族名，CSS 里就是这个名字）
+		// 只有 Regular 一个字形，500 以上字重由浏览器合成加粗
+		name: "LXGW WenKai Lite",
+		cssVariable: "--font-lxgw-wenkai",
+		provider: "local",
+		display: "swap",
+		options: {
+			variants: [
+				{
+					src: ["./public/assets/fonts/LXGW-WenKai-Lite-Regular.ttf"],
+					weight: "400",
+					style: "normal",
+				},
+			],
+		},
+		fallbacks: ["sans-serif"],
+	},
+	{
 		name: "GreatVibes Regular 2",
 		cssVariable: "--font-greatvibes",
 		provider: "local",
@@ -152,14 +170,14 @@ export const fontConfig: FontSelectionConfig = {
 	enable: true,
 	// 当前选择的字体 CSS 变量名（对应上方 fonts 中的 cssVariable）
 	// 使用 "system" 表示系统字体（不加载任何自定义字体）
-	selected: ["system"],
+	selected: ["--font-lxgw-wenkai"],
 
 	// 各区域独立字体设置（填写上方 fonts 中的 cssVariable，留空则使用全局 selected 字体）
 	// 例如：bannerTitleFont: "--font-inter", 表示主页横幅主标题使用 Inter 字体
 	// 主页横幅主标题字体
-	bannerTitleFont: "--font-zen-maru-gothic",
+	bannerTitleFont: "",
 	// 主页横幅副标题字体
-	bannerSubtitleFont: "--font-inter",
+	bannerSubtitleFont: "",
 	// 导航栏标题字体
 	navbarTitleFont: "",
 	// 代码块字体（用于代码高亮和等宽字体场景）
@@ -168,6 +186,12 @@ export const fontConfig: FontSelectionConfig = {
 	// 本地字体子集化配置（构建时由 scripts/subset-fonts.ts 处理）
 	// key 为 fonts 数组中对应的 cssVariable，value 为子集化选项
 	subsetFonts: {
+		// 霞鹜文楷是完整 CJK 字体（约 2MB），构建时按页面实际用到的字生成 woff2 子集
+		// extraChars 用来兜底动态内容（评论区、番组、随机文案等页面里扫不到的字符）
+		"--font-lxgw-wenkai": {
+			extraChars:
+				"的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往酸历市克何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养易置派层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严",
+		},
 		"--font-greatvibes": {
 			// 额外包含的字符
 			extraChars: "",
