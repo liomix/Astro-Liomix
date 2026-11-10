@@ -116,6 +116,8 @@ export const ko: Translation = {
 	[Key.minutesCount]: "분",
 	[Key.postCount]: "게시글",
 	[Key.postsCount]: "게시글",
+	[Key.tagChartTitle]: "글 수",
+	[Key.tagChartAverage]: "평균",
 	[Key.tagsCount]: "태그",
 	[Key.noData]: "데이터 없음",
 

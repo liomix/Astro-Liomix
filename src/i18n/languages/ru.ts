@@ -117,6 +117,8 @@ export const ru: Translation = {
 	[Key.minutesCount]: "минуты",
 	[Key.postCount]: "пост",
 	[Key.postsCount]: "постов",
+	[Key.tagChartTitle]: "Количество статей",
+	[Key.tagChartAverage]: "Среднее",
 	[Key.tagsCount]: "тегов",
 	[Key.noData]: "Нет данных",
 

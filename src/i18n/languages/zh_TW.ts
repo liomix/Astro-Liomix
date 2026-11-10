@@ -114,6 +114,8 @@ export const zh_TW: Translation = {
 	[Key.minutesCount]: "分鐘",
 	[Key.postCount]: "篇文章",
 	[Key.postsCount]: "篇文章",
+	[Key.tagChartTitle]: "文章篇數",
+	[Key.tagChartAverage]: "平均",
 	[Key.tagsCount]: "個標籤",
 	[Key.noData]: "暫無資料",
 

@@ -117,6 +117,8 @@ export const en: Translation = {
 	[Key.minutesCount]: "minutes",
 	[Key.postCount]: "post",
 	[Key.postsCount]: "posts",
+	[Key.tagChartTitle]: "Article count",
+	[Key.tagChartAverage]: "Average",
 	[Key.tagsCount]: "tags",
 	[Key.noData]: "No data yet",
 

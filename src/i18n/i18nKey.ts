@@ -72,6 +72,8 @@ enum I18nKey {
 	minutesCount = "minutesCount",
 	postCount = "postCount",
 	postsCount = "postsCount",
+	tagChartTitle = "tagChartTitle",
+	tagChartAverage = "tagChartAverage",
 	tagsCount = "tagsCount",
 	noData = "noData",
 
