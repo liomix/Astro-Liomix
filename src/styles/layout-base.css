@@ -78,6 +78,22 @@
     }
   }
 
+  /* 多标签导航栏：滚动吸顶跟随（与右侧目录卡片同样的跟随方式）。
+     留 0.75rem 顶部间隙，避免卡片圆角贴住视口边缘；z-index 只需压过同列的内容区，
+     不能高于 #top-row（z-80），否则会盖住导航栏
+     是否吸顶由 siteConfig.tabBarSticky 控制，关闭时 wrapper 带 data-sticky="false" */
+  #tab-bar-wrapper:not([data-sticky="false"]) {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 5;
+  }
+
+  /* 吸顶期间补一道轻阴影，把标签栏和从它下方滑过的正文分开。
+     半透明底换实色的部分在 main.css（须压过 .wallpaper-transparent .card-base） */
+  #tab-bar-wrapper.is-stuck > #tab-bar {
+    box-shadow: 0 14px 30px -22px color-mix(in oklch, var(--primary) 60%, transparent);
+  }
+
   /* --content-top 由 html[data-wallpaper-mode] + body.is-home + 媒体查询解析（解析期生效，无 JS 内联 top） */
   /* banner（桌面全页 + 移动首页）：内容在横幅下方，重叠 3.5rem */
   html[data-wallpaper-mode="banner"] .content-panel {

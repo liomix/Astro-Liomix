@@ -103,6 +103,9 @@ export type SiteConfig = {
 	// 多标签导航栏开关
 	tabBar?: boolean;
 
+	// 多标签导航栏滚动时是否吸顶跟随，默认 true；设为 false 则随页面一起滚走
+	tabBarSticky?: boolean;
+
 	// 分类导航栏按钮样式："pill"=胶囊，"rectangle"=矩形（配色同胶囊）
 	categoryStyle?: "pill" | "rectangle";
 

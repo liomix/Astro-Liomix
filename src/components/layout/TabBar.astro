@@ -842,6 +842,42 @@ const labels = {
     window.addEventListener("pointercancel", finish);
   }
 
+  // ── 吸顶状态 ────────────────────────────────────────────────
+  // 滚动吸顶由 layout-base.css 的 #tab-bar-wrapper 负责（siteConfig.tabBarSticky 可关闭），
+  // 这里只负责在「确实吸住」时打上 is-stuck，好让半透明卡片换成实色底 + 阴影
+  let stickyTop = 12;
+  let stuckFrame = 0;
+
+  // 关闭吸顶时 wrapper 带 data-sticky="false"，此时不测量、也不切类
+  function stickyWrapper(): HTMLElement | null {
+    const wrap = bar?.parentElement;
+    return wrap && wrap.dataset.sticky !== "false" ? wrap : null;
+  }
+
+  function readStickyTop(): void {
+    const wrap = stickyWrapper();
+    if (!wrap) return;
+    const value = Number.parseFloat(getComputedStyle(wrap).top);
+    if (Number.isFinite(value)) stickyTop = value;
+  }
+
+  function syncStuck(): void {
+    const wrap = stickyWrapper();
+    if (!wrap) return;
+    const stuck = wrap.getBoundingClientRect().top <= stickyTop + 0.5;
+    if (stuck !== wrap.classList.contains("is-stuck")) {
+      wrap.classList.toggle("is-stuck", stuck);
+    }
+  }
+
+  function scheduleStuck(): void {
+    if (stuckFrame) return;
+    stuckFrame = requestAnimationFrame(() => {
+      stuckFrame = 0;
+      syncStuck();
+    });
+  }
+
   // ── 交互绑定 ────────────────────────────────────────────────
   function bindBar(): void {
     if (!strip || !bar) return;
@@ -925,12 +961,27 @@ const labels = {
       // home 按钮与「分类栏/悬浮按钮」的回首页入口走同一套逻辑（落到内容区而不是 hero 顶部）
       initHomeEntryLinks();
 
+      // 吸顶状态：只切一次类，滚动路径不做布局测量以外的写入；关闭吸顶时不挂监听
+      if (bar.parentElement?.dataset.sticky !== "false") {
+        readStickyTop();
+        syncStuck();
+        window.addEventListener("scroll", scheduleStuck, { passive: true });
+        window.addEventListener("resize", () => {
+          readStickyTop();
+          scheduleStuck();
+        });
+      }
+
       // 离开页面前保存当前标签的状态（滚动 / 表单），回来时恢复
       document.addEventListener("astro:before-swap", () => {
         hideMenu();
         captureSnapshot();
       });
-      document.addEventListener("astro:page-load", onPageView);
+      document.addEventListener("astro:page-load", () => {
+        onPageView();
+        readStickyTop();
+        scheduleStuck();
+      });
 
       // 没有 swup 时（直链、原生跳转）退化处理
       window.addEventListener("popstate", () => {

@@ -141,6 +141,10 @@ export const siteConfig: SiteConfig = {
 	// 多标签导航栏开关：在主内容区顶部显示 home + 页面标签页
 	tabBar: true,
 
+	// 多标签导航栏是否吸顶：true 时滚动到顶部会贴住视口（像右侧目录卡片一样始终可见），
+	// false 时保持普通文档流，随页面一起滚出视口
+	tabBarSticky: true,
+
 	// 分类导航栏按钮样式
 	// "pill"：胶囊，主题色浅底圆角
 	// "rectangle"：矩形，配色同胶囊，仅圆角更小

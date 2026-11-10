@@ -223,6 +223,11 @@ html {
     .wallpaper-transparent .card-base {
         background-color: var(--card-bg-transparent) !important;
     }
+
+    /* 多标签栏吸顶时正文会从半透明卡片下透出，此时换回实色底（须与上一条同层并压过特异性） */
+    .wallpaper-transparent #tab-bar-wrapper.is-stuck > #tab-bar {
+        background-color: var(--card-bg) !important;
+    }
  
     
     .wallpaper-transparent #navbar > div {

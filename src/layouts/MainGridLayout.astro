@@ -71,6 +71,8 @@ const {
 const isHomePageCheck = isHomePage(Astro.url.pathname);
 const isPostPage = !!postSlug;
 const shouldRenderTabBar = !!siteConfig.tabBar;
+// 吸顶开关由 CSS 选择器 [data-sticky="false"] 承担，未配置时默认吸顶
+const tabBarSticky = siteConfig.tabBarSticky !== false;
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 
 const banner = getBannerVisibilityState({
@@ -127,7 +129,7 @@ const {
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
             <div id="content-column" class={staticBarClass}>
                 {/* 多标签导航栏 - 全站渲染并显示 */}
-                {shouldRenderTabBar && <div id="tab-bar-wrapper"><TabBar /></div>}
+                {shouldRenderTabBar && <div id="tab-bar-wrapper" data-sticky={tabBarSticky ? "true" : "false"}><TabBar /></div>}
                 {/* 主内容区 - 始终渲染，确保 Swup 容器存在 */}
                 <main
                     id="swup-container"
