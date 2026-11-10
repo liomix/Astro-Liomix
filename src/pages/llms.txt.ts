@@ -16,11 +16,10 @@ type KeyPage = {
 	pageKey?: keyof typeof siteConfig.pages;
 };
 
-// 主要页面：首页 / 归档 / 关于始终包含；其余按 siteConfig.pages 开关过滤
+// 主要页面：首页 / 归档始终包含；其余按 siteConfig.pages 开关过滤
 const KEY_PAGES: KeyPage[] = [
 	{ labelKey: I18nKey.home, path: "/" },
 	{ labelKey: I18nKey.archive, path: "/archive/" },
-	{ labelKey: I18nKey.about, path: "/about/" },
 	{
 		labelKey: I18nKey.friends,
 		path: "/friends/",

@@ -52,43 +52,81 @@ const profileStats = showStats
 const githubUrl =
 	profileConfig.links.find((item) => item.name === "GitHub")?.url ??
 	"https://github.com/liomix";
+
+// 头像状态徽章：配置了 status 且未显式关闭时展示
+// enable=false 隐藏；icon 留空则退化为一个小圆点；text 留空则只显示图标（不展开）
+const profileStatus =
+	profileConfig.status && profileConfig.status.enable !== false
+		? profileConfig.status
+		: null;
+const statusIcon = profileStatus?.icon?.trim() ?? "";
+const statusText = profileStatus?.text?.trim() ?? "";
+const statusIsStatic = !statusText;
 ---
 
 <div class:list={["card-base", "p-3", className]} style={style}>
-  <a
-    aria-label="Go to About Page"
-    href={url("/about/")}
+  <div
     class:list={[
-      "group block relative overflow-hidden active:scale-95",
+      "relative",
       isCircleAvatar
-        ? "mx-auto mt-1 mb-3 w-24 lg:w-28 rounded-full"
-        : "mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3 max-w-48 lg:max-w-none rounded-xl",
+        ? "mx-auto mt-1 mb-3 w-24 lg:w-28"
+        : "mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3 max-w-48 lg:max-w-none",
     ]}
   >
-    <div
-      class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
-        w-full h-full z-50 flex items-center justify-center"
+    <a
+      aria-label="Go to Home Page"
+      href={url("/")}
+      class:list={[
+        "group block relative overflow-hidden active:scale-95",
+        isCircleAvatar ? "rounded-full" : "rounded-xl",
+      ]}
     >
-      <Icon
-        name="fa7-regular:address-card"
-        class:list={[
-          "transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white",
-          isCircleAvatar ? "text-3xl" : "text-5xl",
-        ]}
+      <div
+        class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
+          w-full h-full z-50 flex items-center justify-center"
+      >
+        <Icon
+          name="fa7-regular:address-card"
+          class:list={[
+            "transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white",
+            isCircleAvatar ? "text-3xl" : "text-5xl",
+          ]}
+        />
+      </div>
+      <AvatarImage
+        src={profileConfig.avatar || ""}
+        alt="Profile Image of the Author"
+        class={`profile-avatar-image ${isCircleAvatar ? "w-full aspect-square" : "mx-auto lg:w-full h-full lg:mt-0"}`}
+        loading="eager"
+        fetchpriority="high"
+        widths={[350]}
+        sizes="350px"
+        animated={avatarMotionOverride()}
+        poster={profileConfig.avatarPoster}
       />
-    </div>
-    <AvatarImage
-      src={profileConfig.avatar || ""}
-      alt="Profile Image of the Author"
-      class={`profile-avatar-image ${isCircleAvatar ? "w-full aspect-square" : "mx-auto lg:w-full h-full lg:mt-0"}`}
-      loading="eager"
-      fetchpriority="high"
-      widths={[350]}
-      sizes="350px"
-      animated={avatarMotionOverride()}
-      poster={profileConfig.avatarPoster}
-    />
-  </a>
+    </a>
+
+    {profileStatus && (
+      <span
+        class:list={["profile-status", statusIsStatic && "is-static"]}
+        title={statusText || undefined}
+        style={
+          profileStatus.color
+            ? `--status-color:${profileStatus.color}`
+            : undefined
+        }
+      >
+        {statusIcon ? (
+          <span class="profile-status-icon">
+            <Icon name={statusIcon} />
+          </span>
+        ) : (
+          <span class="profile-status-dot" aria-hidden="true"></span>
+        )}
+        {statusText && <span class="profile-status-text">{statusText}</span>}
+      </span>
+    )}
+  </div>
   <div class="px-2">
     <div
       class="font-bold text-xl text-center mb-1 dark:text-neutral-50 transition"
@@ -179,6 +217,88 @@ const githubUrl =
 </div>
 
 <style>
+  /* ── 头像状态徽章 ──
+     收起只露图标（小圆角胶囊），鼠标悬浮/触摸时「图标不动，文字向右展开」。
+     左边缘做锚点，宽度增长才会只往右长；宽度用 max-width 过渡实现
+     （width: auto 无法参与过渡）。 */
+  .profile-status {
+    position: absolute;
+    /* 左边缘落在头像右下角，向右展开时直接长进卡片留白里 */
+    left: calc(100% - 1.5rem);
+    bottom: 0.5rem;
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    height: 1.75rem;
+    padding: 0 0.375rem;
+    border-radius: 9999px;
+    background: var(--card-bg);
+    border: 1px solid color-mix(in oklch, var(--primary) 12%, transparent);
+    box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 0.28);
+    color: inherit;
+    white-space: nowrap;
+    cursor: default;
+  }
+
+  /* 没配文字就不展开，纯图标徽章 */
+  .profile-status.is-static {
+    cursor: help;
+  }
+
+  .profile-status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--status-color, var(--primary));
+  }
+
+  /* 没配 icon 时的兜底：一个主题色小圆点 */
+  .profile-status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin: 0 0.1875rem;
+    border-radius: 9999px;
+    background: var(--status-color, var(--primary));
+  }
+
+  .profile-status-text {
+    max-width: 0;
+    margin-left: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(-0.25rem);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    transition:
+      max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      margin-left 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease,
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .profile-status:hover,
+  .profile-status:active {
+    background: color-mix(in oklch, var(--card-bg) 94%, var(--primary));
+  }
+
+  .profile-status:hover .profile-status-text,
+  .profile-status:focus-within .profile-status-text,
+  .profile-status:active .profile-status-text {
+    max-width: 6.5rem;
+    margin-left: 0.3rem;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profile-status-text {
+      transition: none;
+    }
+  }
+
   /* 简介固定单行：宽度不够时由脚本等比缩小字号，不换行也不省略 */
   .profile-bio {
     white-space: nowrap;
@@ -282,7 +402,6 @@ const githubUrl =
     min-width: 0;
     padding: 0;
     height: 3.5rem;
-    font-family: "Galano Grotesque", Poppins, Montserrat, sans-serif;
     font-style: normal;
     font-size: 1rem;
     font-weight: 600;

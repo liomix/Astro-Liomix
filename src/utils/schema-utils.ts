@@ -69,7 +69,7 @@ function filterAbsoluteLinks(links: ProfileConfig["links"]): string[] {
 export interface PersonEntityOpts {
 	site: URL | string;
 	profileConfig: ProfileConfig;
-	/** 作者个人页（/about/）绝对 URL，亦作为 Person.url */
+	/** 作者标识页（站点首页）绝对 URL，亦作为 Person.url */
 	authorUrl: string;
 	/** 头像绝对 URL（schema-image 的 getAuthorAvatarUrl 产物） */
 	avatarUrl?: string | null;
@@ -98,19 +98,6 @@ export function buildPersonEntity(
 		...(opts.avatarUrl ? { image: opts.avatarUrl } : {}),
 		...(opts.description ? { description: opts.description } : {}),
 		...(sameAs.length ? { sameAs } : {}),
-	};
-}
-
-/**
- * 作者简介页（/about/）结构化数据：ProfilePage + mainEntity Person。
- */
-export function buildProfilePage(
-	opts: PersonEntityOpts,
-): Record<string, unknown> {
-	return {
-		"@context": "https://schema.org",
-		"@type": "ProfilePage",
-		mainEntity: buildPersonEntity(opts),
 	};
 }
 

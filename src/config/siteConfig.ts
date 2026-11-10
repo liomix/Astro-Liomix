@@ -23,8 +23,8 @@ const pages = resolvePageToggles({
 	projects: true,
 	// 相册页面开关
 	gallery: true,
-	// 书签导航页面开关
-	booknav: true,
+	// 书签导航页面开关（已关闭：导航菜单自动隐藏，/booknav/ 跳 404）
+	booknav: false,
 	// 哔哩哔哩追番页面开关
 	bilibili: false,
 	// 番组计划页面开关
@@ -33,9 +33,6 @@ const pages = resolvePageToggles({
 	vndb: false,
 	// MyAnimeList页面开关
 	mal: false,
-
-	// ── 关于 (About) ──────────────────────────────────
-
 });
 
 export const siteConfig: SiteConfig = {

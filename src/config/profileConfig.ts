@@ -21,6 +21,19 @@ export const profileConfig: ProfileConfig = {
 	// 头像形状：rect 圆角矩形（主题默认样式，铺满卡片宽度），circle 正圆（居中显示）
 	avatarShape: "circle",
 
+	// 头像右下角状态徽章：默认只露一个图标，鼠标悬浮时「图标不动，文字向右展开」
+	// 目前默认关闭，要用时把 enable 改回 true 即可（下面的文字/图标/颜色都保留着）
+	status: {
+		// 总开关：false 直接不渲染，不用删代码
+		enable: false,
+		// 状态文字（悬浮后从图标右侧展开）；留空则只显示图标
+		text: "Cold",
+		// 状态图标，图标代码见 https://icones.js.org/；留空则显示成一个圆点
+		icon: "material-symbols:ac-unit",
+		// 图标 / 圆点颜色，留空则跟随主题色
+		color: "#3b82f6",
+	},
+
 	// 头像动态策略：只决定「怎么识别头像」，不是播放开关（能不能播由文件本身决定）。
 	//   "auto"   自动识别：读文件头（gif、apng、动态 webp/avif）+ 扩展名（mp4、webm、mov、m4v）
 	//   "always" 始终当动态资源：跳过识别直出原文件（远程动态 WebP/AVIF 读不到文件头，必须用它）

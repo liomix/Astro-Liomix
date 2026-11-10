@@ -20,7 +20,7 @@ export const announcementConfig: AnnouncementConfig = {
 		// 链接文本（已不再显示，保留字段兼容旧配置）
 		text: "了解更多",
 		// 兜底链接：无 JS 或按住 Ctrl/中键点击时仍打开该地址
-		url: "/about/",
+		url: "/",
 		// 内部链接
 		external: false,
 	},

@@ -31,7 +31,7 @@ const apiUrl = dynamicConfig.apiUrl?.startsWith("http")
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
 const memos = dynamicConfig.memos;
 
-const profileUrl = url(dynamicConfig.profileUrl || "/about/");
+const profileUrl = url(dynamicConfig.profileUrl || "/");
 
 // 弹窗条目需要头像的最终 URL，这里把本地资源先交给 Astro 生成一次
 async function resolveAvatar(src: string): Promise<string> {

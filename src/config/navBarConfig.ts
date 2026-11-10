@@ -13,41 +13,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 基础导航栏链接
 	const links: NavBarLink[] = [];
 
-	// 文章及其子菜单
-	links.push({
-		name: "文章",
-		url: "#",
-		icon: "material-symbols:article",
-		children: [
-			// 归档
-			LinkPresets.Archive,
-
-			// 分类
-			LinkPresets.Categories,
-
-			// 标签
-			LinkPresets.Tags,
-
-			// 系列
-			LinkPresets.Series,
-		],
-	});
-
-	//社交及其子菜单
-	links.push({
-		name: "社交",
-		url: "#",
-		icon: "material-symbols:group",
-		children: [
-			// 友链
-			LinkPresets.Friends,
-
-			// 留言
-			LinkPresets.Guestbook,
-		],
-	});
-
-	// 我的及其子菜单
+	// 我的及其子菜单（导航栏第一项）
 	links.push({
 		name: "我的",
 		url: "#",
@@ -79,14 +45,37 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
-	// 关于及其子菜单
+	// 文章及其子菜单
 	links.push({
-		name: "关于",
+		name: "文章",
 		url: "#",
-		icon: "material-symbols:info",
+		icon: "material-symbols:article",
 		children: [
-			// 关于页面
-			LinkPresets.About,
+			// 归档
+			LinkPresets.Archive,
+
+			// 分类
+			LinkPresets.Categories,
+
+			// 标签
+			LinkPresets.Tags,
+
+			// 系列
+			LinkPresets.Series,
+		],
+	});
+
+	//社交及其子菜单
+	links.push({
+		name: "社交",
+		url: "#",
+		icon: "material-symbols:group",
+		children: [
+			// 友链
+			LinkPresets.Friends,
+
+			// 留言
+			LinkPresets.Guestbook,
 		],
 	});
 
@@ -223,11 +212,6 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/myanimelist/",
 		icon: "material-symbols:menu-book",
 		pageKey: "mal",
-	},
-	About: {
-		name: "关于我",
-		url: "/about/",
-		icon: "material-symbols:person",
 	},
 };
 

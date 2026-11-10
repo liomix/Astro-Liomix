@@ -122,16 +122,15 @@ const coverImage =
 		siteConfig.site_url,
 	)) ?? undefined;
 
-// 作者个人页（/about/）绝对 URL，用于 author.url 指向唯一标识作者的页面
-const aboutUrl =
-	toAbsoluteUrl("/about/", siteConfig.site_url) ?? siteConfig.site_url;
+// 作者页已移除：author.url 指向站点首页，与首页 Person 的 @id 保持一致
+const authorUrl = toAbsoluteUrl("/", siteConfig.site_url) ?? siteConfig.site_url;
 
-// 作者实体：与首页/about 的 Person 共用同一 @id（#person），author 用 @id 关联
+// 作者实体：与首页的 Person 共用同一 @id（#person），author 用 @id 关联
 const authorAvatarUrl = await getAuthorAvatarUrl();
 const authorPerson = buildPersonEntity({
 	site: siteConfig.site_url,
 	profileConfig,
-	authorUrl: aboutUrl,
+	authorUrl,
 	avatarUrl: authorAvatarUrl,
 	description: profileConfig.bio,
 });
