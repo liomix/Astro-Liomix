@@ -569,5 +569,4 @@ export const ko: Translation = {
 	[Key.tabPin]: "탭 고정",
 	[Key.tabUnpin]: "고정 해제",
 	[Key.tabUntitled]: "제목 없음",
-	[Key.tabClear]: "탭 비우기",
 };

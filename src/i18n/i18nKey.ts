@@ -551,7 +551,6 @@ enum I18nKey {
 	tabPin = "tabPin",
 	tabUnpin = "tabUnpin",
 	tabUntitled = "tabUntitled",
-	tabClear = "tabClear",
 }
 
 export default I18nKey;

@@ -18,11 +18,10 @@ const labels = {
 	pin: i18n(I18nKey.tabPin),
 	unpin: i18n(I18nKey.tabUnpin),
 	untitled: i18n(I18nKey.tabUntitled),
-	clear: i18n(I18nKey.tabClear),
 };
 ---
 
-<!-- 多标签导航栏：左侧 home 常驻，中间标签页由脚本渲染，右侧垃圾桶（暂只做 UI） -->
+<!-- 多标签导航栏：左侧 home 常驻，中间标签页由脚本渲染 -->
 <div
   id="tab-bar"
   class="card-base tab-bar p-3 onload-animation"
@@ -46,18 +45,6 @@ const labels = {
     <div class="tab-scroll-area">
       <div class="tab-strip" role="tablist"></div>
     </div>
-
-    <div class="tab-divider" aria-hidden="true"></div>
-
-    <button
-      class="tab-trash focus-ring-inset"
-      type="button"
-      data-tab-trash
-      aria-label={i18n(I18nKey.tabClear)}
-      title={i18n(I18nKey.tabClear)}
-    >
-      <Icon name="material-symbols:delete-outline-rounded" />
-    </button>
   </div>
 </div>
 
@@ -77,6 +64,8 @@ const labels = {
     item: HTMLElement;
     link: HTMLAnchorElement;
     close: HTMLButtonElement;
+    /** 固定态下显示的标题首字 */
+    pin: HTMLElement;
     /** 上次写入的标题，用来跳过无变化的 DOM 写入 */
     title: string;
   };
@@ -99,8 +88,6 @@ const labels = {
   const STORAGE_KEY = "firefly-tabs-v1";
   const CLOSE_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
-  const PIN_SVG =
-    '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16 3a1 1 0 0 1 1 1v1h2a1 1 0 0 1 0 2h-.3l-1.2 4.2 1.9 2.5A1 1 0 0 1 18.6 15H13v5.6a1 1 0 0 1-2 0V15H5.4a1 1 0 0 1-.8-1.3l1.9-2.5L5.3 7H5a1 1 0 0 1 0-2h2V4a1 1 0 0 1 1-1h8z"/></svg>';
 
   const bar = document.getElementById("tab-bar");
   const strip = bar?.querySelector<HTMLElement>(".tab-strip") ?? null;
@@ -128,6 +115,8 @@ const labels = {
   /** 每个标签页的滚动位置与表单值快照（只在内存里，刷新即失效） */
   const snapshots = new Map<string, Snapshot>();
   let lastNav = { key: "", at: 0 };
+  /** navigate() 已提前存过快照，before-swap 不要再采一次（那时 activeKey 已是目标页） */
+  let pendingNav = false;
   let suppressClick = false;
 
   /** key → 已创建的 DOM 节点。切页只做状态/顺序更新，不再整条重建 */
@@ -201,6 +190,13 @@ const labels = {
     return cut || labels.untitled || "Untitled";
   }
 
+  /** 固定标签只显示标题首字：按码点取，避免把 emoji 切成半个 */
+  function initialOf(title: string): string {
+    const text = title.trim();
+    if (!text) return (labels.untitled || "?").charAt(0);
+    return Array.from(text)[0] ?? "?";
+  }
+
   /** 创建一个标签节点（每个 key 只建一次，固定/普通共用同一套子节点，靠 CSS 切换形态） */
   function createTabNode(tab: Tab): TabNode {
     const item = document.createElement("div");
@@ -211,7 +207,8 @@ const labels = {
 
     const pin = document.createElement("span");
     pin.className = "tab-pin";
-    pin.innerHTML = PIN_SVG;
+    pin.setAttribute("aria-hidden", "true");
+    pin.textContent = initialOf(tab.title);
     item.appendChild(pin);
 
     const link = document.createElement("a");
@@ -228,7 +225,7 @@ const labels = {
     close.innerHTML = CLOSE_SVG;
     item.appendChild(close);
 
-    const node: TabNode = { item, link, close, title: "" };
+    const node: TabNode = { item, link, close, pin, title: "" };
     applyNodeState(node, tab);
     return node;
   }
@@ -240,6 +237,8 @@ const labels = {
       node.link.textContent = tab.title;
       node.link.title = tab.title;
       node.item.title = tab.title;
+      node.item.setAttribute("aria-label", tab.title);
+      node.pin.textContent = initialOf(tab.title);
     }
 
     const pinned = tab.pinned;
@@ -351,6 +350,11 @@ const labels = {
       return;
     }
 
+    // 必须在改 activeKey 之前存快照：swup 在 visit:start 就回顶，且本函数会提前把
+    // activeKey 指向目标页，晚一步采集就会把「源页的滚动位置」记到目标页头上
+    captureSnapshot();
+    pendingNav = true;
+
     // 回首页统一走「回首页入口」逻辑：落到内容区，而不是 hero 顶部
     if (key === HOME_KEY) {
       activeKey = "";
@@ -410,10 +414,15 @@ const labels = {
     });
   }
 
+  /** 最近一次指针按下时的滚动位置（见 captureSnapshot 的注释） */
+  let pointerScrollY = 0;
+
   /** 切走前保存当前标签的滚动位置与表单输入 */
   function captureSnapshot(): void {
+    // swup 在 visit:start 之前就把页面滚回顶部了，等 before-swap 再读 window.scrollY 只能拿到 0，
+    // 所以用「指针按下瞬间记录的位置」兜底，两者取大
     snapshots.set(currentTabKey(), {
-      y: window.scrollY,
+      y: Math.max(window.scrollY, pointerScrollY),
       fields: collectFields(),
     });
   }
@@ -423,12 +432,22 @@ const labels = {
     const snap = snapshots.get(key);
     if (!snap) return;
     applyFields(snap.fields);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.scrollTo(0, snap.y));
-    });
+
+    const target = snap.y;
+
+    // swup 的 visit:end 可能晚于 page-load 再滚一次，单次 scrollTo 会被它覆盖；
+    // 这里在 600ms 内持续校正，位置对上就停止（用户自己滚动也会被这一段吃掉，所以窗口别太长）
+    const until = performance.now() + 600;
+    const apply = () => {
+      if (Math.abs(window.scrollY - target) > 2) window.scrollTo(0, target);
+      if (performance.now() < until) requestAnimationFrame(apply);
+    };
+    requestAnimationFrame(apply);
   }
 
   function onPageView(): void {
+    // 跳转已落地，清掉标记，避免下一条离开路径被误判
+    pendingNav = false;
     const key = keyOfLocation();
 
     if (key === HOME_KEY) {
@@ -961,6 +980,16 @@ const labels = {
       // home 按钮与「分类栏/悬浮按钮」的回首页入口走同一套逻辑（落到内容区而不是 hero 顶部）
       initHomeEntryLinks();
 
+      // 记录「指针按下时」的滚动位置：swup 在 visit:start 之前就会回顶，
+      // 切页事件里读 window.scrollY 只能拿到 0，必须在点击瞬间留一份
+      document.addEventListener(
+        "pointerdown",
+        () => {
+          pointerScrollY = window.scrollY;
+        },
+        { capture: true, passive: true },
+      );
+
       // 吸顶状态：只切一次类，滚动路径不做布局测量以外的写入；关闭吸顶时不挂监听
       if (bar.parentElement?.dataset.sticky !== "false") {
         readStickyTop();
@@ -975,7 +1004,9 @@ const labels = {
       // 离开页面前保存当前标签的状态（滚动 / 表单），回来时恢复
       document.addEventListener("astro:before-swap", () => {
         hideMenu();
-        captureSnapshot();
+        // 标签跳转已经在 navigate() 里存过了，这里只处理「从导航栏/正文链接离开」的情况
+        if (pendingNav) pendingNav = false;
+        else captureSnapshot();
       });
       document.addEventListener("astro:page-load", () => {
         onPageView();
@@ -1000,8 +1031,7 @@ const labels = {
     align-items: center;
     gap: 0.5rem;
   }
-  .tab-home,
-  .tab-trash {
+  .tab-home {
     display: grid;
     place-items: center;
     flex: 0 0 auto;
@@ -1018,8 +1048,7 @@ const labels = {
       color 0.15s ease,
       border-color 0.15s ease;
   }
-  .tab-home:hover,
-  .tab-trash:hover {
+  .tab-home:hover {
     color: var(--primary);
     background: color-mix(in srgb, var(--primary) 15%, transparent);
     border-color: color-mix(in srgb, var(--primary) 25%, transparent);
@@ -1127,7 +1156,7 @@ const labels = {
     color: inherit;
     text-decoration: none;
   }
-  /* 固定标签：和左侧 home 按钮同尺寸的正方形，只留 pin 图标 */
+  /* 固定标签：和左侧 home 按钮同尺寸的正方形，只留标题首字 */
   :global(.tab-item[data-pinned]) {
     flex: 0 0 auto;
     justify-content: center;
@@ -1150,7 +1179,9 @@ const labels = {
   }
   :global(.tab-item[data-pinned] .tab-pin) {
     display: grid;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1;
     opacity: 0.85;
   }
   :global(.tab-item[data-pinned][data-active]) {
@@ -1171,7 +1202,7 @@ const labels = {
     opacity: 0.5;
   }
   :global(.tab-pin) {
-    /* 每个标签节点都带一个 pin，普通标签靠 display 关掉，节点结构才稳定可复用 */
+    /* 每个标签节点都带一个首字，普通标签靠 display 关掉，节点结构才稳定可复用 */
     display: none;
     place-items: center;
     flex: 0 0 auto;
@@ -1179,7 +1210,6 @@ const labels = {
     opacity: 0.7;
   }
   /* 内联 svg 没有宽高，必须显式给尺寸，否则会按默认 300×150 撑爆布局 */
-  :global(.tab-pin svg),
   :global(.tab-close svg) {
     display: block;
     width: 1em;
@@ -1282,10 +1312,11 @@ const labels = {
     :global(.tab-item[data-pinned]) {
       width: 2rem;
       height: 2rem;
+      /* 桌面那条 min-width 是 2.25rem，不一起缩就会撑成 31.5×28 的长方形 */
+      min-width: 2rem;
       padding: 0;
     }
-    .tab-home,
-    .tab-trash {
+    .tab-home {
       width: 2rem;
       height: 2rem;
       border-radius: 0.6rem;

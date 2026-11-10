@@ -8,6 +8,7 @@ import NavMenuPanel from "@components/layout/NavMenuPanel.astro";
 import SideBar from "@components/layout/SideBar.astro";
 import type { MarkdownHeading } from "astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
+import MessagePop from "@/components/misc/MessagePop.svelte";
 import TabBar from "@/components/layout/TabBar.astro";
 import SidebarColumn from "@/components/layout/SidebarColumn.astro";
 import WallpaperSection from "@/components/layout/WallpaperSection.astro";
@@ -167,6 +168,9 @@ const {
 
         <SpineModel></SpineModel>
         {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
+
+        {/* 全局消息提示宿主：全站只挂一次，任意脚本用 showMessage() 发消息 */}
+        <MessagePop client:idle />
 
         {/* 页脚宽度跨「侧栏 + 内容栏」，故在 #content-column 之外；又在 Swup 容器之外，
             切页不重渲染 */}

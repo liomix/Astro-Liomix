@@ -561,5 +561,4 @@ export const zh_TW: Translation = {
 	[Key.tabPin]: "固定標籤",
 	[Key.tabUnpin]: "取消固定",
 	[Key.tabUntitled]: "未命名",
-	[Key.tabClear]: "清空標籤",
 };

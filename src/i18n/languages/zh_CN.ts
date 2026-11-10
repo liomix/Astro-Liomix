@@ -559,5 +559,4 @@ export const zh_CN: Translation = {
 	[Key.tabPin]: "固定标签",
 	[Key.tabUnpin]: "取消固定",
 	[Key.tabUntitled]: "未命名",
-	[Key.tabClear]: "清空标签",
 };

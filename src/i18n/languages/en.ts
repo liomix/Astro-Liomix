@@ -572,5 +572,4 @@ export const en: Translation = {
 	[Key.tabPin]: "Pin tab",
 	[Key.tabUnpin]: "Unpin tab",
 	[Key.tabUntitled]: "Untitled",
-	[Key.tabClear]: "Clear tabs",
 };

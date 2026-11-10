@@ -569,5 +569,4 @@ export const ja: Translation = {
 	[Key.tabPin]: "タブを固定",
 	[Key.tabUnpin]: "固定を解除",
 	[Key.tabUntitled]: "無題",
-	[Key.tabClear]: "タブをクリア",
 };

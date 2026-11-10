@@ -573,5 +573,4 @@ export const ru: Translation = {
 	[Key.tabPin]: "Закрепить вкладку",
 	[Key.tabUnpin]: "Открепить вкладку",
 	[Key.tabUntitled]: "Без названия",
-	[Key.tabClear]: "Очистить вкладки",
 };
