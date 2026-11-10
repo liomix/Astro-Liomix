@@ -584,5 +584,12 @@ export const ru: Translation = {
 	[Key.playMode]: "Режим воспроизведения",
 	[Key.playerNowPlaying]: "Сейчас играет",
 	[Key.playerSpeed]: "Скорость",
+	[Key.playerGlass]: "Стекло плеера",
+	[Key.playerPersistent]: "Оставлять плеер",
+	[Key.playerPersistentHint]: "Карточка остаётся в углу после паузы или остановки",
+	[Key.playerAutoPlay]: "Автовоспроизведение при входе",
+	[Key.playerAutoPlayHint]:
+		"Начинать воспроизведение при загрузке (со следующего визита); браузер может блокировать до первого клика",
+	[Key.playerTapForSound]: "Играет без звука — щёлкните по странице, чтобы включить",
 	[Key.playerPlaylist]: "Плейлист",
 };

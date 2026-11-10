@@ -109,4 +109,13 @@ const showSettingsButton = hasThemeSettings || hasPlaybackSettings;
         bottom: 4rem;
     }
   }
+
+  /* 移动端播放条铺满整个底边，展开歌词行时卡片会高一行：
+     按钮列跟着上移同样的高度，否则会被压在卡片下面。
+     高度值与 NowPlayingCard 的 --np-lyric-h 保持一致。 */
+  @media (max-width: 520px) {
+    :global(body:has(.now-playing.has-lyric:not(.is-mini))) .floating-controls-container {
+      bottom: calc(4rem + 1.0625rem);
+    }
+  }
 </style>

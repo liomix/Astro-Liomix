@@ -570,5 +570,11 @@ export const zh_CN: Translation = {
 	[Key.playMode]: "播放模式",
 	[Key.playerNowPlaying]: "正在播放",
 	[Key.playerSpeed]: "播放速度",
+	[Key.playerGlass]: "播放器玻璃",
+	[Key.playerPersistent]: "播放器常驻",
+	[Key.playerPersistentHint]: "暂停或停止后，卡片继续留在左下角",
+	[Key.playerAutoPlay]: "进入站点自动播放",
+	[Key.playerAutoPlayHint]: "打开页面就自动播放（下次进站生效）；浏览器可能拦截，需先点击页面",
+	[Key.playerTapForSound]: "已静音播放，点击页面开启声音",
 	[Key.playerPlaylist]: "播放列表",
 };

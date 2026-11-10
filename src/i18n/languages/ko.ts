@@ -580,5 +580,12 @@ export const ko: Translation = {
 	[Key.playMode]: "재생 모드",
 	[Key.playerNowPlaying]: "재생 중",
 	[Key.playerSpeed]: "재생 속도",
+	[Key.playerGlass]: "플레이어 유리 효과",
+	[Key.playerPersistent]: "플레이어 항상 표시",
+	[Key.playerPersistentHint]: "일시정지·정지 후에도 카드를 왼쪽 아래에 유지",
+	[Key.playerAutoPlay]: "사이트 방문 시 자동 재생",
+	[Key.playerAutoPlayHint]:
+		"페이지를 열면 자동으로 재생합니다(다음 방문부터). 브라우저가 차단하면 클릭 후 시작됩니다",
+	[Key.playerTapForSound]: "음소거로 재생 중 — 페이지를 클릭하면 소리가 납니다",
 	[Key.playerPlaylist]: "재생 목록",
 };

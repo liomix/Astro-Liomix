@@ -9,6 +9,7 @@ import FontSetup from "@components/features/FontSetup.astro";
 import GithubCardManager from "@components/features/GithubCardManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import MusicPlayerView from "@components/features/MusicPlayerView.astro";
+import NowPlayingCard from "@components/features/NowPlayingCard.svelte";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import WavesEffect from "@components/features/WavesEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
@@ -585,6 +586,10 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
 
     <ConfigCarrier />
     <MusicManager />
+    {/* 左下角迷你播放器（版式参考 APlayer）：由 fm:* 事件驱动，全站只挂一份 */}
+    {(musicPlayerConfig.showInNavbar || musicPlayerConfig.showInSidebar !== false) && (
+      <NowPlayingCard client:idle />
+    )}
     <slot />
 
     <!-- 播放器视图脚本：必须在 <slot /> 之后（解析到它时所有 widget 的 DOM 要已存在），

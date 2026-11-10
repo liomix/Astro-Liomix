@@ -9,6 +9,9 @@ export type MusicPlayerConfig = {
 	// 播放模式：'list'=列表循环, 'one'=单曲循环, 'random'=随机播放
 	playMode?: "list" | "one" | "random";
 
+	// 进入站点是否自动播放（设置面板里的开关会覆盖这里的默认值）
+	autoPlay?: boolean;
+
 	// 是否显示歌词
 	showLyrics?: boolean;
 

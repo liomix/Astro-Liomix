@@ -36,6 +36,7 @@ const managerConfigStr = JSON.stringify({
 	localPlaylist: localPlaylist,
 	volume: config.volume ?? 0.7,
 	playMode: config.playMode ?? "list",
+	autoPlay: config.autoPlay === true,
 	showLyrics: config.showLyrics ?? true,
 	i18n: {
 		noPlaying: i18n(I18nKey.musicNoPlaying),
@@ -134,6 +135,108 @@ const managerConfigStr = JSON.stringify({
     } else if (config.playMode === 'random') state.playMode = 2;
     else if (config.playMode === 'one') state.playMode = 1;
     else state.playMode = 0;
+
+    // 进入站点自动播放：同样先看「播放设置」面板存的选择（"1"/"0"），没有才用配置
+    var autoPlayEnabled = (function () {
+        var stored = null;
+        try {
+            stored = localStorage.getItem('music-player-autoplay');
+        } catch (e) {
+            // 隐私模式读不到就按配置来
+        }
+        if (stored === '1') return true;
+        if (stored === '0') return false;
+        return config.autoPlay === true;
+    })();
+
+    // 浏览器会拦截带声音的自动播放，而且没有任何前端手段能真正绕开：
+    // 唯一放行的是「静音自动播放」。所以被拦时退一步——先静音把进度跑起来，
+    // 用户第一次点/按时（浏览器认定有用户激活）再自动把声音打开。
+    var siteAutoplayAttempt = false;
+    var mutedAutoplay = false;
+    var autoplayGestureArmed = false;
+
+    // 静音键自己会处理「开/关声音」，首次交互的兜底别去抢（否则刚开又被按回去）
+    var AUTOPLAY_SKIP_SELECTOR = '.btn-mute, [data-np-mute]';
+
+    function onAutoplayGesture(event) {
+        var target = event.target;
+        if (target && target.closest && target.closest(AUTOPLAY_SKIP_SELECTOR)) {
+            disarmAutoplayGesture();
+            return;
+        }
+        disarmAutoplayGesture();
+
+        if (mutedAutoplay) {
+            // 就在手势这一拍里改 muted，浏览器才认可（Safari 尤为严格）
+            mutedAutoplay = false;
+            audio.muted = false;
+            state.isMuted = false;
+            emit('fm:volume', { volume: state.volume, isMuted: false });
+            emit('fm:autoplay-muted', { muted: false });
+            if (audio.paused) {
+                audio.play().catch(function () {
+                    // 打不开就等用户自己点播放
+                });
+            }
+            return;
+        }
+
+        // 连静音自动播放都没起来：趁这次用户激活，直接出声补播
+        if (audio.paused && state.playlist.length > 0) {
+            audio.play().then(function () {
+                emitPlayState(true, true);
+            }).catch(function () {
+                // 还是不行就等用户自己点播放
+            });
+        }
+    }
+
+    function armAutoplayGesture() {
+        if (autoplayGestureArmed) return;
+        autoplayGestureArmed = true;
+        ['pointerdown', 'touchstart', 'keydown'].forEach(function (name) {
+            document.addEventListener(name, onAutoplayGesture, true);
+        });
+    }
+
+    function disarmAutoplayGesture() {
+        if (!autoplayGestureArmed) return;
+        autoplayGestureArmed = false;
+        ['pointerdown', 'touchstart', 'keydown'].forEach(function (name) {
+            document.removeEventListener(name, onAutoplayGesture, true);
+        });
+    }
+
+    /** 带声音被拦后的退路：静音起播，等首次交互再开声音 */
+    function startMutedAutoplay(ver) {
+        if (ver !== loadVersion) return;
+        audio.muted = true;
+        audio.play().then(function () {
+            if (ver !== loadVersion) return;
+            mutedAutoplay = true;
+            state.isMuted = true;
+            emitPlayState(true, true);
+            emit('fm:volume', { volume: state.volume, isMuted: true });
+            emit('fm:autoplay-muted', { muted: true });
+            armAutoplayGesture();
+        }).catch(function () {
+            // 连静音都被拦（iOS 低电量模式、省流模式等）→ 只能等用户点
+            audio.muted = false;
+            emitPlayState(false, true);
+            armAutoplayGesture();
+        });
+    }
+
+    /** 用户点播放 / 拖音量 / 点静音，都算主动接管，静音兜底立即作废 */
+    function takeOverMutedAutoplay() {
+        if (!mutedAutoplay) return;
+        mutedAutoplay = false;
+        audio.muted = false;
+        state.isMuted = false;
+        emit('fm:volume', { volume: state.volume, isMuted: false });
+        emit('fm:autoplay-muted', { muted: false });
+    }
 
     // ── Event helpers ────────────────────────────────────────
     function emit(name, detail) {
@@ -359,12 +462,18 @@ const managerConfigStr = JSON.stringify({
         if (autoPlay) {
             audio.play().then(function () {
                 if (ver !== loadVersion) return; // stale, discard
+                siteAutoplayAttempt = false;
                 emitPlayState(true, true);
             }).catch(function (e) {
                 if (ver !== loadVersion) return; // stale, discard
                 if (e.name === 'AbortError') return; // interrupted by new load
                 console.warn('Autoplay blocked:', e);
                 emitPlayState(false, true);
+                // 进站自动播放被浏览器拦下 → 退一步用静音起播，首次交互再开声音
+                if (siteAutoplayAttempt) {
+                    siteAutoplayAttempt = false;
+                    startMutedAutoplay(ver);
+                }
             });
         } else {
             emitPlayState(false, true);
@@ -374,6 +483,7 @@ const managerConfigStr = JSON.stringify({
     // ── Track loading ────────────────────────────────────────
     function loadTrack(index, autoPlay) {
         if (index < 0 || index >= state.playlist.length) return;
+        if (!autoPlay) siteAutoplayAttempt = false;
         state.currentIndex = index;
         var track = state.playlist[index];
         var ver = ++loadVersion;
@@ -412,7 +522,10 @@ const managerConfigStr = JSON.stringify({
     // ── Playback controls ────────────────────────────────────
     function togglePlay() {
         if (!state.playlist || state.playlist.length === 0) return;
+        siteAutoplayAttempt = false; // 用户自己点了，不再走补播
         if (audio.paused) {
+            // 点播放本身就是用户激活，静音兜底可以直接开声音
+            takeOverMutedAutoplay();
             audio.play().then(function () {
                 emitPlayState(true);
             }).catch(function (e) {
@@ -427,6 +540,7 @@ const managerConfigStr = JSON.stringify({
 
     function playNext(auto) {
         if (state.playlist.length === 0) return;
+        if (!auto) takeOverMutedAutoplay(); // 手动切歌＝用户激活，顺手开声音
         if (state.playMode === 1 && auto) {
             audio.currentTime = 0;
             audio.play().catch(function (e) {
@@ -446,6 +560,7 @@ const managerConfigStr = JSON.stringify({
 
     function playPrev() {
         if (state.playlist.length === 0) return;
+        takeOverMutedAutoplay(); // 手动上一首＝用户激活，顺手开声音
         var prevIndex;
         if (state.playMode === 2) {
             prevIndex = Math.floor(Math.random() * state.playlist.length);
@@ -471,6 +586,7 @@ const managerConfigStr = JSON.stringify({
         val = Math.max(0, Math.min(1, val));
         state.volume = val;
         state.isMuted = false;
+        mutedAutoplay = false;
         audio.volume = val;
         audio.muted = false;
         localStorage.setItem('music-player-volume', val.toString());
@@ -480,6 +596,7 @@ const managerConfigStr = JSON.stringify({
     function toggleMute() {
         state.isMuted = !state.isMuted;
         audio.muted = state.isMuted;
+        if (!state.isMuted) mutedAutoplay = false;
         emit('fm:volume', { volume: state.volume, isMuted: state.isMuted });
     }
 
@@ -505,6 +622,7 @@ const managerConfigStr = JSON.stringify({
     }
 
     function playTrackByIndex(index) {
+        takeOverMutedAutoplay(); // 列表里点歌＝用户激活，顺手开声音
         if (index === state.currentIndex && !audio.paused) {
             togglePlay();
         } else {
@@ -622,7 +740,9 @@ const managerConfigStr = JSON.stringify({
                     playbackRate: state.playbackRate
                 });
 
-                loadTrack(startIndex, false);
+                // 进站自动播放：标记来源，被浏览器拦截时由 tryPlayCurrentTrackUrl 挂补播
+                siteAutoplayAttempt = autoPlayEnabled;
+                loadTrack(startIndex, autoPlayEnabled);
                 setupMediaSession();
             } else {
                 state.initialized = true;
@@ -692,5 +812,15 @@ const managerConfigStr = JSON.stringify({
         playTrackByIndex: playTrackByIndex,
         loadTrack: loadTrack
     };
+
+    // 开了「进入站点自动播放」但侧栏播放器没挂载（sidebarConfig 里关掉了 music 组件）时，
+    // 没有任何组件会触发 init —— 这里补一次，否则开关等于没打开
+    if (autoPlayEnabled) {
+        var bootAutoPlay = function () {
+            setTimeout(function () { init(); }, 0);
+        };
+        if (document.readyState === 'complete') bootAutoPlay();
+        else window.addEventListener('load', bootAutoPlay, { once: true });
+    }
 })();
 </script>

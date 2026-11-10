@@ -1,6 +1,6 @@
 ---
 /**
- * 年度发文热力图 + 当月文章列表
+ * 年度发文热力图 + 最新文章列表（全站最新 N 篇，不限月份）
  * 从日历卡片（Calendar.astro）下半部分拆出，嵌到站点统计卡片里复用
  * 注意：SiteStats 会同时渲染在桌面侧栏与移动端底部，故用 class 查询而非 id
  */
@@ -13,6 +13,9 @@ const heatmapWeekTemplate = i18n(I18nKey.calendarHeatmapWeek);
 
 const calendarDataUrl = url("/api/allPostMeta.json");
 const postUrlPrefix = url("/posts/");
+
+/** 列表只展示全站最新 N 篇（避免文章多时把卡片撑高） */
+const listLimit = 3;
 ---
 
 <div class="post-activity" data-post-activity>
@@ -25,7 +28,7 @@ const postUrlPrefix = url("/posts/");
 
   <div class="pa-divider"></div>
 
-  <div class="pa-list custom-scrollbar"></div>
+  <div class="pa-list"></div>
 </div>
 
 <style>
@@ -72,8 +75,6 @@ const postUrlPrefix = url("/posts/");
     display: flex;
     flex-direction: column;
     gap: 0.0625rem;
-    max-height: 10.5rem;
-    overflow-y: auto;
   }
 
   :global(.pa-post) {
@@ -108,7 +109,7 @@ const postUrlPrefix = url("/posts/");
   }
 </style>
 
-<script is:inline define:vars={{ calendarDataUrl, postUrlPrefix, heatmapWeekTemplate }}>
+<script is:inline define:vars={{ calendarDataUrl, postUrlPrefix, heatmapWeekTemplate, listLimit }}>
   const PA_OPACITY = [0, 0.45, 0.65, 0.85, 1];
 
   function buildHeatmapHtml(posts) {
@@ -141,17 +142,10 @@ const postUrlPrefix = url("/posts/");
   }
 
   function buildPostsHtml(posts) {
-    const now = new Date();
     return posts
-      .filter((post) => {
-        const date = new Date(post.published);
-        return (
-          !Number.isNaN(date.getTime()) &&
-          date.getFullYear() === now.getFullYear() &&
-          date.getMonth() === now.getMonth()
-        );
-      })
+      .filter((post) => !Number.isNaN(new Date(post.published).getTime()))
       .sort((a, b) => new Date(b.published) - new Date(a.published))
+      .slice(0, listLimit)
       .map((post) => {
         const date = new Date(post.published);
         return `<a class="pa-post" href="${postUrlPrefix}${post.id}/">

@@ -18,6 +18,11 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 播放模式：'list'=列表循环, 'one'=单曲循环, 'random'=随机播放
 	playMode: "list",
 
+	// 进入站点是否自动播放
+	// 这只是默认值：「设置 → 播放设置 → 进入站点自动播放」里的开关会覆盖它
+	// 浏览器通常拦截带声音的自动播放，被拦截时会等用户第一次点击/按键后再播
+	autoPlay: false,
+
 	// 是否显启用歌词
 	showLyrics: false,
 

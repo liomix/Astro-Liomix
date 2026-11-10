@@ -583,5 +583,12 @@ export const en: Translation = {
 	[Key.playMode]: "Play mode",
 	[Key.playerNowPlaying]: "Now playing",
 	[Key.playerSpeed]: "Playback speed",
+	[Key.playerGlass]: "Player glass",
+	[Key.playerPersistent]: "Keep player visible",
+	[Key.playerPersistentHint]: "Keep the card in the corner after pause or stop",
+	[Key.playerAutoPlay]: "Autoplay on visit",
+	[Key.playerAutoPlayHint]:
+		"Start playing as the page loads (from next visit); browsers may block it until you interact",
+	[Key.playerTapForSound]: "Playing muted — click the page to turn on sound",
 	[Key.playerPlaylist]: "Playlist",
 };

@@ -580,5 +580,12 @@ export const ja: Translation = {
 	[Key.playMode]: "再生モード",
 	[Key.playerNowPlaying]: "再生中",
 	[Key.playerSpeed]: "再生速度",
+	[Key.playerGlass]: "プレイヤーのガラス",
+	[Key.playerPersistent]: "プレイヤーを常時表示",
+	[Key.playerPersistentHint]: "一時停止・停止後もカードを左下に残します",
+	[Key.playerAutoPlay]: "サイト訪問時に自動再生",
+	[Key.playerAutoPlayHint]:
+		"ページを開くと自動で再生します（次回の訪問から）。ブラウザにブロックされた場合はクリック後に再生",
+	[Key.playerTapForSound]: "ミュートで再生中 — ページをクリックで音が出ます",
 	[Key.playerPlaylist]: "プレイリスト",
 };

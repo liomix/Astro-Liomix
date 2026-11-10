@@ -566,6 +566,12 @@ enum I18nKey {
 	playerNowPlaying = "playerNowPlaying",
 	playerSpeed = "playerSpeed",
 	playerPlaylist = "playerPlaylist",
+	playerGlass = "playerGlass",
+	playerPersistent = "playerPersistent",
+	playerPersistentHint = "playerPersistentHint",
+	playerAutoPlay = "playerAutoPlay",
+	playerAutoPlayHint = "playerAutoPlayHint",
+	playerTapForSound = "playerTapForSound",
 }
 
 export default I18nKey;
