@@ -10,8 +10,8 @@ export const sponsorConfig: SponsorConfig = {
 
 	// 打赏弹窗里的收款码（相对于 public 目录），点击文章底部的金币按钮弹出
 	// 留空则不显示打赏入口
-	tipQrCode: "/assets/images/sponsor/wechat-tip.png",
+	qrCode: "/assets/images/sponsor/wechat-tip.png",
 
 	// 收款码下方的收款方式名，如「微信」「支付宝」
-	tipQrLabel: "微信",
+	qrLabel: "微信",
 };

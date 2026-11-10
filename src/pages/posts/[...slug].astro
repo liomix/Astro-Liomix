@@ -28,9 +28,9 @@ import PostHeader from "@/components/layout/PostHeader.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
 import RecommendedPost from "@/components/misc/RecommendedPost.astro";
 import SeriesNav from "@/components/misc/SeriesNav.astro";
-import SharePoster from "@/components/misc/SharePoster.svelte";
-import SponsorCoin from "@/components/misc/SponsorCoin.astro";
-import TipPop from "@/components/misc/TipPop.svelte";
+import ShareButton from "@/components/misc/ShareButton.svelte";
+import SponsorButton from "@/components/misc/SponsorButton.astro";
+import SponsorPop from "@/components/misc/SponsorPop.svelte";
 import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
@@ -51,12 +51,12 @@ import {
 } from "@/utils/schema-utils";
 import { url } from "@/utils/url-utils";
 
-const tipPopQr = sponsorConfig.tipQrCode?.trim() || "";
+const sponsorQr = sponsorConfig.qrCode?.trim() || "";
 // 打赏入口：开关打开且配了收款码才显示。弹窗是唯一入口，站点没有独立的打赏页
-const showSponsorButton = sponsorConfig.showButtonInPost && tipPopQr.length > 0;
+const showSponsorButton = sponsorConfig.showButtonInPost && sponsorQr.length > 0;
 const showPostActionCard = siteConfig.post.share || showSponsorButton;
 
-const TIP_POP_ID = "post-tip";
+const SPONSOR_POP_ID = "post-sponsor-pop";
 
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
@@ -403,7 +403,7 @@ const seriesData = await getSeriesPosts(entry);
                     <div class="flex items-center gap-3">
                       {
                         siteConfig.post.share && (
-                          <SharePoster
+                          <ShareButton
                             client:load
                             title={entry.data.title}
                             author={entry.data.author || profileConfig.name}
@@ -412,7 +412,6 @@ const seriesData = await getSeriesPosts(entry);
                             coverImage={posterCoverUrl}
                             coverImageSelector={posterCoverSelector}
                             url={Astro.url.href}
-                            siteTitle={siteConfig.title}
                             avatar={posterAvatarUrl}
                             avatarSelector={posterAvatarSelector}
                           />
@@ -420,7 +419,7 @@ const seriesData = await getSeriesPosts(entry);
                       }
                       {
                         showSponsorButton && (
-                          <SponsorCoin popId={TIP_POP_ID} />
+                          <SponsorButton popId={SPONSOR_POP_ID} />
                         )
                       }
                     </div>
@@ -486,7 +485,7 @@ const seriesData = await getSeriesPosts(entry);
                     <div class="flex items-center gap-3">
                       {
                         siteConfig.post.share && (
-                          <SharePoster
+                          <ShareButton
                             client:load
                             title={entry.data.title}
                             author={entry.data.author || profileConfig.name}
@@ -495,7 +494,6 @@ const seriesData = await getSeriesPosts(entry);
                             coverImage={posterCoverUrl}
                             coverImageSelector={posterCoverSelector}
                             url={Astro.url.href}
-                            siteTitle={siteConfig.title}
                             avatar={posterAvatarUrl}
                             avatarSelector={posterAvatarSelector}
                           />
@@ -503,7 +501,7 @@ const seriesData = await getSeriesPosts(entry);
                       }
                       {
                         showSponsorButton && (
-                          <SponsorCoin popId={TIP_POP_ID} />
+                          <SponsorButton popId={SPONSOR_POP_ID} />
                         )
                       }
                     </div>
@@ -653,14 +651,14 @@ const seriesData = await getSeriesPosts(entry);
   <!-- 评论 -->
   {entry.data.comment && !entry.data.password && <Comment post={entry} />}
 
-  <!-- 打赏弹窗：由底部的金币按钮通过 data-tip-pop 触发 -->
+  <!-- 打赏弹窗：由底部的金币按钮通过 data-sponsor-pop 触发 -->
   {
     showSponsorButton && (
-      <TipPop
+      <SponsorPop
         client:idle
-        id={TIP_POP_ID}
-        qrCode={tipPopQr}
-        qrLabel={sponsorConfig.tipQrLabel}
+        id={SPONSOR_POP_ID}
+        qrCode={sponsorQr}
+        qrLabel={sponsorConfig.qrLabel}
         usage={sponsorConfig.usage}
       />
     )

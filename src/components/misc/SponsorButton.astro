@@ -1,0 +1,50 @@
+---
+import SponsorButtonLottie from "@/components/misc/SponsorButtonLottie.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+
+interface Props {
+	class?: string;
+	/** 打赏弹窗的触发 id（与 SponsorPop 的 id 对应） */
+	popId: string;
+}
+
+const { class: className, popId } = Astro.props;
+const label = i18n(I18nKey.sponsor);
+---
+
+<button
+	type="button"
+	class:list={["sponsor-button", className]}
+	aria-label={label}
+	aria-haspopup="dialog"
+	data-sponsor-pop={popId}
+	title={label}
+>
+	<SponsorButtonLottie client:load />
+</button>
+
+<style>
+	/* 打赏入口：内部是 coin.json 的 Lottie 动画（欧/美/日硬币轮播）。
+	   按钮本身只负责点击热区和 focus 环，视觉全部交给 SponsorButtonLottie。 */
+	.sponsor-button {
+		--button-size: 3rem;
+
+		position: relative;
+		display: grid;
+		place-items: center;
+		width: var(--button-size);
+		height: var(--button-size);
+		padding: 0;
+		border: 0;
+		background: none;
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.sponsor-button:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 3px;
+		border-radius: 50%;
+	}
+</style>

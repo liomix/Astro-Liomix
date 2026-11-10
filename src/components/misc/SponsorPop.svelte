@@ -3,7 +3,7 @@
  * 打赏弹窗（文章页底部金币按钮的弹出层）
  * 原生 <dialog>：标题栏 + 收款码 + 用途说明 + 前往打赏页入口
  *
- * 用法：在触发元素上加 `data-tip-pop={id}`，本组件传同一个 `id`。
+ * 用法：在触发元素上加 `data-sponsor-pop={id}`，本组件传同一个 `id`。
  * 触发元素本身保留 href 兜底（未水合、禁用 JS 时直接跳打赏页）。
  */
 import I18nKey from "@i18n/i18nKey";
@@ -11,7 +11,7 @@ import { i18n } from "@i18n/translation";
 import { onMount } from "svelte";
 
 interface Props {
-	/** 触发元素上的 data-tip-pop 值 */
+	/** 触发元素上的 data-sponsor-pop 值 */
 	id: string;
 	/** 收款码图片（public 目录下的路径） */
 	qrCode: string;
@@ -50,7 +50,7 @@ function handleClick(event: MouseEvent) {
 }
 
 onMount(() => {
-	const selector = `[data-tip-pop="${id}"]`;
+	const selector = `[data-sponsor-pop="${id}"]`;
 	const onClick = (event: MouseEvent) => {
 		// 保留 Ctrl/⌘/Shift/中键等原生打开新标签页的行为
 		if (event.button !== 0) return;
@@ -69,18 +69,18 @@ onMount(() => {
 
 <dialog
 	bind:this={dialogEl}
-	class="tip-pop"
-	aria-labelledby={`tip-pop-title-${id}`}
+	class="sponsor-pop"
+	aria-labelledby={`sponsor-pop-title-${id}`}
 	onclick={handleClick}
 >
-	<header class="tip-head">
-		<h2 class="tip-title" id={`tip-pop-title-${id}`}>
-			<span class="tip-title-bar" aria-hidden="true"></span>
-			<span class="tip-title-text">{title}</span>
+	<header class="sponsor-pop-head">
+		<h2 class="sponsor-pop-title" id={`sponsor-pop-title-${id}`}>
+			<span class="sponsor-pop-title-bar" aria-hidden="true"></span>
+			<span class="sponsor-pop-title-text">{title}</span>
 		</h2>
 		<button
 			type="button"
-			class="tip-close"
+			class="sponsor-pop-close"
 			onclick={closePop}
 			aria-label={closeLabel}
 		>
@@ -90,13 +90,13 @@ onMount(() => {
 		</button>
 	</header>
 
-	<div class="tip-body">
+	<div class="sponsor-pop-body">
 		{#if usage}
-			<p class="tip-usage">{usage}</p>
+			<p class="sponsor-pop-usage">{usage}</p>
 		{/if}
 
-		<figure class="tip-qr">
-			<div class="tip-qr-frame">
+		<figure class="sponsor-pop-qr">
+			<div class="sponsor-pop-qr-frame">
 				<img
 					src={qrCode}
 					alt={`${qrLabel || title} ${scanLabel}`}
@@ -105,10 +105,10 @@ onMount(() => {
 					decoding="async"
 				/>
 			</div>
-			<figcaption class="tip-qr-caption">
+			<figcaption class="sponsor-pop-qr-caption">
 				{#if qrLabel}
-					<span class="tip-qr-label">{qrLabel}</span>
-					<span class="tip-qr-dot" aria-hidden="true">·</span>
+					<span class="sponsor-pop-qr-label">{qrLabel}</span>
+					<span class="sponsor-pop-qr-dot" aria-hidden="true">·</span>
 				{/if}
 				<span>{scanLabel}</span>
 			</figcaption>
@@ -118,11 +118,11 @@ onMount(() => {
 
 <style>
 	/* 弹窗打开时锁住页面滚动 */
-	:global(body:has(.tip-pop[open])) {
+	:global(body:has(.sponsor-pop[open])) {
 		overflow: hidden;
 	}
 
-	.tip-pop {
+	.sponsor-pop {
 		width: min(90vw, 21rem);
 		max-width: min(90vw, 21rem);
 		max-height: min(86vh, 40rem);
@@ -139,20 +139,20 @@ onMount(() => {
 		flex-direction: column;
 	}
 
-	.tip-pop:not([open]) {
+	.sponsor-pop:not([open]) {
 		display: none;
 	}
 
-	.tip-pop::backdrop {
+	.sponsor-pop::backdrop {
 		background: rgb(15 23 42 / 0.34);
 		backdrop-filter: blur(3px);
 	}
 
-	.tip-pop[open] {
-		animation: tip-pop-in 0.24s cubic-bezier(0.22, 0.8, 0.3, 1) both;
+	.sponsor-pop[open] {
+		animation: sponsor-pop-in 0.24s cubic-bezier(0.22, 0.8, 0.3, 1) both;
 	}
 
-	@keyframes tip-pop-in {
+	@keyframes sponsor-pop-in {
 		from {
 			opacity: 0;
 			transform: translateY(10px) scale(0.97);
@@ -163,7 +163,7 @@ onMount(() => {
 		}
 	}
 
-	.tip-head {
+	.sponsor-pop-head {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -172,7 +172,7 @@ onMount(() => {
 		border-bottom: 1px solid var(--line-divider);
 	}
 
-	.tip-title {
+	.sponsor-pop-title {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -183,7 +183,7 @@ onMount(() => {
 		line-height: 1.4;
 	}
 
-	.tip-title-bar {
+	.sponsor-pop-title-bar {
 		flex: none;
 		width: 3px;
 		height: 1.05em;
@@ -191,13 +191,13 @@ onMount(() => {
 		background: var(--primary);
 	}
 
-	.tip-title-text {
+	.sponsor-pop-title-text {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 
-	.tip-close {
+	.sponsor-pop-close {
 		display: inline-flex;
 		flex: none;
 		align-items: center;
@@ -215,12 +215,12 @@ onMount(() => {
 			background-color 0.15s ease;
 	}
 
-	.tip-close:hover {
+	.sponsor-pop-close:hover {
 		opacity: 1;
 		background: var(--btn-plain-bg-hover);
 	}
 
-	.tip-close svg {
+	.sponsor-pop-close svg {
 		width: 1rem;
 		height: 1rem;
 		fill: none;
@@ -229,7 +229,7 @@ onMount(() => {
 		stroke-linecap: round;
 	}
 
-	.tip-body {
+	.sponsor-pop-body {
 		flex: 1 1 auto;
 		min-height: 0;
 		overflow-y: auto;
@@ -237,7 +237,7 @@ onMount(() => {
 		overscroll-behavior: contain;
 	}
 
-	.tip-usage {
+	.sponsor-pop-usage {
 		margin: 0 0 0.875rem;
 		font-size: 0.8125rem;
 		line-height: 1.7;
@@ -247,7 +247,7 @@ onMount(() => {
 		text-wrap: pretty;
 	}
 
-	.tip-qr {
+	.sponsor-pop-qr {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -256,7 +256,7 @@ onMount(() => {
 	}
 
 	/* 二维码外框：白底承托，圆角 + 主题色微光，扫码时边界清晰 */
-	.tip-qr-frame {
+	.sponsor-pop-qr-frame {
 		position: relative;
 		width: min(62vw, 13.5rem);
 		padding: 0.5rem;
@@ -267,14 +267,14 @@ onMount(() => {
 			0 14px 30px -16px rgb(0 0 0 / 0.35);
 	}
 
-	.tip-qr-frame img {
+	.sponsor-pop-qr-frame img {
 		display: block;
 		width: 100%;
 		height: auto;
 		border-radius: 0.625rem;
 	}
 
-	.tip-qr-caption {
+	.sponsor-pop-qr-caption {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.3rem;
@@ -283,23 +283,23 @@ onMount(() => {
 		opacity: 0.72;
 	}
 
-	.tip-qr-label {
+	.sponsor-pop-qr-label {
 		font-weight: 600;
 		color: var(--primary);
 		opacity: 1;
 	}
 
-	.tip-qr-dot {
+	.sponsor-pop-qr-dot {
 		opacity: 0.5;
 	}
 
-	.tip-close:focus-visible {
+	.sponsor-pop-close:focus-visible {
 		outline: 2px solid var(--primary);
 		outline-offset: 2px;
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.tip-pop[open] {
+		.sponsor-pop[open] {
 			animation: none;
 		}
 	}

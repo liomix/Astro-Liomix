@@ -499,6 +499,7 @@ export const zh_TW: Translation = {
 	[Key.copied]: "已複製",
 	[Key.copyLink]: "複製連結",
 	[Key.savePoster]: "保存海報",
+	[Key.sharePoster]: "分享海報",
 	[Key.scanToRead]: "掃碼閱讀文章",
 
 	// 代碼區塊折疊配置

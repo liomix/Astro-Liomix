@@ -508,6 +508,7 @@ export const en: Translation = {
 	[Key.copied]: "Copied",
 	[Key.copyLink]: "Copy Link",
 	[Key.savePoster]: "Save Poster",
+	[Key.sharePoster]: "Share Poster",
 	[Key.scanToRead]: "Scan to Read",
 
 	// Code Block Collapsible Configuration

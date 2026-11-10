@@ -24,12 +24,14 @@ const localPlaylist =
 					name: song.name,
 					artist: song.artist,
 					url: isFullUrl(song.url) ? song.url : url(song.url),
-					// 曲目自己没写 cover 就用缺省封面（<audio> 读不到内嵌封面图，只能靠这里）
+					// 曲目自己没写 cover 就用缺省封面；同时标记「可以去文件里找内嵌封面」，
+					// 找到后由 manager 覆盖成 blob URL（见下方 resolveEmbeddedCover）
 					pic: song.cover
 						? isFullUrl(song.cover)
 							? song.cover
 							: url(song.cover)
 						: defaultCover,
+					embeddedCover: !song.cover,
 					lrc: song.lrc
 						? isFullUrl(song.lrc)
 							? song.lrc
@@ -611,7 +613,43 @@ const managerConfigStr = JSON.stringify({
 
         emit('fm:track', { index: index, track: track, autoPlay: !!autoPlay });
 
+        // 曲目没写 cover 时，去音频文件里找内嵌封面（异步，找到了再补发一次 fm:track）
+        resolveEmbeddedCover(index);
+
         tryPlayCurrentTrackUrl(autoPlay, ver);
+    }
+
+    // ── 内嵌封面 ─────────────────────────────────────────────
+    // <audio> 只解声音，拿不到封面；真正解析文件头的是 utils/audio-cover，
+    // 由文件末尾的模块脚本挂到 window.__ffCover 上（内联脚本 import 不了）。
+    var coverJobs = {};
+    var coverWaitBound = false;
+    function resolveEmbeddedCover(index) {
+        var track = state.playlist[index];
+        if (!track || !track.embeddedCover || coverJobs[index]) return;
+        var read = window.__ffCover;
+        if (typeof read !== 'function') {
+            // 模块脚本还没执行（defer），等 load 之后再补一次
+            if (!coverWaitBound) {
+                coverWaitBound = true;
+                window.addEventListener('load', function () {
+                    resolveEmbeddedCover(state.currentIndex);
+                });
+            }
+            return;
+        }
+        coverJobs[index] = true;
+        Promise.resolve(read(track.url)).then(function (pic) {
+            if (typeof pic !== 'string' || !pic) return;
+            track.pic = pic;
+            track.embeddedCover = false;
+            if (index === state.currentIndex) {
+                updateMediaSessionMetadata(track);
+                emit('fm:track', { index: index, track: track, autoPlay: false });
+            }
+        }).catch(function () {
+            coverJobs[index] = false;
+        });
     }
 
     // ── Playback controls ────────────────────────────────────
@@ -955,4 +993,13 @@ const managerConfigStr = JSON.stringify({
         else window.addEventListener('load', bootAutoPlay, { once: true });
     }
 })();
+</script>
+
+<script>
+	import { readEmbeddedCover } from "@/utils/audio-cover";
+
+	// 上面的内联脚本没法 import，把解析函数挂到 window 上交给它用。
+	// 模块脚本是 defer 的，内联脚本里会做「没就绪就等 load」的兜底。
+	(window as unknown as { __ffCover?: typeof readEmbeddedCover }).__ffCover =
+		readEmbeddedCover;
 </script>

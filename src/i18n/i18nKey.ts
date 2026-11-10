@@ -491,6 +491,7 @@ enum I18nKey {
 	copied = "copied",
 	copyLink = "copyLink",
 	savePoster = "savePoster",
+	sharePoster = "sharePoster",
 	scanToRead = "scanToRead",
 
 	// 代码块折叠配置

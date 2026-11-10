@@ -505,6 +505,7 @@ export const ja: Translation = {
 	[Key.copied]: "コピーしました",
 	[Key.copyLink]: "リンクをコピー",
 	[Key.savePoster]: "ポスターを保存",
+	[Key.sharePoster]: "ポスターをシェア",
 	[Key.scanToRead]: "QRコードで読む",
 
 	// コードブロック折りたたみ設定

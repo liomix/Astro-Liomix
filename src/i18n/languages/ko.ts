@@ -505,6 +505,7 @@ export const ko: Translation = {
 	[Key.copied]: "복사됨",
 	[Key.copyLink]: "링크 복사",
 	[Key.savePoster]: "포스터 저장",
+	[Key.sharePoster]: "포스터 공유",
 	[Key.scanToRead]: "스캔하여 읽기",
 
 	// Code Block Collapsible Configuration

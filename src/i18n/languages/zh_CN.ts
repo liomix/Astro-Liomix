@@ -497,6 +497,7 @@ export const zh_CN: Translation = {
 	[Key.copied]: "已复制",
 	[Key.copyLink]: "复制链接",
 	[Key.savePoster]: "保存海报",
+	[Key.sharePoster]: "分享海报",
 	[Key.scanToRead]: "扫码阅读文章",
 
 	// 代码块折叠配置
