@@ -72,8 +72,9 @@ const {
 const isHomePageCheck = isHomePage(Astro.url.pathname);
 const isPostPage = !!postSlug;
 const shouldRenderTabBar = !!siteConfig.tabBar;
-// 吸顶开关由 CSS 选择器 [data-sticky="false"] 承担，未配置时默认吸顶
-const tabBarSticky = siteConfig.tabBarSticky !== false;
+// 吸顶开关由 CSS 选择器 [data-sticky="false"] 承担，未配置时默认吸顶；
+// 首页固定不吸顶（页面顶部有 hero 横幅，吸顶会压在上面）
+const tabBarSticky = siteConfig.tabBarSticky !== false && !isHomePageCheck;
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 
 const banner = getBannerVisibilityState({

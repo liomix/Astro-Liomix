@@ -186,7 +186,7 @@ $: if (initialized && keyword !== undefined) {
 	class="nav-icon-btn"
 	id="search-switch"
 >
-	<Icon icon="material-symbols:search" class="text-[1.25rem]"></Icon>
+	<Icon icon="material-symbols:search" class="text-[1.4rem]"></Icon>
 </button>
 
 <!-- 弹窗打开时的全屏遮罩（点它即关闭，走全局 click-outside） -->

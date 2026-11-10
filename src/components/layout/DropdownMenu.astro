@@ -32,7 +32,6 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 		>
 			{processedLink.icon && <Icon name={processedLink.icon} class="nav-item-icon navbar-icon" />}
 			<span class="nav-item-label">{processedLink.name}</span>
-			<Icon name="material-symbols:keyboard-arrow-down-rounded" class="nav-item-caret dropdown-arrow" />
 		</button>
 		<div class="dropdown-menu" data-dropdown-menu>
 			<DropdownPanel class="dropdown-content">
@@ -81,11 +80,6 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	.dropdown-container:hover .dropdown-menu,
 	.dropdown-container:focus-within .dropdown-menu {
 		@apply pointer-events-auto;
-	}
-
-	.dropdown-container:hover .dropdown-arrow,
-	.dropdown-container:focus-within .dropdown-arrow {
-		@apply rotate-180;
 	}
 
 	/* 移动端隐藏下拉菜单 */

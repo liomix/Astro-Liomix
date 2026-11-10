@@ -178,7 +178,7 @@ onMount(() => {
 				icon={displayedMode === DARK_MODE
 					? "material-symbols:wb-sunny-outline-rounded"
 					: "material-symbols:dark-mode-outline-rounded"}
-				class="text-[1.25rem]"
+				class="text-[1.4rem]"
 			></Icon>
 		</div>
 	{/if}

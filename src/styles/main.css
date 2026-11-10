@@ -417,11 +417,6 @@ html {
         @apply pointer-events-auto;
     }
 
-    .dropdown-container:hover .dropdown-arrow,
-    .dropdown-container:focus-within .dropdown-arrow {
-        @apply rotate-180;
-    }
-
     .dropdown-content {
         @apply bg-(--card-bg) rounded-(--radius-large) shadow-xl border border-black/5 dark:border-white/10 py-2 min-w-48
         opacity-0 translate-y-[-8px] transition-[opacity,translate,background-color,border-color] duration-200 ease-out;
