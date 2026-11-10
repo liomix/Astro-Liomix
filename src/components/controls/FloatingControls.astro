@@ -1,10 +1,12 @@
 ---
 import type { MarkdownHeading } from "astro";
-import { displaySettingsConfig, siteConfig } from "@/config";
+import { displaySettingsConfig, musicPlayerConfig, siteConfig } from "@/config";
 import BackToComment from "./BackToComment.astro";
 import BackToHome from "./BackToHome.astro";
 import BackToTop from "./BackToTop.astro";
-import ThemeSettingsButton from "./ThemeSettingsButton.astro";
+import PlaybackSettings from "./PlaybackSettings.svelte";
+import SettingsButton from "./SettingsButton.astro";
+import SettingsMenu from "./SettingsMenu.astro";
 import FloatingTOC from "./FloatingTOC.astro";
 import ImmersiveReading from "./ImmersiveReading.astro";
 import ImmersiveTOC from "./ImmersiveTOC.astro";
@@ -17,8 +19,12 @@ interface Props {
 const { headings, encrypted } = Astro.props;
 const immersiveReadingEnabled =
 	siteConfig.post.immersiveReading?.enable !== false;
-// 「背景」Tab 里始终有日夜切换，所以只要总开关开着就显示入口
-const hasDisplaySettings = displaySettingsConfig.enable;
+// 主题设置面板始终有日夜切换，只要总开关开着就显示入口；播放设置则看音乐播放器是否在用
+const hasThemeSettings = displaySettingsConfig.enable;
+const hasPlaybackSettings =
+	musicPlayerConfig.showInNavbar === true ||
+	musicPlayerConfig.showInSidebar !== false;
+const showSettingsButton = hasThemeSettings || hasPlaybackSettings;
 ---
 
 <div class="floating-controls-container">
@@ -31,9 +37,17 @@ const hasDisplaySettings = displaySettingsConfig.enable;
   )}
   <BackToComment />
   <BackToHome />
-  {hasDisplaySettings && <ThemeSettingsButton />}
+  {showSettingsButton && <SettingsButton />}
   <BackToTop />
 </div>
+
+<!-- 设置浮层挂在按钮组之外：容器带 pointer-events:none，浮层需要自己接管指针事件 -->
+{showSettingsButton && (
+  <>
+    <SettingsMenu />
+    {hasPlaybackSettings && <PlaybackSettings client:load />}
+  </>
+)}
 
 <style>
   .floating-controls-container {

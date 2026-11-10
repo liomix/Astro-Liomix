@@ -553,6 +553,19 @@ enum I18nKey {
 	tabPin = "tabPin",
 	tabUnpin = "tabUnpin",
 	tabUntitled = "tabUntitled",
+
+	// 设置入口与子面板
+	settings = "settings",
+	settingsTheme = "settingsTheme",
+	settingsPlayback = "settingsPlayback",
+	playMode = "playMode",
+	playModeList = "playModeList",
+	playModeOne = "playModeOne",
+	playModeRandom = "playModeRandom",
+	// 播放设置面板内的区块
+	playerNowPlaying = "playerNowPlaying",
+	playerSpeed = "playerSpeed",
+	playerPlaylist = "playerPlaylist",
 }
 
 export default I18nKey;

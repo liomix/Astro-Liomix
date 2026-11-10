@@ -25,6 +25,14 @@ declare global {
 		/** 按需加载 pagefind.js，由 Navbar.astro 的内联脚本挂载；幂等 */
 		__loadPagefind?: () => Promise<void>;
 		__pagefindLoading?: Promise<void>;
+		/** 打开指定设置面板（设置菜单 / 主题设置 / 播放设置），由 utils/settings-panels.ts 挂载 */
+		__settingsOpenPanel?: (
+			id: "settings-menu" | "display-setting" | "playback-setting",
+		) => void;
+		/** 齿轮按钮：任意设置面板打开时全部收起，否则拉出设置菜单 */
+		__settingsTogglePanels?: () => void;
+		/** 设置面板初始化守卫，确保监听器只注册一次 */
+		__settingsPanelsInit?: boolean;
 		__fireflyMusic?: {
 			init: () => Promise<void>;
 			getState: () => {
@@ -47,6 +55,8 @@ declare global {
 				playMode: number;
 				volume: number;
 				isMuted: boolean;
+				/** 播放速度倍率，1 为原速 */
+				playbackRate: number;
 				currentTime: number;
 				duration: number;
 				progress: number;
@@ -62,8 +72,12 @@ declare global {
 			playNext: () => void;
 			playPrev: () => void;
 			cyclePlayMode: () => void;
+			/** 直接指定播放模式：0=列表循环 1=单曲循环 2=随机 */
+			setPlayMode: (mode: number) => void;
 			setVolume: (val: number) => void;
 			toggleMute: () => void;
+			/** 设置播放速度（0.5 ~ 2），会写入 localStorage */
+			setPlaybackRate: (rate: number) => void;
 			seek: (percent: number) => void;
 			seekToTime: (time: number) => void;
 			playTrackByIndex: (index: number) => void;

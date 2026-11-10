@@ -31,10 +31,8 @@ export function initLayout(): void {
 
 	initializeFloatingPanels();
 
-	setClickOutsideToClose("display-setting", [
-		"display-setting",
-		"display-settings-floating",
-	]);
+	// 设置面板组（设置菜单 / 主题设置 / 播放设置）的点击外部关闭由
+	// utils/settings-panels.ts 统一处理，这里不再单独注册
 	// nav-menu-panel 现为全屏抽屉（inset-0），点击外部永不触发且由遮罩点击关闭，
 	// 不再注册 click-outside（见 NavMenuPanel.astro 的 document 委托）。
 	setClickOutsideToClose("search-panel", ["search-panel", "search-switch"]);

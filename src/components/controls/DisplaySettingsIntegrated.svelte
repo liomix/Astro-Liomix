@@ -556,6 +556,11 @@ function checkScreenSize() {
 	}
 }
 
+/** 返回设置菜单（齿轮按钮那一层），由 settings-panels 统一负责开合与定位 */
+function openSettingsMenu(): void {
+	window.__settingsOpenPanel?.("settings-menu");
+}
+
 function updateRangeProgress(input: HTMLInputElement) {
 	const min = Number(input.min || 0);
 	const max = Number(input.max || 100);
@@ -781,7 +786,21 @@ onMount(() => {
 </script>
 
 {#if hasAnyContent}
-<div id="display-setting" bind:this={panelEl} class="float-panel float-panel-closed absolute transition-all overflow-hidden hide-scrollbar flex flex-col" data-floating-panel data-floating-panel-trigger="display-settings-floating" inert aria-hidden="true">
+<div id="display-setting" bind:this={panelEl} class="float-panel float-panel-closed absolute transition-all overflow-hidden hide-scrollbar flex flex-col" data-floating-panel data-floating-panel-trigger="settings-floating" inert aria-hidden="true">
+	<!-- 标题栏：返回设置菜单 -->
+	<div class="panel-head">
+		<button
+			type="button"
+			class="panel-back"
+			aria-label={i18n(I18nKey.settings)}
+			title={i18n(I18nKey.settings)}
+			onclick={openSettingsMenu}
+		>
+			<Icon icon="material-symbols:arrow-back-rounded" />
+		</button>
+		<span class="panel-title">{i18n(I18nKey.settingsTheme)}</span>
+	</div>
+
 	<!-- Tab Bar（固定在顶部，不随内容滚动） -->
 	{#if showTabBar}
 	<div class="shrink-0 flex gap-1 border-b border-black/5 dark:border-white/10 px-3 pt-3 pb-1">

@@ -115,6 +115,11 @@ const managerConfigStr = JSON.stringify({
             ? parseFloat(localStorage.getItem('music-player-volume'))
             : (config.volume || 0.7),
         isMuted: false,
+        // 播放速度：设置面板选过的值会记住，浏览器刷新后仍生效
+        playbackRate: (function () {
+            var stored = parseFloat(localStorage.getItem('music-player-rate'));
+            return !isNaN(stored) && stored >= 0.5 && stored <= 2 ? stored : 1;
+        })(),
         lyrics: [],
         currentLrcIndex: -1,
         initialized: false,
@@ -122,8 +127,11 @@ const managerConfigStr = JSON.stringify({
         error: null
     };
 
-    // Map config playMode string to number
-    if (config.playMode === 'random') state.playMode = 2;
+    // 播放模式：优先用「播放设置」面板记住的值，其次回落到配置默认
+    var storedPlayMode = parseInt(localStorage.getItem('music-player-playmode'), 10);
+    if (!isNaN(storedPlayMode) && storedPlayMode >= 0 && storedPlayMode <= 2) {
+        state.playMode = storedPlayMode;
+    } else if (config.playMode === 'random') state.playMode = 2;
     else if (config.playMode === 'one') state.playMode = 1;
     else state.playMode = 0;
 
@@ -448,7 +456,10 @@ const managerConfigStr = JSON.stringify({
     }
 
     function setPlayMode(mode) {
+        mode = Math.max(0, Math.min(2, mode | 0));
         state.playMode = mode;
+        // 播放设置面板选完要能记住，否则刷新后回到配置默认值
+        try { localStorage.setItem('music-player-playmode', String(mode)); } catch (e) { /* ignore */ }
         emit('fm:mode', { playMode: mode });
     }
 
@@ -470,6 +481,15 @@ const managerConfigStr = JSON.stringify({
         state.isMuted = !state.isMuted;
         audio.muted = state.isMuted;
         emit('fm:volume', { volume: state.volume, isMuted: state.isMuted });
+    }
+
+    function setPlaybackRate(rate) {
+        rate = Math.round(Math.max(0.5, Math.min(2, Number(rate) || 1)) * 100) / 100;
+        state.playbackRate = rate;
+        audio.playbackRate = rate;
+        // 与播放模式、音量一致：选了就记住
+        try { localStorage.setItem('music-player-rate', String(rate)); } catch (e) { /* ignore */ }
+        emit('fm:rate', { playbackRate: rate });
     }
 
     function seek(percent) {
@@ -584,6 +604,8 @@ const managerConfigStr = JSON.stringify({
             if (state.playlist.length > 0) {
                 // Apply volume
                 audio.volume = state.volume;
+                // Apply playback rate（换曲不会重置 audio 元素，这里初始化一次即可）
+                audio.playbackRate = state.playbackRate;
 
                 var startIndex = 0;
                 if (state.playMode === 2) {
@@ -596,7 +618,8 @@ const managerConfigStr = JSON.stringify({
                     playlist: state.playlist,
                     playMode: state.playMode,
                     volume: state.volume,
-                    isMuted: state.isMuted
+                    isMuted: state.isMuted,
+                    playbackRate: state.playbackRate
                 });
 
                 loadTrack(startIndex, false);
@@ -607,7 +630,8 @@ const managerConfigStr = JSON.stringify({
                     playlist: [],
                     playMode: state.playMode,
                     volume: state.volume,
-                    isMuted: state.isMuted
+                    isMuted: state.isMuted,
+                    playbackRate: state.playbackRate
                 });
                 emit('fm:error', { message: config.i18n.noSongs });
             }
@@ -618,7 +642,8 @@ const managerConfigStr = JSON.stringify({
                 playlist: [],
                 playMode: state.playMode,
                 volume: state.volume,
-                isMuted: state.isMuted
+                isMuted: state.isMuted,
+                playbackRate: state.playbackRate
             });
             emit('fm:error', { message: config.i18n.error });
         } finally {
@@ -641,6 +666,7 @@ const managerConfigStr = JSON.stringify({
                 playMode: state.playMode,
                 volume: state.volume,
                 isMuted: state.isMuted,
+                playbackRate: state.playbackRate,
                 currentTime: audio.currentTime,
                 duration: audio.duration || 0,
                 progress: audio.duration ? (audio.currentTime / audio.duration) * 100 : 0,
@@ -657,8 +683,10 @@ const managerConfigStr = JSON.stringify({
         playNext: function () { playNext(false); },
         playPrev: playPrev,
         cyclePlayMode: cyclePlayMode,
+        setPlayMode: setPlayMode,
         setVolume: setVolume,
         toggleMute: toggleMute,
+        setPlaybackRate: setPlaybackRate,
         seek: seek,
         seekToTime: seekToTime,
         playTrackByIndex: playTrackByIndex,

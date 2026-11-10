@@ -9,8 +9,11 @@ import Search from "@/components/controls/Search.svelte";
 import {
 	backgroundWallpaper,
 	displaySettingsConfig,
+	musicPlayerConfig,
 	siteConfig,
 } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import type { NavBarLink } from "@/types/config";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { isHomePage } from "@/utils/layout-utils";
@@ -57,6 +60,12 @@ const isDisplaySettingsEnabled = displaySettingsConfig.enable;
 
 // 解析导航栏链接（按 siteConfig.pages 过滤 + i18n 名称），桌面下拉与移动抽屉共用
 const links: NavBarLink[] = resolveNavMenuLinks();
+
+// 导航栏音乐入口：由 musicPlayerConfig.showInNavbar 控制，点击只切换播放/暂停
+const showNavMusic = musicPlayerConfig.showInNavbar === true;
+const musicLabel = i18n(I18nKey.music);
+const musicPlayLabel = i18n(I18nKey.musicPlay);
+const musicPauseLabel = i18n(I18nKey.musicPause);
 
 // 处理导航栏 Logo 图片，image / url 类型支持亮暗色分别设置
 const logoConfig = siteConfig.navbar.logo;
@@ -197,6 +206,26 @@ const logoVariants = await Promise.all(
                 <Search
                     client:load
                 />
+                {showNavMusic && (
+                    <button
+                        type="button"
+                        id="nav-music-switch"
+                        class="nav-icon-btn nav-music-btn"
+                        aria-label={musicPlayLabel}
+                        aria-pressed="false"
+                        title={musicLabel}
+                        data-label-music={musicLabel}
+                        data-label-play={musicPlayLabel}
+                        data-label-pause={musicPauseLabel}
+                    >
+                        <span class="nav-music-note" aria-hidden="true">
+                            <Icon name="material-symbols:music-note-rounded" class="text-[1.4rem]" />
+                        </span>
+                        <span class="nav-music-bars" aria-hidden="true">
+                            <i></i><i></i><i></i>
+                        </span>
+                    </button>
+                )}
                 {/* 主题（显示设置）入口只在右下角悬浮按钮，导航栏不再放置调色板按钮 */}
                 {/* @ts-ignore */}
                 <LightDarkSwitch client:load></LightDarkSwitch>
@@ -211,7 +240,7 @@ const logoVariants = await Promise.all(
 
 <script>
 function loadButtonScript() {
-    // 主题设置面板的开关在右下角悬浮按钮（ThemeSettingsButton）里，
+    // 设置面板（主题/播放）的开关在右下角悬浮按钮（SettingsButton）里，
     // 日夜切换按钮（LightDarkSwitch）自己处理点击，两者都不在这里绑定。
 
     let menuBtn = document.getElementById("nav-menu-switch");
@@ -226,6 +255,82 @@ function loadButtonScript() {
 }
 
 loadButtonScript();
+
+// ── 导航栏音乐入口 ──────────────────────────────────────────
+// 只负责「点一下切播放/暂停」和「跟着播放状态换图标」，
+// 播放本身全部交给 window.__fireflyMusic（MusicManager 提供）。
+function initNavMusic() {
+    const btn = document.getElementById("nav-music-switch") as HTMLButtonElement | null;
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+
+    const labelMusic = btn.dataset.labelMusic || "";
+    const labelPlay = btn.dataset.labelPlay || "";
+    const labelPause = btn.dataset.labelPause || "";
+    let trackTitle = "";
+
+    function paintTitle() {
+        btn!.title = trackTitle || labelMusic;
+    }
+
+    function paintState(isPlaying: boolean) {
+        btn!.classList.toggle("is-playing", isPlaying);
+        btn!.setAttribute("aria-pressed", isPlaying ? "true" : "false");
+        btn!.setAttribute("aria-label", isPlaying ? labelPause : labelPlay);
+        paintTitle();
+    }
+
+    function paintTrack(track: { name?: string; artist?: string } | null) {
+        trackTitle =
+            track && track.name
+                ? track.artist
+                    ? `${track.name} · ${track.artist}`
+                    : track.name
+                : "";
+        paintTitle();
+    }
+
+    function syncFromManager() {
+        const api = window.__fireflyMusic;
+        if (!api || typeof api.getState !== "function") return false;
+        const state = api.getState();
+        paintTrack(state.track);
+        paintState(!!state.isPlaying);
+        return true;
+    }
+
+    btn.addEventListener("click", async function () {
+        const api = window.__fireflyMusic;
+        if (!api) return;
+
+        // 侧栏播放器可能被关闭（sidebarConfig 里 music 那条 enable:false），
+        // 此时没有任何 widget 触发过 init，歌单还是空的 —— 这里补一次初始化。
+        if (!api.getState().initialized) {
+            await api.init();
+        }
+        if (!api.getState().initialized) return; // 歌单为空 / 接口失败
+
+        api.togglePlay();
+    });
+
+    window.addEventListener("fm:play-state", function (e) {
+        paintState(!!(e as CustomEvent<{ isPlaying?: boolean }>).detail?.isPlaying);
+    });
+
+    window.addEventListener("fm:track", function (e) {
+        paintTrack(
+            (e as CustomEvent<{ track?: { name?: string; artist?: string } }>).detail
+                ?.track ?? null,
+        );
+    });
+
+    window.addEventListener("fm:init", syncFromManager);
+
+    // 管理器可能已经先跑完（两个脚本执行顺序不固定），这里补一次同步
+    syncFromManager();
+}
+
+initNavMusic();
 
 // 为semifull模式添加滚动检测逻辑
 function initSemifullScrollDetection() {

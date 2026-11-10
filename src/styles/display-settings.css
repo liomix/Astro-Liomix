@@ -175,3 +175,123 @@
 	align-items: center;
 	justify-content: center;
 }
+
+/* ============================================
+ * 播放设置面板（齿轮按钮 → 播放设置）
+ * 与主题设置面板共用分区标题样式，滑块按音频播放器习惯做成细轨道 + 圆点手柄
+ * ============================================ */
+
+#playback-setting .section-title {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	font-weight: 600;
+	font-size: 0.9375rem;
+	color: oklch(0.20 0.02 var(--hue));
+	transition: all;
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+
+.dark #playback-setting .section-title {
+	color: oklch(0.96 0.02 var(--hue));
+}
+
+#playback-setting .section-title::before {
+	content: "";
+	width: 0.25rem;
+	height: 0.875rem;
+	border-radius: 0.125rem;
+	background: var(--primary);
+	flex-shrink: 0;
+}
+
+#playback-setting input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	height: 0.375rem;
+	border-radius: 999px;
+	background-image: linear-gradient(
+		90deg,
+		var(--primary) 0 var(--range-progress, 50%),
+		hsla(var(--hue), 22%, 28%, 0.18) var(--range-progress, 50%) 100%
+	);
+	transition: background-image 0.15s ease-in-out;
+	cursor: pointer;
+}
+
+#playback-setting input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 0.875rem;
+	height: 0.875rem;
+	border-radius: 50%;
+	background: var(--primary);
+	border: 2px solid var(--card-bg);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+	transition: transform 0.15s var(--ease-standard, ease);
+}
+
+#playback-setting input[type="range"]::-webkit-slider-thumb:active {
+	transform: scale(1.12);
+}
+
+#playback-setting input[type="range"]::-moz-range-thumb {
+	width: 0.75rem;
+	height: 0.75rem;
+	border-radius: 50%;
+	background: var(--primary);
+	border: 2px solid var(--card-bg);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+#playback-setting input[type="range"]::-moz-range-track {
+	height: 0.375rem;
+	border-radius: 999px;
+	background: transparent;
+}
+
+#playback-setting input[type="range"]:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 3px;
+}
+
+/* 主题设置面板标题栏：返回设置菜单 */
+#display-setting .panel-head {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	flex-shrink: 0;
+	padding: 0.625rem 0.75rem 0;
+}
+
+#display-setting .panel-back {
+	display: grid;
+	place-items: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	border-radius: 999px;
+	font-size: 1.1rem;
+	color: inherit;
+	opacity: 0.65;
+	transition:
+		background-color 0.18s var(--ease-standard),
+		color 0.18s var(--ease-standard),
+		opacity 0.18s var(--ease-standard);
+}
+
+#display-setting .panel-back:hover {
+	background-color: var(--btn-plain-bg-hover);
+	color: var(--primary);
+	opacity: 1;
+}
+
+#display-setting .panel-title {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: oklch(0.2 0.02 var(--hue));
+}
+
+.dark #display-setting .panel-title {
+	color: oklch(0.96 0.02 var(--hue));
+}

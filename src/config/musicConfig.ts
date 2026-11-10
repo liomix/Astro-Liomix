@@ -2,10 +2,9 @@ import type { MusicPlayerConfig } from "../types/musicConfig";
 
 // 音乐播放器配置
 export const musicPlayerConfig: MusicPlayerConfig = {
-	// 是否在导航栏显示音乐播放器入口
-	// 导航栏入口已按需求移除（Navbar.astro 不再渲染该按钮），此项仅为配置结构兼容保留；
-	// 侧边栏播放器由 showInSidebar 控制
-	showInNavbar: false,
+	// 是否在导航栏显示音乐入口（搜索图标右侧）
+	// 点击只切换播放/暂停，图标随播放状态变成跳动的均衡器
+	showInNavbar: true,
 
 	// 是否在侧边栏显示音乐播放器组件
 	showInSidebar: true,
