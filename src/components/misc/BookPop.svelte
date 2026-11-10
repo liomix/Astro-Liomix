@@ -16,7 +16,8 @@ interface BookInfo {
 	cover: string;
 	category: string;
 	link: string;
-	finished: boolean;
+	/** 阅读状态：在读 / 读过 / 读完 */
+	status: "reading" | "read" | "finished";
 	/** 预格式化的最近阅读时间，空串表示没有记录 */
 	lastReadText: string;
 }
@@ -30,7 +31,15 @@ interface Props {
 let { book, onClose }: Props = $props();
 
 const readingLabel = i18n(I18nKey.booksReading);
+const readLabel = i18n(I18nKey.booksReadCount);
 const finishedLabel = i18n(I18nKey.booksFinished);
+
+// 读完 / 读过 / 在读三种状态各自的文案
+function statusLabel(status: BookInfo["status"]): string {
+	if (status === "finished") return finishedLabel;
+	if (status === "read") return readLabel;
+	return readingLabel;
+}
 const openLabel = i18n(I18nKey.booksOpen);
 const closeLabel = i18n(I18nKey.announcementClose);
 const categoryLabel = i18n(I18nKey.categories);
@@ -91,8 +100,12 @@ function handleClick(event: MouseEvent) {
 			</figure>
 
 			<div class="book-pop-info">
-				<span class="book-pop-status" class:is-finished={shown.finished}>
-					{shown.finished ? finishedLabel : readingLabel}
+				<span
+					class="book-pop-status"
+					class:is-finished={shown.status === "finished"}
+					class:is-read={shown.status === "read"}
+				>
+					{statusLabel(shown.status)}
 				</span>
 
 				<h2 class="book-pop-title" id="book-pop-title">{shown.title}</h2>
@@ -239,6 +252,12 @@ function handleClick(event: MouseEvent) {
 	.book-pop-status.is-finished {
 		background: color-mix(in srgb, var(--primary) 14%, transparent);
 		color: var(--primary);
+	}
+
+	/* 读过：介于读完（主题色）与在读（中性）之间 */
+	.book-pop-status.is-read {
+		background: color-mix(in srgb, var(--primary) 7%, var(--btn-regular-bg));
+		color: color-mix(in srgb, var(--primary) 45%, var(--content-meta));
 	}
 
 	.book-pop-title {

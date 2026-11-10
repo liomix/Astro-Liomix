@@ -19,9 +19,6 @@ export interface WereadConfig {
 	// 书架最多展示多少本，0 表示全部展示
 	limit?: number;
 
-	// 是否把「已读完但移出书架」的书一起放进书架，默认 true
-	includeFinished?: boolean;
-
 	// 是否显示顶部的阅读统计条（本月 / 累计 / 日均 / 读完）
 	showStats?: boolean;
 

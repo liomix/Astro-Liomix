@@ -29,10 +29,8 @@ export const wereadConfig: WereadConfig = {
 	description: "",
 
 	// 书架最多展示多少本（按最近阅读时间排序），0 表示全部
+	// 只同步微信读书书架上的书（在读 / 读完），不从阅读记录、笔记里反推
 	limit: 0,
-
-	// 把读完但已移出书架的书也补进书架（会额外查每本书的阅读进度）
-	includeFinished: true,
 
 	// 是否显示阅读统计条
 	showStats: true,

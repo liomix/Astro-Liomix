@@ -39,6 +39,16 @@ const shelfBooks = books.map((book) => ({
 		: "",
 }));
 
+// 书架只按阅读状态收录，这三种各有多少本
+const statusCounts = { reading: 0, read: 0, finished: 0 };
+for (const book of books) statusCounts[book.status] += 1;
+
+const statusItems = [
+	{ status: "reading", label: i18n(I18nKey.booksReading), count: statusCounts.reading },
+	{ status: "read", label: i18n(I18nKey.booksReadCount), count: statusCounts.read },
+	{ status: "finished", label: i18n(I18nKey.booksFinished), count: statusCounts.finished },
+].filter((item) => item.count > 0);
+
 // 更新时间取构建时间：静态站点数据随构建刷新
 const buildTime = formatDateI18n(new Date());
 
@@ -115,7 +125,19 @@ const statItems = stats
 
 		<div class="books-section card-base">
 			<div class="books-section-head">
-				<h3>{i18n(I18nKey.booksShelf)}</h3>
+				<div class="books-section-title">
+					<h3>{i18n(I18nKey.booksShelf)}</h3>
+					<span class="books-status-sum">
+						{
+							statusItems.map((item) => (
+								<span data-status={item.status}>
+									{item.label}
+									<b>{item.count}</b>
+								</span>
+							))
+						}
+					</span>
+				</div>
 				<span class="books-section-note">
 					<Icon name="simple-icons:wechat" />
 					{i18n(I18nKey.booksDataSource)}
@@ -126,6 +148,7 @@ const statItems = stats
 				client:load
 				books={shelfBooks}
 				readingLabel={i18n(I18nKey.booksReading)}
+				readLabel={i18n(I18nKey.booksReadCount)}
 				finishedLabel={i18n(I18nKey.booksFinished)}
 				prevLabel={i18n(I18nKey.booksPrev)}
 				nextLabel={i18n(I18nKey.booksNext)}

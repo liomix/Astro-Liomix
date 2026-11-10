@@ -13,6 +13,12 @@ import type { WereadConfig } from "@/types/wereadConfig";
 
 const GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
 
+// 书籍的阅读状态，书架上只会出现这两种：
+//   reading  在读 —— 还在书架上、没读完
+//   read     读过 —— 已移出书架的历史书（当前只同步书架，暂不会出现）
+//   finished 读完 —— finishReading === 1
+export type WereadBookStatus = "reading" | "read" | "finished";
+
 export interface WereadBook {
 	// 书籍 ID
 	id: string;
@@ -28,10 +34,8 @@ export interface WereadBook {
 	link: string;
 	// 最近阅读时间（Unix 秒），0 表示从未打开
 	lastReadAt: number;
-	// 是否已读完
-	finished: boolean;
-	// 是否仍在书架里；false 表示已读完并被移出书架，由阅读记录补回来
-	onShelf: boolean;
+	// 阅读状态：在读 / 读完
+	status: WereadBookStatus;
 }
 
 export interface WereadStats {
@@ -53,7 +57,7 @@ export interface WereadStats {
 export interface WereadData {
 	// 是否成功拿到书架
 	ok: boolean;
-	// 按最近阅读时间倒序：在架书籍 + 已读完但移出书架的书
+	// 微信读书书架上的书，按最近阅读时间倒序
 	books: WereadBook[];
 	// 阅读统计，接口失败时为 null
 	stats: WereadStats | null;
@@ -79,34 +83,10 @@ interface ReadStatEntry {
 	counts?: string;
 }
 
-// 累计统计里按阅读时长排行的书籍（含已移出书架的书）
-interface ReadLongestEntry {
-	book?: {
-		bookId?: string;
-		title?: string;
-		author?: string;
-		cover?: string;
-		deepLink?: string;
-		readerLink?: string;
-	};
-	readTime?: number;
-}
-
-// 单本书的阅读进度：finishTime 有值才是「用户读完」，书自带的 finished 是「连载完结」
-interface ProgressResponse {
-	book?: {
-		progress?: number;
-		finishTime?: number;
-		readingTime?: number;
-		updateTime?: number;
-	};
-}
-
 interface ReadDataResponse {
 	readTimes?: Record<string, number>;
 	readDays?: number;
 	dayAverageReadTime?: number;
-	readLongest?: ReadLongestEntry[];
 	readStat?: ReadStatEntry[];
 	totalReadTime?: number;
 	preferCategory?: Array<{ categoryTitle?: string; readingTime?: number }>;
@@ -216,77 +196,15 @@ function normalizeBooks(data: ShelfResponse | null): WereadBook[] {
 				book.readerLink ||
 				(book.bookId ? `https://weread.qq.com/book-detail?type=1&v=${book.bookId}` : ""),
 			lastReadAt: book.readUpdateTime ?? 0,
-			finished: book.finishReading === 1,
-			onShelf: true,
+			// 书架上的书只有两种状态：读完 / 在读
+			status: (book.finishReading === 1 ? "finished" : "reading") as WereadBookStatus,
 		}))
 		.sort((a, b) => b.lastReadAt - a.lastReadAt);
 }
 
-// 补查已读完书籍时最多问几本，避免构建期请求过多
-const FINISHED_LOOKUP_LIMIT = 12;
-
-/**
- * 已读完但被移出书架的书。
- * 书架接口只给「现在在架上的」，读完就移出书架的书会消失，
- * 所以在累计统计的 readLongest（按阅读时长排行的书）里找候选，
- * 再逐本查 /book/getprogress 用 finishTime 确认确实读完了。
- */
-async function fetchFinishedBooks(
-	config: WereadConfig,
-	overall: ReadDataResponse | null,
-	existing: WereadBook[],
-): Promise<WereadBook[]> {
-	const takenIds = new Set(existing.map((book) => book.id));
-	const takenTitles = new Set(
-		existing.map((book) => book.title.trim()).filter(Boolean),
-	);
-
-	const candidates: Array<NonNullable<ReadLongestEntry["book"]>> = [];
-	for (const entry of overall?.readLongest ?? []) {
-		const book = entry.book;
-		if (!book?.bookId || !book.title) continue;
-		const title = book.title.trim();
-		// 同一本书可能既是书架条目又在排行里，或者出现不同 bookId 的同名版本
-		if (takenIds.has(book.bookId) || takenTitles.has(title)) continue;
-		takenIds.add(book.bookId);
-		takenTitles.add(title);
-		candidates.push(book);
-		if (candidates.length >= FINISHED_LOOKUP_LIMIT) break;
-	}
-
-	const resolved = await Promise.all(
-		candidates.map(async (book) => {
-			const progress = await callGateway<ProgressResponse>(
-				"/book/getprogress",
-				config,
-				{ bookId: book.bookId },
-			);
-			const info = progress?.book;
-			// 没有 finishTime 说明只是读了一部分，留在「读过」里不进书架
-			if (!info?.finishTime) return null;
-			const finished: WereadBook = {
-				id: book.bookId ?? "",
-				title: book.title ?? "",
-				author: book.author ?? "",
-				cover: book.cover ?? "",
-				category: "",
-				link:
-					book.deepLink ||
-					book.readerLink ||
-					`https://weread.qq.com/book-detail?type=1&v=${book.bookId}`,
-				lastReadAt: info.updateTime ?? info.finishTime,
-				finished: true,
-				onShelf: false,
-			};
-			return finished;
-		}),
-	);
-
-	return resolved.filter((book): book is WereadBook => book !== null);
-}
-
 /**
  * 拉取书架 + 阅读统计。三个请求并行，任一失败不影响其它部分。
+ * 书架只同步微信读书书架上的书，不从阅读记录 / 笔记里反推。
  */
 export async function fetchWereadData(
 	config: WereadConfig,
@@ -302,15 +220,6 @@ export async function fetchWereadData(
 	]);
 
 	const books = normalizeBooks(shelf);
-
-	// 读完但已移出书架的书也补进来，书架即「在架 + 读完」的全集
-	if (config.includeFinished !== false) {
-		const finishedBooks = await fetchFinishedBooks(config, overall, books);
-		if (finishedBooks.length > 0) {
-			books.push(...finishedBooks);
-			books.sort((a, b) => b.lastReadAt - a.lastReadAt);
-		}
-	}
 
 	let stats: WereadStats | null = null;
 	if (monthly || overall) {

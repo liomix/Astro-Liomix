@@ -4,8 +4,9 @@
  * ----------------------------------------------------------------------------
  * 几何常量取自 lib/archive_shelf_geometry.dart，并按本项目的版式放大过：
  *   depthX 0.66 / depthY -0.30（斜投影方向）、rowStep 2.5（波形轨距）、
- *   spine = w*.03∈[13,18]、pitch = spine+11、cover = w*.33∈[118,180]、
+ *   cover = w*.33∈[118,195]、spine = cover*.095∈[13,19]、pitch = spine+11、
  *   height = (cover-20)*166/118 + 54、pull = cover*.84。
+ * 舞台铺满卡片宽度：书长到 195 的封面上限后不再变大，多余的宽度摊成更多本书。
  * 书脊与封面里的字号、内边距都乘同一个系数 cover/128，书本放大时排版一起放大。
  * 单本书 = 书脊面 + 封面 + 顶面，三个面都是平行四边形，
  * 用 CSS matrix() 直接画（不做真透视，和原实现一样是斜投影）。
@@ -23,8 +24,8 @@ export interface ShelfBook {
 	cover: string;
 	category: string;
 	link: string;
-	finished: boolean;
-	onShelf: boolean;
+	/** 阅读状态：在读 / 读过 / 读完 */
+	status: "reading" | "read" | "finished";
 	/** 预格式化的最近阅读时间，空串表示没有记录 */
 	lastReadText: string;
 }
@@ -32,6 +33,7 @@ export interface ShelfBook {
 interface Props {
 	books: ShelfBook[];
 	readingLabel: string;
+	readLabel: string;
 	finishedLabel: string;
 	prevLabel: string;
 	nextLabel: string;
@@ -42,6 +44,7 @@ interface Props {
 let {
 	books,
 	readingLabel,
+	readLabel,
 	finishedLabel,
 	prevLabel,
 	nextLabel,
@@ -49,13 +52,24 @@ let {
 	emptyLabel,
 }: Props = $props();
 
+// 书脊 / 焦点栏上的状态文案
+function statusLabel(status: ShelfBook["status"]): string {
+	if (status === "finished") return finishedLabel;
+	if (status === "read") return readLabel;
+	return readingLabel;
+}
+
 // ---- 原项目的几何常量 ----
 const DEPTH_X = 0.66;
 const DEPTH_Y = -0.3;
 const ROW_STEP = 2.5;
 const RADIUS = 1.48;
-const MAX_VIEWPORT = 620;
+const MAX_VIEWPORT = 1200;
 const SPINE_GAP = 11;
+/** 距中心多少个槽位算「退到最深处」：超过这个距离不再继续缩小 */
+const DEPTH_SPAN = 7;
+/** 最深处保留的尺寸比例（0.84 = 缩小 16%），越小纵深越强 */
+const DEPTH_SHRINK = 0.16;
 /** 封面宽度的旧基准值：封面变大时，书脊与封面里的字号按同比例放大 */
 const COVER_BASE = 128;
 
@@ -79,11 +93,12 @@ let raf = 0;
 let wheelTimer: ReturnType<typeof setTimeout> | undefined;
 
 const geo = $derived.by(() => {
-	const w = Math.min(width || MAX_VIEWPORT, MAX_VIEWPORT);
-	const spine = clamp(w * 0.03, 13, 18);
+	// 舞台铺满卡片，所以视口可以很宽；这里只是兜底上限，防止超宽屏把书撑得离谱
+	const w = Math.min(width || 360, MAX_VIEWPORT);
+	// 书只跟着宽度长到一定程度：再宽就多摊几本，而不是把书继续放大
+	const cover = clamp(w * 0.33, 118, 195);
+	const spine = clamp(cover * 0.095, 13, 19);
 	const pitch = spine + SPINE_GAP;
-	// 书变高变厚：封面深度取视口的三分之一多一点，上下限都不再压着它
-	const cover = clamp(w * 0.33, 118, 180);
 	const height = ((cover - 20) * 166) / 118 + 54;
 	const footprint = spine + cover * DEPTH_X;
 	const pull = cover * 0.84;
@@ -107,9 +122,13 @@ const geo = $derived.by(() => {
 		/** 书脊/封面内部文字、内边距的等比缩放系数 */
 		scale: cover / COVER_BASE,
 		stageHeight: Math.round(baseY + height + 14),
+		// 书本落地的那一小片接触阴影（椭圆，尺寸跟着封面走）
+		castW: cover * 1.05,
+		castH: Math.max(10, cover * 0.2),
+		castX: (spine + cover * DEPTH_X) / 2 - (cover * 1.05) / 2,
+		castY: height - Math.max(10, cover * 0.2) * 0.35,
 		// 三个面 + 地面投影的变换矩阵（cover 面带书脊宽度与 0.1 的竖向错位）
 		matSpine: "matrix(1,0.1,0,1,0,0)",
-		matCover: `matrix(${DEPTH_X},${DEPTH_Y},0,1,${spine},${spine * 0.1})`,
 		matTop: `matrix(1,0.1,${DEPTH_X},${DEPTH_Y},0,0)`,
 	};
 });
@@ -125,11 +144,29 @@ type Slot = {
 	book: ShelfBook;
 	/** 在 books 里的真实下标，决定编号与文案 */
 	index: number;
+	/** 这本书自己的书脊厚度（在基准值上下浮动，避免一排骨牌完全一样） */
+	spine: number;
+	/** 封面面的矩阵（平移量跟着书脊厚度走） */
+	matCover: string;
+	/** 纵深缩放：远处的书略小，近处略大 */
+	scale: number;
+	/** 纵深系数 0（最近）~1（最远），用来做远处的空气透视减淡 */
+	depth: number;
 	x: number;
 	y: number;
 	weight: number;
 	focused: boolean;
 };
+
+/** 由书 id 生成 0.88~1.22 的稳定系数：同一本书永远同一个厚度 */
+function spineScale(key: string): number {
+	let hash = 0;
+	for (let i = 0; i < key.length; i++) {
+		hash = (hash * 31 + key.charCodeAt(i)) | 0;
+	}
+	const t = ((hash >>> 0) % 997) / 996;
+	return 0.88 + t * 0.34;
+}
 
 const slots = $derived.by<Slot[]>(() => {
 	const g = geo;
@@ -164,13 +201,30 @@ const slots = $derived.by<Slot[]>(() => {
 		const railY = rail * ROW_STEP + rail * rail * 0.45;
 		const pull = g.pull * weight * (1.24 - 0.24 * weight);
 		const lift = weight * weight * (3 - 2 * weight);
+		// 纵深：远处的书缩小并整体上移（站在更靠后的位置），近处的书放大
+		const depth = clamp(distance / DEPTH_SPAN, 0, 1);
+		const scale = 1 - DEPTH_SHRINK * depth * depth;
+		const sink = (1 - scale) * g.height * 0.6;
 		const index = indexAt(slot);
+		const book = books[index];
+		// 中心书加厚一点，前后层次才拉得开
+		const spineW =
+			g.spine * spineScale(book.id || book.title) * (1 + 0.28 * weight);
 		out.push({
 			slot,
-			book: books[index],
+			book,
 			index,
+			spine: spineW,
+			matCover: `matrix(${DEPTH_X},${DEPTH_Y},0,1,${spineW.toFixed(2)},${(spineW * 0.1).toFixed(2)})`,
+			scale,
+			depth,
 			x: g.startX + (slot - focusSlot) * g.pitch - pull * DEPTH_X,
-			y: railY + g.baseY - pull * DEPTH_Y - g.height * 0.6 * lift,
+			y:
+				railY +
+				g.baseY -
+				pull * DEPTH_Y -
+				g.height * 0.6 * lift -
+				sink,
 			weight,
 			focused: distance < 0.5,
 		});
@@ -372,27 +426,36 @@ onMount(() => {
 					aria-label="{slot.book.title} · {slot.book.author}"
 					aria-selected={slot.focused}
 					role="option"
-					style="transform:translate3d({slot.x.toFixed(2)}px,{slot.y.toFixed(2)}px,0)"
+					style="transform:translate3d({slot.x.toFixed(2)}px,{slot.y.toFixed(2)}px,0) scale({slot.scale.toFixed(3)});transform-origin:0 {geo.height.toFixed(1)}px;--shelf-d:{slot.depth.toFixed(3)}"
 					onclick={(event) => onBookClick(event, slot)}
 				>
+					{#if slot.weight > 0.02}
+						<span
+							class="shelf-cast"
+							style="width:{geo.castW.toFixed(1)}px;height:{geo.castH.toFixed(1)}px;transform:translate3d({geo.castX.toFixed(1)}px,{geo.castY.toFixed(1)}px,0);opacity:{slot.weight.toFixed(2)}"
+						></span>
+					{/if}
 					<span
 						class="shelf-top"
-						style="width:{geo.spine}px;height:{geo.cover}px;transform:{geo.matTop}"
+						style="width:{slot.spine.toFixed(2)}px;height:{geo.cover}px;transform:{geo.matTop}"
 					></span>
 					<span
 						class="shelf-spine"
-						style="width:{geo.spine}px;height:{geo.height}px;transform:{geo.matSpine}"
+						style="width:{slot.spine.toFixed(2)}px;height:{geo.height}px;transform:{geo.matSpine}"
 					>
 						<span class="spine-code">{no2}</span>
 						<span class="spine-title">{slot.book.title}</span>
-						<span class="spine-dot"></span>
+						<span class="spine-dot" data-status={slot.book.status}></span>
 					</span>
 					<span
 						class="shelf-cover"
-						style="width:{geo.cover}px;height:{geo.height}px;transform:{geo.matCover}"
+						style="width:{geo.cover}px;height:{geo.height}px;transform:{slot.matCover}"
 					>
 						<span class="cover-head">
 							<span class="cover-code">NO.{no3}</span>
+							<span class="cover-status" data-status={slot.book.status}>
+								{statusLabel(slot.book.status)}
+							</span>
 						</span>
 						<span class="cover-art">
 							{#if slot.book.cover}
@@ -428,7 +491,7 @@ onMount(() => {
 				<span class="shelf-meta-sub">
 					{active?.author ?? ""}
 					<i>·</i>
-					{active?.finished ? finishedLabel : readingLabel}
+					{active ? statusLabel(active.status) : ""}
 				</span>
 			</div>
 			<div class="shelf-pager">
