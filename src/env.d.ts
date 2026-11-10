@@ -6,6 +6,8 @@ declare global {
 		readonly MEILI_MASTER_KEY: string;
 		// 视图设置面板总开关，可在部署平台配置（true / 1 / on / yes 开启）
 		readonly PUBLIC_DISPLAY_SETTINGS?: string;
+		// 微信读书 API Key（wrk- 开头），仅服务端读取，用于图书页抓取书架
+		readonly WEREAD_API_KEY?: string;
 	}
 
 	interface ITOCManager {

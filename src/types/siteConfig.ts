@@ -97,6 +97,7 @@ export type SiteConfig = {
 		gallery: boolean; // 相册页面开关
 		bilibili: boolean; // 哔哩哔哩追番页面开关
 		dynamic: boolean; // 动态页面开关
+		books: boolean; // 图书页面开关（微信读书书架）
 		projects: boolean; // 项目展示页开关
 	};
 

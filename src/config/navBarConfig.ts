@@ -19,6 +19,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "#",
 		icon: "material-symbols:person",
 		children: [
+			// 图书（微信读书书架）
+			LinkPresets.Books,
+
 			// 动态
 			LinkPresets.Dynamic,
 
@@ -170,6 +173,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/dynamic/",
 		icon: "material-symbols:forum-rounded",
 		pageKey: "dynamic",
+	},
+	Books: {
+		name: "图书",
+		url: "/books/",
+		icon: "material-symbols:auto-stories",
+		pageKey: "books",
 	},
 	Projects: {
 		name: "项目",

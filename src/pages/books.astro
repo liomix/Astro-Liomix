@@ -1,0 +1,137 @@
+---
+import { Icon } from "astro-icon/components";
+import Bookshelf3D from "@/components/misc/Bookshelf3D.svelte";
+import { siteConfig } from "@/config";
+import { wereadConfig } from "@/config/wereadConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import "@/styles/pages/common.css";
+import "@/styles/pages/books.css";
+import { formatDateI18n } from "@/utils/date-utils";
+import {
+	fetchWereadData,
+	formatHours,
+	formatMinutes,
+} from "@/utils/weread-utils";
+
+// 页面开关：站点开关或微信读书配置任一关闭都跳 404
+if (!siteConfig.pages.books || !wereadConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const title = wereadConfig.title || i18n(I18nKey.books);
+const description =
+	wereadConfig.description || i18n(I18nKey.booksDescription);
+
+// 构建时抓取微信读书书架与阅读统计（网关只放行 weread.qq.com 跨域，必须服务端拉）
+const data = await fetchWereadData(wereadConfig);
+
+const limit = Math.max(0, wereadConfig.limit ?? 0);
+const books = limit > 0 ? data.books.slice(0, limit) : data.books;
+const stats = wereadConfig.showStats === false ? null : data.stats;
+
+// 书架组件（客户端）不引 i18n 日期工具，这里预先格式化好「最近阅读」
+const shelfBooks = books.map((book) => ({
+	...book,
+	lastReadText: book.lastReadAt
+		? formatDateI18n(new Date(book.lastReadAt * 1000))
+		: "",
+}));
+
+// 更新时间取构建时间：静态站点数据随构建刷新
+const buildTime = formatDateI18n(new Date());
+
+// 顶部统计条，缺数据时整块不渲染
+const statItems = stats
+	? [
+			{
+				label: i18n(I18nKey.booksThisMonth),
+				value: formatHours(stats.monthReadTime),
+				unit: "h",
+				sub: `${stats.monthReadDays} ${i18n(I18nKey.booksDays)}`,
+			},
+			{
+				label: i18n(I18nKey.booksAllTime),
+				value: formatHours(stats.totalReadTime),
+				unit: "h",
+				sub: `${stats.totalReadDays} ${i18n(I18nKey.booksDays)}`,
+			},
+			{
+				label: i18n(I18nKey.booksDailyAverage),
+				value: formatMinutes(stats.monthDailyAverage),
+				unit: "min",
+				sub: `${i18n(I18nKey.booksNotes)} ${stats.monthNotes}`,
+			},
+			{
+				label: i18n(I18nKey.booksFinished),
+				value: `${stats.totalFinished}`,
+				unit: "",
+				sub: `${i18n(I18nKey.booksReadCount)} ${stats.totalReadCount}`,
+			},
+		]
+	: [];
+---
+
+<MainGridLayout title={title} description={description}>
+	<section class="page-shell books-page">
+		<header class="page-header card-base">
+			<div class="page-heading">
+				<div class="page-icon" aria-hidden="true">
+					<Icon name="material-symbols:auto-stories" />
+				</div>
+				<div>
+					<h2>{title}</h2>
+					<p>{description}</p>
+				</div>
+				<div class="page-count">
+					<Icon name="material-symbols:menu-book" />
+					<strong>{books.length}</strong>
+					<span>{i18n(I18nKey.books)}</span>
+				</div>
+				<p class="page-updated">
+					<span>{i18n(I18nKey.booksLastUpdated)}</span>
+					<span>{buildTime}</span>
+				</p>
+			</div>
+		</header>
+
+		{
+			statItems.length > 0 && (
+				<div class="books-stats card-base">
+					{statItems.map((item) => (
+						<div class="books-stat">
+							<span class="books-stat-label">{item.label}</span>
+							<span class="books-stat-value">
+								{item.value}
+								{item.unit && <small>{item.unit}</small>}
+							</span>
+							{item.sub && <span class="books-stat-sub">{item.sub}</span>}
+						</div>
+					))}
+				</div>
+			)
+		}
+
+		<div class="books-section card-base">
+			<div class="books-section-head">
+				<h3>{i18n(I18nKey.booksShelf)}</h3>
+				<span class="books-section-note">
+					<Icon name="simple-icons:wechat" />
+					{i18n(I18nKey.booksDataSource)}
+				</span>
+			</div>
+
+			<Bookshelf3D
+				client:load
+				books={shelfBooks}
+				readingLabel={i18n(I18nKey.booksReading)}
+				finishedLabel={i18n(I18nKey.booksFinished)}
+				prevLabel={i18n(I18nKey.booksPrev)}
+				nextLabel={i18n(I18nKey.booksNext)}
+				openLabel={i18n(I18nKey.booksOpen)}
+				emptyLabel={i18n(I18nKey.booksEmpty)}
+			/>
+		</div>
+	</section>
+</MainGridLayout>
