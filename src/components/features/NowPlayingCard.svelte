@@ -68,7 +68,8 @@ let listOpen = $state(false);
 /** 关列表 → 折叠之间的延时（等列表滑回，约等于它的 0.28s 过渡） */
 let collapseTimer: ReturnType<typeof setTimeout> | undefined;
 let resizeTimer: ReturnType<typeof setTimeout> | undefined;
-let collapsed = $state(false);
+/** 默认收起：先只露封面 + 展开箭头，不挡版面；点箭头才展开成完整横条 */
+let collapsed = $state(true);
 /** 宽度动画进行中：期间撤掉背景模糊，避免模糊快照滞后于卡片本体 */
 let resizing = $state(false);
 let isMuted = $state(false);

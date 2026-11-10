@@ -21,6 +21,9 @@ export type MusicPlayerConfig = {
 	// 是否在侧边栏显示音乐播放器组件
 	showInSidebar?: boolean;
 
+	// 缺省封面路径（曲目没有 cover 或返回封面为空时使用）
+	defaultCover?: string;
+
 	// Meting API 配置
 	meting?: {
 		// Meting API 地址

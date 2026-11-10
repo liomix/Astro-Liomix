@@ -7,19 +7,29 @@ import { url } from "@/utils/url-utils";
 
 const config = musicPlayerConfig;
 
+const isFullUrl = (path: string) => /^https?:\/\//.test(path);
+
+// 缺省封面：没配、或配置里写了空串时，用一张内置的唱片图兜底
+const DEFAULT_COVER = "/assets/music/cover/default.svg";
+const defaultCover = url(
+	config.defaultCover && config.defaultCover !== ""
+		? config.defaultCover
+		: DEFAULT_COVER,
+);
+
 const localPlaylist =
 	config.mode === "local" && config.local?.playlist
 		? config.local.playlist.map((song) => {
-				const isFullUrl = (path: string) => /^https?:\/\//.test(path);
 				return {
 					name: song.name,
 					artist: song.artist,
 					url: isFullUrl(song.url) ? song.url : url(song.url),
+					// 曲目自己没写 cover 就用缺省封面（<audio> 读不到内嵌封面图，只能靠这里）
 					pic: song.cover
 						? isFullUrl(song.cover)
 							? song.cover
 							: url(song.cover)
-						: undefined,
+						: defaultCover,
 					lrc: song.lrc
 						? isFullUrl(song.lrc)
 							? song.lrc
@@ -34,6 +44,7 @@ const managerConfigStr = JSON.stringify({
 	mode: config.mode,
 	meting: config.meting,
 	localPlaylist: localPlaylist,
+	defaultCover: defaultCover,
 	volume: config.volume ?? 0.7,
 	playMode: config.playMode ?? "list",
 	autoPlay: config.autoPlay === true,
@@ -148,6 +159,81 @@ const managerConfigStr = JSON.stringify({
         if (stored === '0') return false;
         return config.autoPlay === true;
     })();
+
+    // ── 播放进度记忆 ─────────────────────────────────────────
+    // 只存一条「上次听到哪」：哪首 + 第几秒。进站时据此恢复曲目与位置，
+    // 关掉页面再回来不会从 0:00 重来。
+    var PROGRESS_KEY = 'music-player-progress';
+    var RESUME_MIN_SECONDS = 3; // 不足 3 秒没意义，直接从头
+    var RESUME_END_GAP = 3; // 距结尾不足 3 秒当作听完，下次从头开始
+    var SAVE_INTERVAL = 4000; // timeupdate 落盘节流
+
+    function readStoredProgress() {
+        try {
+            var raw = localStorage.getItem(PROGRESS_KEY);
+            if (!raw) return null;
+            var data = JSON.parse(raw);
+            if (!data || typeof data.time !== 'number' || !isFinite(data.time) || data.time < 0) return null;
+            return data;
+        } catch (e) {
+            return null; // 隐私模式 / 脏数据
+        }
+    }
+
+    // 进站时读一次做快照：只用于本次首次加载，之后各曲目一律从头
+    var storedProgress = readStoredProgress();
+    // 待恢复的位置：loadTrack 时按曲目匹配，元数据到了再 seek
+    var pendingResume = null;
+    // 当前 audio 里装着的那首（切歌瞬间 currentIndex 已经变了，存进度要用它）
+    var activeTrack = null;
+
+    function trackKey(track) {
+        if (!track) return '';
+        return track.url || (track.name || '') + '|' + (track.artist || '');
+    }
+
+    function isSameTrack(saved, track) {
+        if (!saved || !track) return false;
+        if (saved.key && saved.key === trackKey(track)) return true;
+        // 歌单接口偶尔会换域名/签名，URL 对不上时退回「歌名 + 歌手」
+        return !!saved.name && saved.name === (track.name || '') && (saved.artist || '') === (track.artist || '');
+    }
+
+    function saveProgress(timeOverride) {
+        var track = activeTrack;
+        if (!track) return;
+        var dur = audio.duration;
+        if (!isFinite(dur) || dur <= 0) return;
+        var time = typeof timeOverride === 'number' ? timeOverride : audio.currentTime;
+        if (!isFinite(time) || time < 0) return;
+        if (time > dur - RESUME_END_GAP) time = 0; // 快听完了，下次从头
+        try {
+            localStorage.setItem(PROGRESS_KEY, JSON.stringify({
+                key: trackKey(track),
+                name: track.name || '',
+                artist: track.artist || '',
+                time: Math.round(time * 10) / 10,
+                duration: Math.round(dur),
+                updatedAt: Date.now()
+            }));
+        } catch (e) {
+            /* 配额满 / 隐私模式：忽略即可，不打扰播放 */
+        }
+    }
+
+    var lastProgressSave = 0;
+    function saveProgressThrottled() {
+        var now = Date.now();
+        if (now - lastProgressSave < SAVE_INTERVAL) return;
+        lastProgressSave = now;
+        saveProgress();
+    }
+
+    // 关标签页 / 切到后台时补一次，别只靠 timeupdate 的节流
+    window.addEventListener('pagehide', function () { saveProgress(); });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') saveProgress();
+    });
 
     // 浏览器会拦截带声音的自动播放，而且没有任何前端手段能真正绕开：
     // 唯一放行的是「静音自动播放」。所以被拦时退一步——先静音把进度跑起来，
@@ -405,7 +491,7 @@ const managerConfigStr = JSON.stringify({
                             name: item.title || item.name || 'Unknown',
                             artist: item.author || item.artist || 'Unknown',
                             url: item.url,
-                            pic: item.pic || item.cover || '',
+                            pic: item.pic || item.cover || config.defaultCover || '',
                             lrc: item.lrc
                         };
                     });
@@ -484,9 +570,18 @@ const managerConfigStr = JSON.stringify({
     function loadTrack(index, autoPlay) {
         if (index < 0 || index >= state.playlist.length) return;
         if (!autoPlay) siteAutoplayAttempt = false;
+        // 换曲前先把当前这首的进度落盘，避免暂停后直接关闭页面丢位置
+        saveProgress();
         state.currentIndex = index;
         var track = state.playlist[index];
         var ver = ++loadVersion;
+        activeTrack = track;
+        lastProgressSave = 0; // 新歌的第一拍就落盘，别等满 4 秒
+
+        // 只有进站后的首次加载才恢复位置；之后手动切歌一律从头
+        pendingResume = storedProgress && isSameTrack(storedProgress, track) ? storedProgress : null;
+        // 有位置要恢复时先取元数据，好在出声前就跳到位
+        audio.preload = pendingResume ? 'metadata' : 'none';
 
         if (errorSkipTimeout) {
             clearTimeout(errorSkipTimeout);
@@ -636,6 +731,7 @@ const managerConfigStr = JSON.stringify({
     });
 
     audio.addEventListener('pause', function () {
+        saveProgress(); // 暂停即落盘：关页面时就是这一秒
         emitPlayState(false, true);
     });
 
@@ -645,27 +741,51 @@ const managerConfigStr = JSON.stringify({
         emit('fm:volume', { volume: state.volume, isMuted: state.isMuted });
     });
 
+    // 进度广播：timeupdate 和「恢复进度后」共用
+    function emitTimeProgress() {
+        var ct = audio.currentTime;
+        var dur = audio.duration;
+        if (isNaN(dur)) return;
+        emit('fm:time', {
+            currentTime: ct,
+            duration: dur,
+            progress: (ct / dur) * 100,
+            currentTimeStr: formatTime(ct),
+            durationStr: formatTime(dur)
+        });
+    }
+
     audio.addEventListener('loadedmetadata', function () {
+        // 上次听到的位置：等元数据到了才设得上 currentTime
+        if (pendingResume) {
+            var dur = audio.duration;
+            var target = pendingResume.time;
+            pendingResume = null;
+            storedProgress = null; // 恢复过一次就作废，本次会话内切歌不再回跳
+            if (isFinite(dur) && dur > 0 && target > dur - RESUME_END_GAP) target = 0;
+            if (target >= RESUME_MIN_SECONDS && (!isFinite(dur) || target < dur)) {
+                try {
+                    audio.currentTime = target;
+                    // seek 后立刻把时间推给卡片/进度条，别等下一次 timeupdate
+                    emitTimeProgress();
+                } catch (e) {
+                    /* 元数据异常就算了，从头播 */
+                }
+            }
+        }
         updateMediaSessionPositionState(true);
     });
 
     audio.addEventListener('seeked', function () {
+        saveProgress();
         updateMediaSessionPositionState(true);
     });
 
     audio.addEventListener('timeupdate', function () {
         if (isNaN(audio.duration)) return;
         var ct = audio.currentTime;
-        var dur = audio.duration;
-        var pct = (ct / dur) * 100;
-
-        emit('fm:time', {
-            currentTime: ct,
-            duration: dur,
-            progress: pct,
-            currentTimeStr: formatTime(ct),
-            durationStr: formatTime(dur)
-        });
+        emitTimeProgress();
+        saveProgressThrottled();
 
         updateMediaSessionPositionState(false);
 
@@ -684,6 +804,7 @@ const managerConfigStr = JSON.stringify({
     });
 
     audio.addEventListener('ended', function () {
+        saveProgress(); // currentTime 已在结尾 → 存成 0，下次从头
         playNext(true);
     });
 
@@ -725,9 +846,20 @@ const managerConfigStr = JSON.stringify({
                 // Apply playback rate（换曲不会重置 audio 元素，这里初始化一次即可）
                 audio.playbackRate = state.playbackRate;
 
-                var startIndex = 0;
-                if (state.playMode === 2) {
-                    startIndex = Math.floor(Math.random() * state.playlist.length);
+                // 上次听到哪首就从哪首继续；找不到对应曲目再按播放模式取起始曲
+                var startIndex = -1;
+                if (storedProgress) {
+                    for (var si = 0; si < state.playlist.length; si++) {
+                        if (isSameTrack(storedProgress, state.playlist[si])) {
+                            startIndex = si;
+                            break;
+                        }
+                    }
+                }
+                if (startIndex < 0) {
+                    startIndex = state.playMode === 2
+                        ? Math.floor(Math.random() * state.playlist.length)
+                        : 0;
                 }
 
                 state.initialized = true;
