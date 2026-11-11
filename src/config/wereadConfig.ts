@@ -17,7 +17,7 @@ export const wereadConfig: WereadConfig = {
 	enable: true,
 
 	// 微信读书 API Key，留空则读取环境变量 WEREAD_API_KEY
-	apiKey: "wrk-jSxey6NdT008mPqryAST4gAA",
+	apiKey: "",
 
 	// 网关版本号
 	skillVersion: "1.0.5",

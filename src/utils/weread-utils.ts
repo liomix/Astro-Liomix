@@ -121,8 +121,15 @@ interface GatewayError {
 	upgrade_info?: unknown;
 }
 
-// 读取环境变量里的 Key（构建脚本用 tsx 直接跑时没有 import.meta.env，需兜底）
+// 读取环境变量里的 Key。两个来源都要覆盖：
+//   1) 系统 / 命令行 / 平台注入的环境变量（`WEREAD_API_KEY=xxx pnpm build`、setx、Vercel、CI）
+//      —— 变量名没有 PUBLIC_ 前缀，Vite 不会把它塞进 import.meta.env，只有 process.env 读得到；
+//   2) 项目根的 .env 文件（Astro 会合并进 import.meta.env，构建脚本用 tsx 跑时则不存在）。
 function readEnvKey(): string {
+	const fromProcess =
+		typeof process === "undefined" ? undefined : process.env.WEREAD_API_KEY;
+	if (fromProcess?.trim()) return fromProcess.trim();
+
 	try {
 		const env = import.meta.env as
 			| Record<string, string | undefined>
@@ -144,7 +151,9 @@ async function callGateway<T>(
 ): Promise<T | null> {
 	const apiKey = config.apiKey?.trim() || readEnvKey();
 	if (!apiKey) {
-		console.warn(`[Weread] ${apiName}: 未配置 API Key，已跳过`);
+		console.warn(
+			`[Weread] ${apiName}: 未配置 API Key，已跳过（设置 WEREAD_API_KEY 环境变量，或直接填 wereadConfig.apiKey）`,
+		);
 		return null;
 	}
 
