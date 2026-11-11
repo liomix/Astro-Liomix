@@ -370,13 +370,16 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 .navbar-brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    /* 图标与标题贴紧一点，Lottie 画布自带留白，0.5rem 会显得分成两截 */
+    gap: 0.4rem;
     height: 2.75rem;
     padding-inline: 0.5rem;
     border-radius: 0.75rem;
     color: var(--nav-fg);
     text-shadow: var(--nav-text-shadow);
     transition: color 0.2s var(--ease-standard), transform 0.2s var(--ease-standard);
+    /* Lottie 站点图标的尺寸，组件里默认 2.5rem */
+    --nav-lottie-size: 2.5rem;
 }
 
 .navbar-brand:hover {
@@ -403,6 +406,11 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 
 .navbar-brand .navbar-logo {
     filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.28));
+}
+
+/* Lottie 图标：贴纸本身有透明边，阴影给得轻一点，避免糊成一坨 */
+.navbar-brand .nav-lottie-logo {
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.22));
 }
 
 /* 菜单项：图标 + 文字，静止时无底色，hover 才浮出一层轻薄底 */

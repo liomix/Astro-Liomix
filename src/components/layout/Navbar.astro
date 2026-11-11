@@ -5,6 +5,7 @@ import type { ImageMetadata } from "astro";
 import { Icon } from "astro-icon/components";
 import DisplaySettings from "@/components/controls/DisplaySettingsIntegrated.svelte";
 import LightDarkSwitch from "@/components/controls/LightDarkSwitch.svelte";
+import NavLottieLogo from "@/components/controls/NavLottieLogo.svelte";
 import NavMusicButton from "@/components/controls/NavMusicButton.svelte";
 import Search from "@/components/controls/Search.svelte";
 import {
@@ -164,7 +165,9 @@ const logoVariants = await Promise.all(
                 ]}
                 aria-label={navbarTitle}
             >
-                {logoConfig?.type === "icon" ? (
+                {logoConfig?.type === "lottie" ? (
+                    <NavLottieLogo client:load name={logoConfig.value || "ya_newborn"} />
+                ) : logoConfig?.type === "icon" ? (
                     <Icon name={logoConfig.value || "material-symbols:home-pin-outline"} class="navbar-logo text-[1.8rem]" />
                 ) : logoIsImage && logoVariants.length > 0 ? (
                     logoVariants.map((variant) => variant.image ? (

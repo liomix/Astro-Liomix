@@ -48,7 +48,7 @@ export const zh_TW: Translation = {
 	[Key.booksScoreLabel]: "評分",
 	[Key.booksRatingCount]: "{n}人評分",
 	[Key.booksOpen]: "在微信讀書打開",
-	[Key.booksHeatmap]: "閱讀熱力圖",
+	[Key.booksHeatmap]: "書海星圖",
 	[Key.booksHeatmapLess]: "少",
 	[Key.booksHeatmapMore]: "多",
 	[Key.booksHeatmapSummary]: "{d} 天有記錄 · 共 {h} 小時",

@@ -412,8 +412,10 @@ html {
         @apply absolute top-full left-1/2 -translate-x-1/2 pt-2 pointer-events-none z-50;
     }
 
+    /* 只认「鼠标悬浮」和「键盘焦点」：
+       :focus-within 会把鼠标点击也算进去（按钮点一下就 focus），所以改用 :focus-visible */
     .dropdown-container:hover .dropdown-menu,
-    .dropdown-container:focus-within .dropdown-menu {
+    .dropdown-container:has(:focus-visible) .dropdown-menu {
         @apply pointer-events-auto;
     }
 
@@ -423,8 +425,18 @@ html {
     }
 
     .dropdown-container:hover .dropdown-content,
-    .dropdown-container:focus-within .dropdown-content {
+    .dropdown-container:has(:focus-visible) .dropdown-content {
         @apply opacity-100 translate-y-0;
+    }
+
+    /* 点了子菜单项 / 按了 Esc：立刻收起。此时鼠标多半还停在菜单上，
+       单靠 :hover 收不回去，所以要一个显式的“已收起”态，等内容指针离开或焦点移出再解除 */
+    .dropdown-container.is-dismissed .dropdown-menu {
+        @apply pointer-events-none;
+    }
+
+    .dropdown-container.is-dismissed .dropdown-content {
+        @apply opacity-0 translate-y-[-8px];
     }
 
     .dropdown-item {
@@ -457,11 +469,6 @@ html {
         .dropdown-container {
             @apply hidden;
         }
-    }
-
-    /* 无障碍支持 */
-    .dropdown-container:focus-within .dropdown-menu {
-        @apply pointer-events-auto;
     }
 
     .meta-icon {

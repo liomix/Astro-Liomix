@@ -48,7 +48,7 @@ export const ja: Translation = {
 	[Key.booksScoreLabel]: "評価",
 	[Key.booksRatingCount]: "{n}人が評価",
 	[Key.booksOpen]: "WeRead で開く",
-	[Key.booksHeatmap]: "読書ヒートマップ",
+	[Key.booksHeatmap]: "書海の星図",
 	[Key.booksHeatmapLess]: "少ない",
 	[Key.booksHeatmapMore]: "多い",
 	[Key.booksHeatmapSummary]: "{d} 日記録 · 計 {h} 時間",

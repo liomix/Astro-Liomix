@@ -48,7 +48,7 @@ export const ru: Translation = {
 	[Key.booksScoreLabel]: "Оценка",
 	[Key.booksRatingCount]: "{n} оценок",
 	[Key.booksOpen]: "Открыть в WeRead",
-	[Key.booksHeatmap]: "Тепловая карта чтения",
+	[Key.booksHeatmap]: "Звёздная карта книжного моря",
 	[Key.booksHeatmapLess]: "Меньше",
 	[Key.booksHeatmapMore]: "Больше",
 	[Key.booksHeatmapSummary]: "{d} дн. с чтением · {h} ч всего",

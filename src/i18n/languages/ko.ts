@@ -48,7 +48,7 @@ export const ko: Translation = {
 	[Key.booksScoreLabel]: "평점",
 	[Key.booksRatingCount]: "{n}명 평가",
 	[Key.booksOpen]: "WeRead에서 열기",
-	[Key.booksHeatmap]: "독서 히트맵",
+	[Key.booksHeatmap]: "책바다 별지도",
 	[Key.booksHeatmapLess]: "적음",
 	[Key.booksHeatmapMore]: "많음",
 	[Key.booksHeatmapSummary]: "{d}일 기록 · 총 {h}시간",

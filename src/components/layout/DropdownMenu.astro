@@ -78,8 +78,14 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	}
 
 	.dropdown-container:hover .dropdown-menu,
-	.dropdown-container:focus-within .dropdown-menu {
+	.dropdown-container:has(:focus-visible) .dropdown-menu {
 		@apply pointer-events-auto;
+	}
+
+	/* 点了子项 / 按 Esc 后立即收起。这条是 unlayered 规则，优先级高于上面的 :hover，
+	   否则鼠标还停在菜单上时会被 hover 重新撑开 */
+	.dropdown-container.is-dismissed .dropdown-menu {
+		@apply pointer-events-none;
 	}
 
 	/* 移动端隐藏下拉菜单 */
@@ -167,4 +173,45 @@ const hasChildren = processedLink.children && processedLink.children.length > 0;
 	function closeDropdown(_dropdown: Element, trigger: Element, _menu: Element) {
 		trigger.setAttribute('aria-expanded', 'false');
 	}
+
+	// ── 点击子项 / 按 Esc：立即收起下拉 ──────────────────────────────────────
+	// 展开只看鼠标悬浮（和键盘焦点），点一下触发按钮不再把菜单顶出来。
+	// 全用 document 委托：Swup 换页后导航栏是全新 DOM，元素级监听会丢，委托不会。
+
+	function dismissDropdown(dropdown: Element) {
+		dropdown.classList.add('is-dismissed');
+	}
+
+	document.addEventListener('click', (event) => {
+		const target = event.target as Element | null;
+		const item = target?.closest('.dropdown-item');
+		const dropdown = item?.closest('[data-dropdown]');
+		if (!dropdown) return;
+		dismissDropdown(dropdown);
+		// 鼠标一般还停在菜单上：等指针离开整个容器再解除，下次悬浮照常展开
+		dropdown.addEventListener(
+			'pointerleave',
+			() => dropdown.classList.remove('is-dismissed'),
+			{ once: true },
+		);
+	});
+
+	document.addEventListener('keydown', (event) => {
+		if (event.key !== 'Escape') return;
+		const active = document.activeElement as Element | null;
+		const dropdown = active?.closest('[data-dropdown]');
+		if (!dropdown) return;
+		event.preventDefault();
+		dismissDropdown(dropdown);
+		const trigger = dropdown.querySelector('[data-dropdown-trigger]') as HTMLElement | null;
+		trigger?.focus();
+	});
+
+	// 焦点彻底离开容器、且鼠标不在上面时解除，键盘用户下次 Tab 回来还能展开
+	document.addEventListener('focusout', (event) => {
+		const target = event.target as Element | null;
+		const dropdown = target?.closest('[data-dropdown].is-dismissed');
+		if (!dropdown || dropdown.matches(':hover')) return;
+		dropdown.classList.remove('is-dismissed');
+	});
 </script>

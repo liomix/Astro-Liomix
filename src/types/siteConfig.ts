@@ -69,10 +69,10 @@ export type SiteConfig = {
 	}>;
 
 	navbar: {
-		/** 导航栏Logo图标，可选类型：icon库、本地图片、网络图片链接 */
+		/** 导航栏Logo图标，可选类型：icon库、本地图片、网络图片链接、Lottie 动画 */
 		logo?: {
-			type: "icon" | "image" | "url";
-			value: string; // icon名、本地图片路径或网络图片url
+			type: "icon" | "image" | "url" | "lottie";
+			value: string; // icon名、本地图片路径、网络图片url，或 src/assets/lottie 下的动画名（不含 .json）
 			valueDark?: string; // 暗色模式下的图片，仅 image / url 类型生效，不设置则亮暗色共用 value
 			alt?: string; // 图片alt文本
 		};

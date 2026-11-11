@@ -48,7 +48,7 @@ export const en: Translation = {
 	[Key.booksScoreLabel]: "Rating",
 	[Key.booksRatingCount]: "{n} ratings",
 	[Key.booksOpen]: "Open in WeRead",
-	[Key.booksHeatmap]: "Reading heatmap",
+	[Key.booksHeatmap]: "Star Map of the Book Sea",
 	[Key.booksHeatmapLess]: "Less",
 	[Key.booksHeatmapMore]: "More",
 	[Key.booksHeatmapSummary]: "{d} days read · {h} h total",
