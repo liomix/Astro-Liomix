@@ -1,19 +1,25 @@
 <script lang="ts">
 /**
- * 3D 书架（复刻 mikufoxxx/Wenku8_Flutter 的立方书架）
+ * 3D 书架 —— 按 Wenku8_Flutter 的 archive_wave.dart / archive_shelf_geometry.dart 复刻
  * ----------------------------------------------------------------------------
- * 几何常量取自 lib/archive_shelf_geometry.dart，并按本项目的版式放大过：
- *   depthX 0.66 / depthY -0.30（斜投影方向）、rowStep 2.5（波形轨距）、
- *   cover = w*.42∈[150,268]、spine = cover*.095∈[14,23]、pitch = spine+11、
- *   height = (cover-20)*166/118 + 54、pull = cover*.84。
- * 舞台铺满卡片宽度：书长到 268 的封面上限后不再变大，多余的宽度摊成更多本书。
- * 书脊与封面里的字号、内边距都乘同一个系数 cover/128，书本放大时排版一起放大。
- * 单本书 = 书脊面 + 封面 + 顶面，三个面都是平行四边形，
- * 用 CSS matrix() 直接画（不做真透视，和原实现一样是斜投影）。
- * 聚焦度 weight = cos(d/1.48 * π/2)²：中心书沿深度滑出 pull 距离并抬起 0.6h，
- * 两侧 1 本内还有余量，再远就回到队列里。
+ * 几何（原值，再统一乘缩放 s）：
+ *   depthX .66 / depthY -.30  —— 斜投影方向（不做真透视）
+ *   spine = 18、cover = 128、pitch = spine + 11 = 29、pull = cover*.84
+ *   height = (cover-20)*166/118 + 54、baseY = -cover*depthY + height*.6 + 12
+ *   railY(d) = d*2.5 + d²*0.45   —— 底部弧线，d 是「离中心几本书」
+ * 书台基准宽度 520（原实现的 maxViewportWidth），按卡片宽度等比放大，上限 1.4 倍，
+ * 由 s 控制所有尺寸与字号，所以放大时排版一起放大，不会出现「书变大字不变」。
+ *
+ * 每本书 = 三个面，全部用 CSS matrix() 斜投影：
+ *   封面（最底层，只露出窄窄一条）→ 顶面（纸叠截面）→ 书脊（最上层）。
+ * 绘制顺序与原实现一致：封面先画，书脊最后画，所以书脊永远压在自己的封面上。
+ *
+ * 交互：拖拽 / 横向滚轮 / ←→ 翻书，松手走 planScroll 的摩擦 + 落位两段物理，
+ * 一定停在整数书位；点非中心的书先滑到中间，点中心书打开详情。
+ * 书列首尾相连（和原实现一致，可无限滑），所以焦点永远在正中，弧线绝对不动。
  */
 import Icon from "@/components/common/Icon.svelte";
+import { cubicBezier, planScroll } from "@/utils/shelf-physics";
 import { onMount } from "svelte";
 import BookPop from "./BookPop.svelte";
 
@@ -60,32 +66,34 @@ function statusLabel(status: ShelfBook["status"]): string {
 	return readingLabel;
 }
 
-// ---- 原项目的几何常量 ----
+// ---- 原实现的几何常量 ----
 const DEPTH_X = 0.66;
 const DEPTH_Y = -0.3;
+/** 弧线的线性项：每离开中心一本书，底边下沉多少 */
 const ROW_STEP = 2.5;
+/** 弧线的二次项：越远沉得越快 */
+const ROW_CURVE = 0.45;
+/** 弧线最多算到几本书，再远就压平（原实现的 clamp ±7） */
+const RAIL_CLAMP = 7;
+/** 聚焦度半径：隔一本书以外完全回到队列 */
 const RADIUS = 1.48;
-const MAX_VIEWPORT = 1200;
-const SPINE_GAP = 11;
-/** 距中心多少个槽位算「退到最深处」：超过这个距离不再继续缩小 */
-const DEPTH_SPAN = 7;
-/** 最深处保留的尺寸比例（0.84 = 缩小 16%），越小纵深越强 */
-const DEPTH_SHRINK = 0.16;
-/** 封面宽度的旧基准值：封面变大时，书脊与封面里的字号按同比例放大 */
-const COVER_BASE = 128;
+/** 书台基准宽度：原实现 maxViewportWidth = 520 */
+const BASE_WIDTH = 520;
+/** 窄屏不缩得太小（手机上正好是 App 的尺寸） */
+const MIN_SCALE = 0.85;
+/** 宽屏的上限：再大书架就太高了（1.55 倍 ≈ 600px 高的书台） */
+const MAX_SCALE = 1.55;
 
-const clamp = (v: number, min: number, max: number) =>
-	Math.min(max, Math.max(min, v));
+const clamp = (v: number, lo: number, hi: number) =>
+	Math.min(hi, Math.max(lo, v));
 
-// Dart 的 % 对正除数永远返回非负，JS 要自己补
 const mod = (a: number, b: number) => ((a % b) + b) % b;
 
 let stage = $state<HTMLDivElement>();
 /** 视口宽度，未测量前先按手机宽度画，水合后校正 */
 let width = $state(360);
-/** 焦点位置（书序号空间，可以是小数，拖拽时连续变化） */
+/** 焦点位置（书位空间，可以是小数，拖拽时连续变化，不带上限） */
 let logical = $state(0);
-let target = $state(0);
 let reduced = $state(false);
 /** 正在查看详情的书，null 表示弹窗关闭 */
 let popBook = $state<ShelfBook | null>(null);
@@ -94,176 +102,237 @@ let raf = 0;
 let wheelTimer: ReturnType<typeof setTimeout> | undefined;
 
 const geo = $derived.by(() => {
-	// 舞台铺满卡片，所以视口可以很宽；这里只是兜底上限，防止超宽屏把书撑得离谱
-	const w = Math.min(width || 360, MAX_VIEWPORT);
-	// 书只跟着宽度长到一定程度：再宽就多摊几本，而不是把书继续放大
-	const cover = clamp(w * 0.42, 150, 268);
-	const spine = clamp(cover * 0.095, 14, 23);
-	const pitch = spine + SPINE_GAP;
-	const height = ((cover - 20) * 166) / 118 + 54;
+	const w = clamp(width || 360, 240, 1700);
+	// 所有尺寸共用的缩放系数：520 宽时正好是原实现的 1 倍
+	const s = clamp(w / BASE_WIDTH, MIN_SCALE, MAX_SCALE);
+	const cover = 128 * s;
+	const spine = 18 * s;
+	const pitch = 29 * s;
+	const height = ((cover - 20 * s) * 166) / 118 + 54 * s;
 	const footprint = spine + cover * DEPTH_X;
 	const pull = cover * 0.84;
+	const baseY = -cover * DEPTH_Y + height * 0.6 + 12 * s;
+	// 弧线的最大下沉：正好在 RAIL_CLAMP 本书处
+	const maxDrop = (RAIL_CLAMP * ROW_STEP + RAIL_CLAMP ** 2 * ROW_CURVE) * s;
 	/**
-	 * 书的原点（书脊左上角在静止状态下）落在这条基线上。
-	 * 焦点书会被抽出 pull、抬高 height*0.6，它的顶面还要沿深度方向上斜切
-	 * cover*|DEPTH_Y|，所以这里从「焦点书的最高点」反推原点：
-	 *   baseY = 抬高量 + 抽出后剩下的深度 + 顶部留白
-	 * 这样书列整体贴住舞台顶部，不会沉在下方、上方空出一大块。
-	 * （原来的 0.3*cover + 12 会多留 cover*0.25 的空隙。）
+	 * 舞台顶部的空档：焦点书被抬起 + 沿深度斜切，它的最高点会比原点高一截。
+	 * 原实现把这截留白算进 rowHeight（下面还要放标题栏），我们不要标题栏，
+	 * 直接把整排上移，书架就贴着卡片顶边。
 	 */
-	const TOP_PAD = 8;
-	const baseY = height * 0.6 + (cover - pull) * -DEPTH_Y + TOP_PAD;
-	const startX = w / 2 - footprint / 2 + pull * DEPTH_X;
-	// 循环池左右各留多少槽位，保证任意焦点下都能把视口铺满
-	const edge = Math.ceil((w / 2 + footprint + pull * DEPTH_X) / pitch) + 2;
+	const headroom = Math.max(0, 0.252 * cover + 12 * s - 6);
 
 	return {
 		w,
+		s,
+		cover,
 		spine,
 		pitch,
-		cover,
 		height,
 		footprint,
 		pull,
+		pullX: pull * DEPTH_X,
 		baseY,
-		startX,
-		edge,
-		/** 书脊/封面内部文字、内边距的等比缩放系数 */
-		scale: cover / COVER_BASE,
-		stageHeight: Math.round(baseY + height + 14),
-		// 书本落地的那一小片接触阴影（椭圆，尺寸跟着封面走）
-		castW: cover * 1.05,
-		castH: Math.max(10, cover * 0.2),
-		castX: (spine + cover * DEPTH_X) / 2 - (cover * 1.05) / 2,
-		castY: height - Math.max(10, cover * 0.2) * 0.35,
-		// 三个面 + 地面投影的变换矩阵（cover 面带书脊宽度与 0.1 的竖向错位）
+		headroom,
+		/**
+		 * 弧线的「槽位数 → 屏幕距离」压缩比。
+		 * 原实现视口最多 520（±6 本），我们的卡片更宽（±13 本），
+		 * 不压缩的话 ±7 之外会拍成一条水平线。压缩后曲线正好铺满可见宽度。
+		 */
+		railK: Math.min(1, RAIL_CLAMP / (w / pitch / 2)),
+		stageHeight: Math.round(
+			baseY + height + maxDrop + 14 - headroom,
+		),
 		matSpine: "matrix(1,0.1,0,1,0,0)",
 		matTop: `matrix(1,0.1,${DEPTH_X},${DEPTH_Y},0,0)`,
 	};
 });
 
-/** 焦点槽位：循环时整体右移 edge 个槽 */
-const focusSlot = $derived(
-	books.length < 2 ? 0 : geo.edge + mod(logical, books.length),
-);
-
-type Slot = {
-	/** 槽序号，作为 DOM key（同一槽永远对应同一本书） */
-	slot: number;
-	book: ShelfBook;
-	/** 在 books 里的真实下标，决定编号与文案 */
-	index: number;
-	/** 这本书自己的书脊厚度（在基准值上下浮动，避免一排骨牌完全一样） */
-	spine: number;
-	/** 封面面的矩阵（平移量跟着书脊厚度走） */
-	matCover: string;
-	/** 纵深缩放：远处的书略小，近处略大 */
-	scale: number;
-	/** 纵深系数 0（最近）~1（最远），用来做远处的空气透视减淡 */
-	depth: number;
-	x: number;
-	y: number;
-	weight: number;
-	focused: boolean;
-};
-
-/** 由书 id 生成 0.88~1.22 的稳定系数：同一本书永远同一个厚度 */
-function spineScale(key: string): number {
-	let hash = 0;
-	for (let i = 0; i < key.length; i++) {
-		hash = (hash * 31 + key.charCodeAt(i)) | 0;
-	}
-	const t = ((hash >>> 0) % 997) / 996;
-	return 0.88 + t * 0.34;
+/**
+ * 聚焦度 0~1：正好在焦点上为 1，隔着一个身位（RADIUS）以外为 0。
+ * 抽出的距离、抬起量都按它加权。
+ */
+function focusWeight(d: number): number {
+	const distance = Math.abs(d);
+	return distance >= RADIUS
+		? 0
+		: Math.cos((distance / RADIUS) * (Math.PI / 2)) ** 2;
 }
 
+/** 底部弧线：书底边相对「最高点」的下沉量（px），入参是「离中心几本书」 */
+function railY(d: number): number {
+	const c = clamp(d * geo.railK, -RAIL_CLAMP, RAIL_CLAMP);
+	return (c * ROW_STEP + c * c * ROW_CURVE) * geo.s;
+}
+
+/** 书脊最多排几个字，再多就接一行省略号 */
+const SPINE_MAX = 10;
+
+/**
+ * 书脊上只排正题：括号里的注释（全集 / 插图版 / 第2版…）连同括号一起去掉，
+ * 中英文括号都认；整名都是括号时回退原文，免得书脊空白。
+ */
+function stripBrackets(title: string): string {
+	const stripped = title
+		.replace(/[（(][^）)]*[）)]/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+	return stripped || title.trim();
+}
+
+/** 书脊上的书名：逐字一行竖排，超过 10 个字截断并以「…」收尾 */
+function spineTitle(title: string): string {
+	const glyphs = Array.from(stripBrackets(title));
+	const shown =
+		glyphs.length > SPINE_MAX
+			? [...glyphs.slice(0, SPINE_MAX), "…"]
+			: glyphs;
+	return shown.join("\n");
+}
+
+type Slot = {
+	/** 槽位号（整数，可正可负，书位空间里唯一且不变，同时用作 DOM key） */
+	key: number;
+	book: ShelfBook;
+	/** 这本书在书架里的序号（1 起） */
+	number: number;
+	/** 离焦点的距离（书位，小数） */
+	d: number;
+	weight: number;
+	x: number;
+	y: number;
+	focused: boolean;
+	/** 离中心 1 本以内才load封面图，和原实现一致 */
+	near: boolean;
+	/** 落地阴影的六边形（舞台坐标） */
+	floor: string;
+};
+
 const slots = $derived.by<Slot[]>(() => {
-	const g = geo;
 	const count = books.length;
-	if (count === 0 || !g.w) return [];
+	if (count === 0) return [];
 
-	const looping = count >= 2;
-	const pool = looping ? count + g.edge * 2 : count;
-	const indexAt = (slot: number) =>
-		looping ? mod(slot - g.edge, count) : clamp(slot, 0, count - 1);
+	// 只有一本书时不做循环，就画它一个
+	if (count === 1) return [buildSlot(0, 0, 0)];
 
-	// 只渲染可能落进视口的槽位：x 从 startX 起每 pitch 一格
-	const lo = Math.max(
-		0,
-		Math.ceil(focusSlot + (-g.startX - g.footprint) / g.pitch) - 1,
-	);
-	const hi = Math.min(
-		pool - 1,
-		Math.floor(focusSlot + (g.w - g.startX) / g.pitch) + 1,
-	);
-
+	// 只渲染可能落进视口的槽位
+	const span = Math.ceil(geo.w / geo.pitch / 2) + 3;
 	const out: Slot[] = [];
-	for (let slot = lo; slot <= hi; slot++) {
-		const d = slot - focusSlot;
-		const distance = Math.abs(d);
-		const weight =
-			distance >= RADIUS
-				? 0
-				: Math.cos((distance / RADIUS) * (Math.PI / 2)) ** 2;
-		// 越远离中心越往下掉（负方向往上），形成原实现那条浅波形
-		const rail = clamp(d, -7, 7);
-		const railY = rail * ROW_STEP + rail * rail * 0.45;
-		const pull = g.pull * weight * (1.24 - 0.24 * weight);
-		const lift = weight * weight * (3 - 2 * weight);
-		// 纵深：远处的书缩小并整体上移（站在更靠后的位置），近处的书放大
-		const depth = clamp(distance / DEPTH_SPAN, 0, 1);
-		const scale = 1 - DEPTH_SHRINK * depth * depth;
-		const sink = (1 - scale) * g.height * 0.6;
-		const index = indexAt(slot);
-		const book = books[index];
-		// 中心书加厚一点，前后层次才拉得开
-		const spineW =
-			g.spine * spineScale(book.id || book.title) * (1 + 0.28 * weight);
-		out.push({
-			slot,
-			book,
-			index,
-			spine: spineW,
-			matCover: `matrix(${DEPTH_X},${DEPTH_Y},0,1,${spineW.toFixed(2)},${(spineW * 0.1).toFixed(2)})`,
-			scale,
-			depth,
-			x: g.startX + (slot - focusSlot) * g.pitch - pull * DEPTH_X,
-			y:
-				railY +
-				g.baseY -
-				pull * DEPTH_Y -
-				g.height * 0.6 * lift -
-				sink,
-			weight,
-			focused: distance < 0.5,
-		});
+	for (let key = Math.floor(logical) - span; key <= Math.ceil(logical) + span; key++) {
+		out.push(buildSlot(key, key - logical, mod(key, count)));
 	}
 	return out;
 });
 
-function animateTo(next: number) {
-	if (!Number.isFinite(next)) return;
-	target = next;
+/**
+ * 算一本书的位置。d = 离焦点几本书（小数）。
+ * 抽出量与抬起量都按聚焦度加权，和原实现一样：
+ *   pull = pullDistance * w * (1.24 - .24w)，lift = w²(3-2w)
+ */
+function buildSlot(key: number, d: number, index: number): Slot {
+	const g = geo;
+	const weight = focusWeight(d);
+	const pull = g.pull * weight * (1.24 - 0.24 * weight);
+	const lift = weight * weight * (3 - 2 * weight);
+	// 抽出后沿深度往观察者方向走：横向左偏 pull*depthX，纵向 +0.3*pull，再被 lift 抬起。
+	// 书位基准线整体先右移 pullX（原实现的 start），抽出的那本再减回去，正好落在正中。
+	const x =
+		g.w / 2 - g.footprint / 2 + g.pullX + d * g.pitch - pull * DEPTH_X;
+	const y =
+		railY(d) + g.baseY - pull * DEPTH_Y - g.height * 0.6 * lift - g.headroom;
+
+	// 落地阴影：锚在书位的静止位置（不含抽出量），沿深度铺一条薄片
+	const sx = g.w / 2 - g.footprint / 2 + g.pullX + d * g.pitch;
+	const sy = railY(d) + g.baseY + g.height - g.headroom;
+	const depthX = g.cover * DEPTH_X;
+	const depthY = g.cover * DEPTH_Y;
+	const tilt = 1.4 * g.s;
+	const lip = 10 * g.s;
+	const floor = [
+		[sx, sy],
+		[sx + g.spine, sy + tilt],
+		[sx + g.spine + depthX, sy + tilt + depthY],
+		[sx + depthX, sy + depthY],
+		[sx + depthX - lip, sy + depthY + lip],
+		[sx - lip, sy + lip],
+	]
+		.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`)
+		.join(" ");
+
+	return {
+		key,
+		book: books[index],
+		number: index + 1,
+		d,
+		weight,
+		x,
+		y,
+		focused: Math.abs(d) < 0.5,
+		near: Math.abs(Math.round(logical) - key) <= 1,
+		floor,
+	};
+}
+
+/** 当前焦点所在的整数书位 */
+function scrollIndex(): number {
+	return Math.round(logical);
+}
+
+// ---- 动画 ----
+const settleCurve = cubicBezier(0.2, 1.06, 0.34, 1);
+
+function stop() {
 	cancelAnimationFrame(raf);
+	raf = 0;
+}
+
+/** 用一条三次曲线把书位滑到目标（点到某本书 / 键盘 / 滚轮用） */
+function animateTo(target: number) {
+	stop();
 	const from = logical;
-	if (reduced || Math.abs(next - from) < 0.001) {
-		logical = next;
+	const span = target - from;
+	if (reduced || Math.abs(span) < 0.0001) {
+		logical = target;
 		return;
 	}
-	// 走得越远，动画越长，但别拖太久
-	const duration = Math.min(760, 300 + Math.abs(next - from) * 90);
+	const duration = 420;
 	const start = performance.now();
 	const tick = (now: number) => {
 		const p = Math.min(1, (now - start) / duration);
-		const eased = 1 - (1 - p) ** 3;
-		logical = from + (next - from) * eased;
+		logical = from + span * settleCurve(p);
 		if (p < 1) raf = requestAnimationFrame(tick);
+		else raf = 0;
+	};
+	raf = requestAnimationFrame(tick);
+}
+
+/** 松手：走摩擦 + 落位两段物理 */
+function release(velocity: number) {
+	stop();
+	if (reduced || books.length < 2) {
+		logical = Math.round(logical);
+		return;
+	}
+	const plan = planScroll(logical, velocity);
+	const start = performance.now();
+	const tick = (now: number) => {
+		const t = (now - start) / 1000;
+		logical = plan.at(Math.min(t, plan.duration));
+		if (t < plan.duration) raf = requestAnimationFrame(tick);
+		else {
+			logical = Math.round(logical);
+			raf = 0;
+		}
 	};
 	raf = requestAnimationFrame(tick);
 }
 
 function step(delta: number) {
-	animateTo(Math.round(logical) + delta);
+	animateTo(scrollIndex() + delta);
+}
+
+/** 滑到某一书位（点非中心书） */
+function centreOn(key: number) {
+	animateTo(key);
 }
 
 // ---- 拖拽 / 滚轮 / 键盘 ----
@@ -273,12 +342,27 @@ let drag: {
 	moved: boolean;
 	/** pointerdown 时命中的书（槽序号），用于区分「点击」和「拖拽」 */
 	slotNo: number | null;
+	/** 最近几帧的采样，用来算松手速度 */
+	samples: Array<{ t: number; x: number }>;
 } | null = null;
 let suppressClick = false;
+let lastDetent = 0;
+let lastPulse = 0;
+
+/** 每跨过一个整数书位给一次轻震动（手机上才有，桌面无感） */
+function detentPulse() {
+	const lane = scrollIndex();
+	if (lane === lastDetent) return;
+	const now = performance.now();
+	if (Math.abs(logical - lane) > 0.12 || now - lastPulse < 65) return;
+	lastDetent = lane;
+	lastPulse = now;
+	navigator.vibrate?.(6);
+}
 
 function onPointerDown(event: PointerEvent) {
 	if (event.pointerType === "mouse" && event.button !== 0) return;
-	cancelAnimationFrame(raf);
+	stop();
 	const el = (event.target as HTMLElement | null)?.closest<HTMLElement>(
 		".shelf-book",
 	);
@@ -287,30 +371,50 @@ function onPointerDown(event: PointerEvent) {
 		from: logical,
 		moved: false,
 		slotNo: el?.dataset.slot == null ? null : Number(el.dataset.slot),
+		samples: [{ t: performance.now(), x: event.clientX }],
 	};
 	suppressClick = false;
+	lastDetent = scrollIndex();
 	// 这里**不能**立刻 setPointerCapture：指针捕获会把 pointerup 以及随后的 click
 	// 一起重定向到舞台，书上的点击就永远收不到了。等真的开始拖再捕获。
 }
 
 function onPointerMove(event: PointerEvent) {
-	if (!drag) return;
+	if (!drag || books.length < 2) return;
 	const dx = event.clientX - drag.x;
 	if (!drag.moved && Math.abs(dx) > 3) {
 		drag.moved = true;
-		// 确认是拖拽后再捕获，手指/鼠标移出舞台也能继续跟手
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 	}
-	if (drag.moved) logical = drag.from - dx / geo.pitch;
+	if (!drag.moved) return;
+	logical = drag.from - dx / geo.pitch;
+	detentPulse();
+	const now = performance.now();
+	drag.samples.push({ t: now, x: event.clientX });
+	// 只留最近 120ms 的采样
+	while (drag.samples.length > 2 && now - drag.samples[0].t > 120) {
+		drag.samples.shift();
+	}
+}
+
+/** 松手速度：取最近采样窗口的位移 / 时间，换算成「书位 / 秒」 */
+function releaseVelocity(): number {
+	if (!drag || drag.samples.length < 2) return 0;
+	const first = drag.samples[0];
+	const last = drag.samples[drag.samples.length - 1];
+	const dt = (last.t - first.t) / 1000;
+	if (dt <= 0.008) return 0;
+	return -(last.x - first.x) / dt / geo.pitch;
 }
 
 function onPointerUp(event: PointerEvent) {
 	if (!drag) return;
 	const { moved, slotNo } = drag;
+	const velocity = releaseVelocity();
 	drag = null;
 	if (moved) {
 		suppressClick = true;
-		animateTo(Math.round(logical));
+		release(velocity);
 		setTimeout(() => {
 			suppressClick = false;
 		}, 0);
@@ -318,7 +422,7 @@ function onPointerUp(event: PointerEvent) {
 	}
 	// 没有拖动 = 一次点击：命中哪本书就激活哪本
 	if (slotNo === null) return;
-	const hit = slots.find((item) => item.slot === slotNo);
+	const hit = slots.find((item) => item.key === slotNo);
 	if (hit) activateBook(hit, event);
 }
 
@@ -326,14 +430,15 @@ function onPointerUp(event: PointerEvent) {
 function onPointerCancel() {
 	if (!drag) return;
 	const moved = drag.moved;
+	const velocity = releaseVelocity();
 	drag = null;
-	if (moved) animateTo(Math.round(logical));
+	if (moved) release(velocity);
 }
 
-/** 点一下书：非中心书先归位到中间，已经在中间的直接看详情 */
+/** 点一下书：非中心书先滑到中间，已经在中间的直接看详情 */
 function activateBook(slot: Slot, event: MouseEvent | PointerEvent) {
-	if (slot.slot !== Math.round(focusSlot)) {
-		animateTo(Math.round(logical + (slot.slot - focusSlot)));
+	if (!slot.focused) {
+		centreOn(slot.key);
 		return;
 	}
 	// 保留 Ctrl/⌘/Shift+点击 直接开新标签页的习惯
@@ -372,8 +477,7 @@ onMount(() => {
 
 	// 横向滚轮 / Shift+滚轮翻书；纵向滚轮留给页面
 	const onWheel = (event: WheelEvent) => {
-		const horizontal =
-			Math.abs(event.deltaX) > Math.abs(event.deltaY);
+		const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
 		const delta = horizontal
 			? event.deltaX
 			: event.shiftKey
@@ -381,10 +485,10 @@ onMount(() => {
 				: 0;
 		if (!delta) return;
 		event.preventDefault();
-		cancelAnimationFrame(raf);
+		stop();
 		logical += delta / (geo.pitch * 4);
 		clearTimeout(wheelTimer);
-		wheelTimer = setTimeout(() => animateTo(Math.round(logical)), 140);
+		wheelTimer = setTimeout(() => release(delta / geo.pitch), 140);
 	};
 	stage?.addEventListener("wheel", onWheel, { passive: false });
 
@@ -405,76 +509,88 @@ onMount(() => {
 		<div
 			class="books-shelf-stage"
 			bind:this={stage}
-			style="height:{geo.stageHeight}px;--shelf-s:{geo.scale.toFixed(3)}"
+			style="height:{geo.stageHeight}px;--shelf-s:{geo.s.toFixed(3)}"
 			role="listbox"
 			tabindex="0"
 			aria-label={openLabel}
+			onkeydown={onKeydown}
 			onpointerdown={onPointerDown}
 			onpointermove={onPointerMove}
 			onpointerup={onPointerUp}
 			onpointercancel={onPointerCancel}
-			onkeydown={onKeydown}
 		>
-			{#each slots as slot (slot.slot)}
-				{@const no2 = String(slot.index + 1).padStart(2, "0")}
-				{@const no3 = String(slot.index + 1).padStart(3, "0")}
+			<!-- 落地阴影：一张 svg 画完所有书，和原实现一样在所有书之前绘制 -->
+			<svg class="shelf-floor" aria-hidden="true">
+				<defs>
+					<linearGradient id="shelf-floor-ink" x1="1" y1="0" x2="0" y2="1">
+						<stop
+							offset="0"
+							stop-color="var(--shelf-floor)"
+							stop-opacity="0.1"
+						/>
+						<stop
+							offset="1"
+							stop-color="var(--shelf-floor)"
+							stop-opacity="0"
+						/>
+					</linearGradient>
+				</defs>
+				{#each slots as slot (slot.key)}
+					<polygon points={slot.floor} fill="url(#shelf-floor-ink)" />
+				{/each}
+			</svg>
+
+			{#each slots as slot (slot.key)}
+				{@const no2 = String(slot.number).padStart(2, "0")}
 				<a
 					class="shelf-book"
 					class:is-focused={slot.focused}
 					href={slot.book.link}
 					target="_blank"
 					rel="noopener noreferrer"
-					data-slot={slot.slot}
-					aria-label="{slot.book.title} · {slot.book.author}"
+					data-slot={slot.key}
+					aria-label="{slot.book.title} · {slot.book.author} · {statusLabel(slot.book.status)}"
 					aria-selected={slot.focused}
 					role="option"
-					style="transform:translate3d({slot.x.toFixed(2)}px,{slot.y.toFixed(2)}px,0) scale({slot.scale.toFixed(3)});transform-origin:0 {geo.height.toFixed(1)}px;--shelf-d:{slot.depth.toFixed(3)}"
+					style="transform:translate3d({slot.x.toFixed(2)}px,{slot.y.toFixed(2)}px,0)"
 					onclick={(event) => onBookClick(event, slot)}
 				>
-					{#if slot.weight > 0.02}
-						<span
-							class="shelf-cast"
-							style="width:{geo.castW.toFixed(1)}px;height:{geo.castH.toFixed(1)}px;transform:translate3d({geo.castX.toFixed(1)}px,{geo.castY.toFixed(1)}px,0);opacity:{slot.weight.toFixed(2)}"
-						></span>
-					{/if}
-					<span
-						class="shelf-top"
-						style="width:{slot.spine.toFixed(2)}px;height:{geo.cover}px;transform:{geo.matTop}"
-					></span>
-					<span
-						class="shelf-spine"
-						style="width:{slot.spine.toFixed(2)}px;height:{geo.height}px;transform:{geo.matSpine}"
-					>
-						<span class="spine-code">{no2}</span>
-						<span class="spine-title">{slot.book.title}</span>
-						<span class="spine-dot" data-status={slot.book.status}></span>
-					</span>
 					<span
 						class="shelf-cover"
-						style="width:{geo.cover}px;height:{geo.height}px;transform:{slot.matCover}"
+						style="width:{geo.cover.toFixed(2)}px;height:{geo.height.toFixed(2)}px;transform:matrix({DEPTH_X},{DEPTH_Y},0,1,{geo.spine.toFixed(2)},{(geo.spine * 0.1).toFixed(2)})"
 					>
-						<span class="cover-head">
-							<span class="cover-code">NO.{no3}</span>
-							<span class="cover-status" data-status={slot.book.status}>
-								{statusLabel(slot.book.status)}
+						{#if slot.near && slot.book.cover}
+							<img
+								class="cover-art"
+								src={slot.book.cover}
+								alt=""
+								loading="lazy"
+								decoding="async"
+								referrerpolicy="no-referrer"
+							/>
+						{:else}
+							<span class="cover-blank">
+								<Icon icon="material-symbols:menu-book" />
 							</span>
-						</span>
-						<span class="cover-art">
-							{#if slot.book.cover}
-								<img
-									src={slot.book.cover}
-									alt=""
-									loading="lazy"
-									decoding="async"
-									referrerpolicy="no-referrer"
-								/>
-							{:else}
-								<span class="cover-blank">
-									<Icon icon="material-symbols:menu-book" />
-								</span>
-							{/if}
-						</span>
-						<span class="cover-foot">WK-{slot.book.id}</span>
+						{/if}
+					</span>
+
+					<span
+						class="shelf-top"
+						style="width:{geo.spine.toFixed(2)}px;height:{geo.cover.toFixed(2)}px;transform:{geo.matTop}"
+					></span>
+
+					<span
+						class="shelf-spine"
+						style="width:{geo.spine.toFixed(2)}px;height:{geo.height.toFixed(2)}px;transform:{geo.matSpine}"
+					>
+						<span class="shelf-code spine-code">{no2}</span>
+						<span class="spine-title">{spineTitle(slot.book.title)}</span>
+						<span
+							class="spine-dot"
+							data-status={slot.book.status}
+							title={statusLabel(slot.book.status)}
+						></span>
 					</span>
 				</a>
 			{/each}

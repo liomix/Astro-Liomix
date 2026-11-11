@@ -109,15 +109,13 @@
 
 /* ── 3D 书架（几何常量见 components/misc/Bookshelf3D.svelte） ── */
 .books-shelf {
-	/* 纸张与投影的配色，都在这里集中定义，深浅色各一套 */
-	--shelf-paper: #f2f0e9;
-	--shelf-milk: #f7f5ec;
-	--shelf-cap: #e3dfd3;
-	/* 轮廓线：书脊/封面的描边，比纸色深一档，书与书之间才分得开 */
-	--shelf-edge: rgb(120 111 92 / 32%);
-	--shelf-edge-strong: rgb(96 88 72 / 46%);
-	--shelf-shade: rgb(72 66 52 / 14%);
-	--shelf-light: rgb(255 255 255 / 78%);
+	/* 纸色与阴影集中在这里，取值对齐 Wenku8_Flutter 的 ArchiveDesign */
+	--shelf-paper: #f2f0e9; /* 书脊：一张平纸，不做渐变 */
+	--shelf-milk: #fefdf8; /* 封面纸 */
+	--shelf-cap: #e3dfd3; /* 顶面靠后的一侧 */
+	--shelf-line: rgb(0 0 0 / 14%); /* 0.7px 描边 */
+	--shelf-top-line: rgb(154 146 127 / 24%);
+	--shelf-floor: #8a806b; /* 落地阴影 */
 	--shelf-ink: #33312b;
 	--shelf-muted: #8b8577;
 	--shelf-stage-bg: #fbfaf5;
@@ -130,15 +128,14 @@
 }
 
 :root.dark .books-shelf {
-	--shelf-paper: #2c2b26;
-	--shelf-milk: #232320;
-	--shelf-cap: #3a3933;
-	--shelf-edge: rgb(255 255 255 / 18%);
-	--shelf-edge-strong: rgb(255 255 255 / 26%);
-	--shelf-shade: rgb(0 0 0 / 40%);
-	--shelf-light: rgb(255 255 255 / 10%);
-	--shelf-ink: #ece9df;
-	--shelf-muted: #a19b8c;
+	--shelf-paper: #2d2d2d;
+	--shelf-milk: #242424;
+	--shelf-cap: #3a3a3a;
+	--shelf-line: rgb(255 255 255 / 18%);
+	--shelf-top-line: rgb(255 255 255 / 10%);
+	--shelf-floor: #f6f6f6;
+	--shelf-ink: #f2f2f2;
+	--shelf-muted: #b7b7b7;
 	--shelf-stage-bg: #1d1d1a;
 	--shelf-grid: rgb(255 255 255 / 3.5%);
 	--shelf-sheen: rgb(255 255 255 / 5%);
@@ -172,33 +169,6 @@
 	-webkit-tap-highlight-color: transparent;
 }
 
-/* 两侧的空气透视 + 底部的接地暗角：远处淡入背景，书列才有纵深 */
-.books-shelf-stage::after {
-	position: absolute;
-	z-index: 200;
-	inset: 0;
-	background:
-		linear-gradient(
-			90deg,
-			color-mix(in srgb, var(--shelf-stage-bg) 88%, transparent) 0%,
-			color-mix(in srgb, var(--shelf-stage-bg) 38%, transparent) 3.5%,
-			transparent 8.5%
-		),
-		linear-gradient(
-			270deg,
-			color-mix(in srgb, var(--shelf-stage-bg) 88%, transparent) 0%,
-			color-mix(in srgb, var(--shelf-stage-bg) 38%, transparent) 3.5%,
-			transparent 8.5%
-		),
-		linear-gradient(
-			0deg,
-			color-mix(in srgb, var(--shelf-stage-bg) 78%, transparent) 0%,
-			transparent 7%
-		);
-	content: "";
-	pointer-events: none;
-}
-
 .books-shelf-stage:active {
 	cursor: grabbing;
 }
@@ -208,7 +178,17 @@
 	outline-offset: 2px;
 }
 
-/* 一本书：零尺寸定位点，四个面全部相对它做斜投影变换 */
+/* 落地阴影：所有书共用一张 svg，画在所有书之前（和原实现一致） */
+.shelf-floor {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+	pointer-events: none;
+}
+
+/* 一本书：零尺寸定位点，三个面全部相对它做斜投影 */
 .shelf-book {
 	position: absolute;
 	top: 0;
@@ -218,18 +198,7 @@
 	color: inherit;
 	cursor: pointer;
 	text-decoration: none;
-	will-change: transform;
-}
-
-/* 悬停：书脊染一点主题色，但保持和静止状态一样的明暗渐变，棱线才不会被抹平 */
-.shelf-book:not(.is-focused):hover .shelf-spine {
-	--hover-skin: color-mix(in srgb, var(--shelf-paper) 88%, var(--primary));
-	background: linear-gradient(
-		90deg,
-		color-mix(in srgb, var(--hover-skin) 82%, #fff) 0%,
-		var(--hover-skin) 34%,
-		color-mix(in srgb, var(--hover-skin) 94%, #000) 100%
-	);
+	-webkit-tap-highlight-color: transparent;
 }
 
 .shelf-book > span {
@@ -241,70 +210,60 @@
 	backface-visibility: hidden;
 }
 
-/* 空气透视：越远的书越往背景色里退，一层层才拉开距离 */
-.shelf-spine::after,
-.shelf-top::after,
-.shelf-cover::after {
-	position: absolute;
-	inset: 0;
-	background: var(--shelf-stage-bg);
-	content: "";
-	opacity: calc(var(--shelf-d, 0) * 0.2);
-	pointer-events: none;
+/* ── 封面：整面铺满封面图，不叠任何文字（最底层，被右边那本书的书脊裁住） ── */
+.shelf-cover {
+	overflow: hidden;
+	background: var(--shelf-milk);
+	box-shadow: inset 0 0 0 0.7px var(--shelf-line);
 }
 
-/* 顶面：书脊厚度 × 封面深度的平行四边形，像一叠纸的截面。
-   前缘亮、后缘压暗，一条面就带出"往里退"的方向 */
+.cover-art {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* 编号：等宽小字，书脊顶部 */
+.shelf-code {
+	display: block;
+	color: var(--shelf-muted);
+	font-family: var(--shelf-mono);
+	font-size: calc(9px * var(--shelf-s, 1));
+	font-weight: 500;
+	letter-spacing: 0.07em;
+	line-height: 1.35;
+	white-space: nowrap;
+}
+
+.cover-blank {
+	display: grid;
+	width: 100%;
+	height: 100%;
+	place-items: center;
+	color: var(--shelf-muted);
+	font-size: calc(1.3rem * var(--shelf-s, 1));
+}
+
+/* ── 顶面：书脊厚度 × 封面的平行四边形，像一叠纸的截面 ── */
 .shelf-top {
-	background: linear-gradient(
-		90deg,
-		color-mix(in srgb, var(--shelf-cap) 70%, #fff) 0%,
-		var(--shelf-cap) 34%,
-		color-mix(in srgb, var(--shelf-cap) 82%, #000) 100%
-	);
-	box-shadow: inset 0 0 0 1px var(--shelf-edge);
+	background: linear-gradient(180deg, var(--shelf-milk) 0%, var(--shelf-cap) 100%);
+	box-shadow: inset 0 0 0 0.4px var(--shelf-top-line);
 }
 
-/* 接触阴影：书落地的那一小片椭圆，只给靠近中心、被拉开的那几本 */
-.shelf-cast {
-	border-radius: 50%;
-	background: radial-gradient(
-		closest-side,
-		rgb(0 0 0 / 34%),
-		rgb(0 0 0 / 12%) 58%,
-		transparent 100%
-	);
-	filter: blur(calc(5px * var(--shelf-s, 1)));
-	pointer-events: none;
-}
-
-/* 书脊：正对读者的那一面。左右各一道棱线 + 右侧一道落影，书才像一本本立着 */
+/* ── 书脊：正对读者的那一面，一张平纸 + 一道细描边 ── */
 .shelf-spine {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	padding: calc(7px * var(--shelf-s, 1)) 0 calc(6px * var(--shelf-s, 1));
+	padding: calc(9px * var(--shelf-s, 1)) calc(1px * var(--shelf-s, 1));
 	overflow: hidden;
-	background: linear-gradient(
-		90deg,
-		color-mix(in srgb, var(--shelf-paper) 82%, #fff) 0%,
-		var(--shelf-paper) 34%,
-		color-mix(in srgb, var(--shelf-paper) 94%, #000) 100%
-	);
-	box-shadow:
-		inset 1px 0 0 var(--shelf-light),
-		inset -1px 0 0 var(--shelf-edge-strong),
-		inset 0 -1px 0 var(--shelf-shade),
-		1.5px 1px 3px -1px var(--shelf-shade);
+	background: var(--shelf-paper);
+	box-shadow: inset 0 0 0 0.7px var(--shelf-line);
 }
 
 .spine-code {
 	flex: none;
-	color: var(--shelf-muted);
-	font-family: var(--shelf-mono);
-	font-size: calc(6.5px * var(--shelf-s, 1));
-	letter-spacing: 0.04em;
-	line-height: 1;
 }
 
 .spine-title {
@@ -313,128 +272,33 @@
 	align-items: center;
 	justify-content: center;
 	min-height: 0;
-	padding: calc(7px * var(--shelf-s, 1)) 0;
+	margin-top: calc(10px * var(--shelf-s, 1));
 	overflow: hidden;
 	color: var(--shelf-ink);
 	font-size: calc(9px * var(--shelf-s, 1));
 	font-weight: 600;
 	line-height: 1.08;
-	mask-image: linear-gradient(to bottom, #000 84%, transparent);
-	white-space: nowrap;
-	writing-mode: vertical-rl;
+	text-align: center;
+	/* 一个字一行，由脚本插入换行；最多 10 字 + 一行省略号，9px 正好排得下 */
+	white-space: pre-line;
 }
 
+/* 书脊底部的小圆点：实心=读完，半实=读过，灰=在读 */
 .spine-dot {
 	flex: none;
-	width: calc(5px * var(--shelf-s, 1));
-	height: calc(5px * var(--shelf-s, 1));
-	margin-bottom: 1px;
+	width: calc(6px * var(--shelf-s, 1));
+	height: calc(6px * var(--shelf-s, 1));
+	margin-top: calc(6px * var(--shelf-s, 1));
 	border-radius: 50%;
-	box-shadow: inset 0 0 0 0.75px var(--shelf-muted);
+	background: var(--shelf-muted);
 }
 
-/* 书脊底部的小圆点也带状态：实心=读完，半实=读过，空心=在读 */
 .spine-dot[data-status="finished"] {
 	background: var(--primary);
-	box-shadow: none;
 }
 
 .spine-dot[data-status="read"] {
-	background: color-mix(in srgb, var(--primary) 40%, transparent);
-}
-
-/* 封面：沿深度方向斜切出去的那一面，聚焦时才露出来 */
-.shelf-cover {
-	display: flex;
-	flex-direction: column;
-	padding: calc(9px * var(--shelf-s, 1)) calc(10px * var(--shelf-s, 1))
-		calc(8px * var(--shelf-s, 1));
-	overflow: hidden;
-	background: var(--shelf-milk);
-	box-shadow:
-		inset 0 0 0 1px var(--shelf-edge),
-		inset 1px 0 0 var(--shelf-light);
-}
-
-.cover-head,
-.cover-foot {
-	display: flex;
-	flex: none;
-	align-items: center;
-	color: var(--shelf-muted);
-	font-family: var(--shelf-mono);
-	font-size: calc(7.5px * var(--shelf-s, 1));
-	letter-spacing: 0.06em;
-	line-height: 1;
-	text-transform: uppercase;
-}
-
-.cover-foot {
-	overflow: hidden;
-	margin-top: auto;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-/* 封面右上角的状态：只在读 / 读过 / 读完三种 */
-.cover-status {
-	margin-left: auto;
-	padding-left: calc(4px * var(--shelf-s, 1));
-	color: var(--shelf-muted);
-	font-size: calc(7px * var(--shelf-s, 1));
-	letter-spacing: 0;
-	text-transform: none;
-}
-
-.cover-status[data-status="finished"] {
-	color: var(--primary);
-}
-
-.cover-status[data-status="read"] {
-	color: color-mix(in srgb, var(--shelf-ink) 62%, transparent);
-}
-
-.cover-art {
-	position: relative;
-	/* 允许在书变高时被轻微压缩，避免把底部编号挤出封面 */
-	flex: 0 1 auto;
-	width: 100%;
-	min-height: 0;
-	margin-top: calc(7px * var(--shelf-s, 1));
-	overflow: hidden;
-	aspect-ratio: 118 / 166;
-	background: var(--btn-regular-bg);
-	box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
-}
-
-.cover-art img {
-	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.cover-blank {
-	display: grid;
-	height: 100%;
-	place-items: center;
-	color: var(--shelf-muted);
-	font-size: calc(1.2rem * var(--shelf-s, 1));
-}
-
-/* 聚焦书：描边加粗一档，落影分三层（近实 + 远虚），让它明确"离开"书架 */
-.shelf-book.is-focused .shelf-cover {
-	box-shadow:
-		inset 0 0 0 1px var(--shelf-edge-strong),
-		0 14px 30px -14px rgb(0 0 0 / 52%),
-		0 34px 60px -34px rgb(0 0 0 / 42%);
-}
-
-.shelf-book.is-focused .shelf-spine {
-	box-shadow:
-		inset 1px 0 0 var(--shelf-light),
-		inset -1px 0 0 var(--shelf-edge-strong),
-		2px 1px 4px -1px var(--shelf-shade);
+	background: color-mix(in srgb, var(--primary) 55%, var(--shelf-muted));
 }
 
 /* ── 移动端 ── */
