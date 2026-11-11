@@ -47,4 +47,20 @@ export const wereadConfig: WereadConfig = {
 
 	// 请求超时（毫秒）
 	timeout: 8000,
+
+	// ── 缓存 ──────────────────────────────────────────────────────────────
+	// 数据会缓存在 cache/weread/ 里（已 gitignore），同一份数据不会反复打网关，
+	// 减少被限流 / 封 Key 的风险。缓存里只有响应体，不含 API Key。
+	// 想立刻看最新数据：临时 `WEREAD_CACHE=off pnpm dev`，或直接删掉 cache/weread/。
+	cache: true,
+
+	// 统一缓存新鲜期（小时），0 表示按接口分档：
+	// 书架 6h、本月统计 2h、累计 / 年度 12h、书籍详情 30 天
+	cacheTtl: 0,
+
+	// 抓取失败时，过期缓存还能继续用多少天（页面不会因网关抽风而空掉）
+	cacheStaleDays: 30,
+
+	// 缓存目录（相对项目根），默认 cache/weread
+	cacheDir: "cache/weread",
 };

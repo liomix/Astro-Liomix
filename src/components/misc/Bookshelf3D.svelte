@@ -214,8 +214,9 @@ const slots = $derived.by<Slot[]>(() => {
 	// 只有一本书时不做循环，就画它一个
 	if (count === 1) return [buildSlot(0, 0, 0)];
 
-	// 只渲染可能落进视口的槽位
-	const span = Math.ceil(geo.w / geo.pitch / 2) + 3;
+	// 只渲染可能落进视口的槽位：两侧各留 2 个身位做缓冲，
+	// 再多就是白白每帧重算（远处那些书肉眼也看不到）
+	const span = Math.ceil(geo.w / geo.pitch / 2) + 2;
 	const out: Slot[] = [];
 	for (let key = Math.floor(logical) - span; key <= Math.ceil(logical) + span; key++) {
 		out.push(buildSlot(key, key - logical, mod(key, count)));
@@ -348,6 +349,34 @@ let drag: {
 let suppressClick = false;
 let lastDetent = 0;
 let lastPulse = 0;
+/** 拖拽中：给书加 GPU 提示，松手立刻撤掉，别让 30 层一直占显存 */
+let dragging = $state(false);
+/** 待应用的指针位置，合并到下一帧统一算 */
+let pendingX: number | null = null;
+let moveRaf = 0;
+
+/** 把待处理的指针位置落到 logical 上（一帧最多一次） */
+function applyPendingMove() {
+	moveRaf = 0;
+	if (!drag || pendingX === null) return;
+	const x = pendingX;
+	pendingX = null;
+	logical = drag.from - (x - drag.x) / geo.pitch;
+	detentPulse();
+}
+
+/** 收尾前把最后一帧补上，否则松手位置会差一帧 */
+function flushPendingMove() {
+	if (moveRaf) {
+		cancelAnimationFrame(moveRaf);
+		moveRaf = 0;
+	}
+	if (drag && pendingX !== null) {
+		const x = pendingX;
+		pendingX = null;
+		logical = drag.from - (x - drag.x) / geo.pitch;
+	}
+}
 
 /** 每跨过一个整数书位给一次轻震动（手机上才有，桌面无感） */
 function detentPulse() {
@@ -384,17 +413,22 @@ function onPointerMove(event: PointerEvent) {
 	const dx = event.clientX - drag.x;
 	if (!drag.moved && Math.abs(dx) > 3) {
 		drag.moved = true;
+		dragging = true;
 		(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 	}
 	if (!drag.moved) return;
-	logical = drag.from - dx / geo.pitch;
-	detentPulse();
+
+	// 速度采样必须逐条记（时间窗口只有 120ms），几何更新则合并到下一帧：
+	// 高刷屏的 pointermove 一秒能来 200+ 次，没必要每次都重算整排书。
 	const now = performance.now();
 	drag.samples.push({ t: now, x: event.clientX });
 	// 只留最近 120ms 的采样
 	while (drag.samples.length > 2 && now - drag.samples[0].t > 120) {
 		drag.samples.shift();
 	}
+
+	pendingX = event.clientX;
+	if (!moveRaf) moveRaf = requestAnimationFrame(applyPendingMove);
 }
 
 /** 松手速度：取最近采样窗口的位移 / 时间，换算成「书位 / 秒」 */
@@ -409,9 +443,12 @@ function releaseVelocity(): number {
 
 function onPointerUp(event: PointerEvent) {
 	if (!drag) return;
+	// 先把还挂在 rAF 里的最后一帧落下去，松手位置才准
+	flushPendingMove();
 	const { moved, slotNo } = drag;
 	const velocity = releaseVelocity();
 	drag = null;
+	dragging = false;
 	if (moved) {
 		suppressClick = true;
 		release(velocity);
@@ -429,9 +466,11 @@ function onPointerUp(event: PointerEvent) {
 /** 指针被系统收走（触摸滚动等）：只收尾，不算点击 */
 function onPointerCancel() {
 	if (!drag) return;
+	flushPendingMove();
 	const moved = drag.moved;
 	const velocity = releaseVelocity();
 	drag = null;
+	dragging = false;
 	if (moved) release(velocity);
 }
 
@@ -496,6 +535,7 @@ onMount(() => {
 		observer.disconnect();
 		stage?.removeEventListener("wheel", onWheel);
 		cancelAnimationFrame(raf);
+		cancelAnimationFrame(moveRaf);
 		clearTimeout(wheelTimer);
 	};
 });
@@ -508,6 +548,7 @@ onMount(() => {
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
 			class="books-shelf-stage"
+			class:is-dragging={dragging}
 			bind:this={stage}
 			style="height:{geo.stageHeight}px;--shelf-s:{geo.s.toFixed(3)}"
 			role="listbox"
@@ -560,12 +601,15 @@ onMount(() => {
 						style="width:{geo.cover.toFixed(2)}px;height:{geo.height.toFixed(2)}px;transform:matrix({DEPTH_X},{DEPTH_Y},0,1,{geo.spine.toFixed(2)},{(geo.spine * 0.1).toFixed(2)})"
 					>
 						{#if slot.near && slot.book.cover}
+							<!-- 只有中心 ±1 本带图（最多 3 张），都在主视觉里，直接 eager 更划算 -->
 							<img
 								class="cover-art"
 								src={slot.book.cover}
 								alt=""
-								loading="lazy"
+								loading="eager"
+								fetchpriority={slot.focused ? "high" : "auto"}
 								decoding="async"
+								draggable="false"
 								referrerpolicy="no-referrer"
 							/>
 						{:else}

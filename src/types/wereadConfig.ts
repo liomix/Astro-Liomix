@@ -34,4 +34,18 @@ export interface WereadConfig {
 
 	// 请求超时时间（毫秒），超时后页面降级为空书架而非构建失败
 	timeout?: number;
+
+	// 是否启用本地缓存，默认 true。关掉后每次构建 / 每次刷新页面都会真的打网关
+	cache?: boolean;
+
+	// 统一缓存新鲜期（小时）。不填或填 0 时按接口分档：
+	// 书架 6h、本月统计 2h、累计与年度统计 12h、书籍详情 30 天
+	cacheTtl?: number;
+
+	// 网关抓取失败（超时 / 限流 / errcode）时，过期缓存还能继续用多少天，默认 30。
+	// 设为 0 表示不留旧数据，抓不到就降级为空书架
+	cacheStaleDays?: number;
+
+	// 缓存目录，默认 cache/weread（相对项目根目录，已被 .gitignore 忽略）
+	cacheDir?: string;
 }

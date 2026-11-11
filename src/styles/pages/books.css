@@ -167,10 +167,17 @@
 	touch-action: pan-y;
 	user-select: none;
 	-webkit-tap-highlight-color: transparent;
+	/* 独立出布局 / 绘制的边界：拖动时只有这块重绘，不牵连整页 */
+	contain: layout paint style;
 }
 
 .books-shelf-stage:active {
 	cursor: grabbing;
+}
+
+/* 拖动中才给书的位移层加 GPU 提示，松手立刻撤掉，别让几十层长期占显存 */
+.books-shelf-stage.is-dragging .shelf-book {
+	will-change: transform;
 }
 
 .books-shelf-stage:focus-visible {

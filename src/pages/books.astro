@@ -13,6 +13,7 @@ import {
 	formatHours,
 	formatMinutes,
 } from "@/utils/weread-utils";
+import { wereadCacheStats } from "@/utils/weread-cache";
 
 // 页面开关：站点开关或微信读书配置任一关闭都跳 404
 if (!siteConfig.pages.books || !wereadConfig.enable) {
@@ -24,7 +25,17 @@ const description =
 	wereadConfig.description || i18n(I18nKey.booksDescription);
 
 // 构建时抓取微信读书书架与阅读统计（网关只放行 weread.qq.com 跨域，必须服务端拉）
+// 结果会落在 cache/weread/，TTL 内不再重复请求，避免 dev 反复刷新把 Key 撸限流
 const data = await fetchWereadData(wereadConfig);
+
+if (import.meta.env.DEV) {
+	const cache = wereadCacheStats();
+	console.log(
+		`[Weread] 缓存命中 ${cache.hit} 次 / 复用旧数据 ${cache.stale} 次 / 实际请求 ${cache.fetch} 次${
+			cache.denied ? ` / 被拒 ${cache.denied} 次` : ""
+		}${cache.skipped ? ` / 冷却跳过 ${cache.skipped} 次` : ""}`,
+	);
+}
 
 const limit = Math.max(0, wereadConfig.limit ?? 0);
 const books = limit > 0 ? data.books.slice(0, limit) : data.books;
@@ -64,6 +75,17 @@ function formatRatingCount(count: number): string {
 	}
 	return ratingTemplate.replace("{n}", text);
 }
+
+// 封面图在微信读书的图床，提前建连，书架首图少一次 DNS + TLS 握手
+const coverOrigin = (() => {
+	const cover = books.find((book) => book.cover)?.cover;
+	if (!cover) return "";
+	try {
+		return new URL(cover).origin;
+	} catch {
+		return "";
+	}
+})();
 
 const shelfBooks = books.map((book) => ({
 	id: book.id,
@@ -137,6 +159,16 @@ const heatmap = wereadConfig.showHeatmap === false ? null : data.calendar;
 ---
 
 <MainGridLayout title={title} description={description}>
+	{
+		coverOrigin && (
+			<link rel="preconnect" href={coverOrigin} slot="head" />
+		)
+	}
+	{
+		coverOrigin && (
+			<link rel="dns-prefetch" href={coverOrigin} slot="head" />
+		)
+	}
 	<section class="page-shell books-page">
 		<div class="books-hero card-base">
 			{

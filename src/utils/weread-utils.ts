@@ -1,4 +1,11 @@
+import crypto from "node:crypto";
 import type { WereadConfig } from "@/types/wereadConfig";
+import {
+	type FetchOutcome,
+	cachedCall,
+	makeCacheKey,
+	resolveCacheDir,
+} from "@/utils/weread-cache";
 
 // ============================================================================
 // 微信读书数据抓取（仅服务端使用）
@@ -12,6 +19,9 @@ import type { WereadConfig } from "@/types/wereadConfig";
 // ============================================================================
 
 const GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
+
+/** 没配 Key 只提醒一次，避免一次构建刷几十行日志 */
+let warnedNoKey = false;
 
 // 书籍的阅读状态，书架上只会出现这两种：
 //   reading  在读 —— 还在书架上、没读完
@@ -159,22 +169,16 @@ function readEnvKey(): string {
 }
 
 /**
- * 调用网关。失败（网络/超时/errcode）一律返回 null，由调用方降级，
+ * 真正打网关：网络 / 超时 / errcode 一律返回 value: null，由调用方降级，
  * 保证图书页在 API 不可用时也能构建成功。
+ * denied 用来标记「限流型」失败（429 / 403），交给缓存层触发冷却，别再硬试。
  */
-async function callGateway<T>(
+async function requestGateway<T>(
 	apiName: string,
+	apiKey: string,
 	config: WereadConfig,
-	payload: Record<string, unknown> = {},
-): Promise<T | null> {
-	const apiKey = config.apiKey?.trim() || readEnvKey();
-	if (!apiKey) {
-		console.warn(
-			`[Weread] ${apiName}: 未配置 API Key，已跳过（设置 WEREAD_API_KEY 环境变量，或直接填 wereadConfig.apiKey）`,
-		);
-		return null;
-	}
-
+	payload: Record<string, unknown>,
+): Promise<FetchOutcome<T>> {
 	const controller = new AbortController();
 	const timer = setTimeout(
 		() => controller.abort(),
@@ -198,7 +202,10 @@ async function callGateway<T>(
 
 		if (!res.ok) {
 			console.warn(`[Weread] ${apiName}: HTTP ${res.status}`);
-			return null;
+			return {
+				value: null,
+				denied: res.status === 429 || res.status === 403,
+			};
 		}
 
 		const data = (await res.json()) as T & GatewayError;
@@ -206,18 +213,85 @@ async function callGateway<T>(
 			console.warn(
 				`[Weread] ${apiName}: errcode ${data.errcode} ${data.errmsg ?? ""}`,
 			);
-			return null;
+			return {
+				value: null,
+				denied: data.errcode === 429 || data.errcode === 403,
+			};
 		}
 		if (data.upgrade_info) {
 			console.warn(`[Weread] ${apiName}: 返回 upgrade_info，请升级 skill_version`);
 		}
-		return data;
+		return { value: data };
 	} catch (error) {
+		// 注意：这里只打接口名和错误本身，绝不打印 apiKey
 		console.warn(`[Weread] ${apiName}: 请求失败`, error);
-		return null;
+		return { value: null };
 	} finally {
 		clearTimeout(timer);
 	}
+}
+
+/**
+ * 各接口的缓存新鲜期（秒）。
+ * 书架 / 统计一天内会变好几次，图书元数据（简介、字数、评分）几乎不变，可以放很久。
+ */
+const CACHE_TTL: Record<string, number> = {
+	"/shelf/sync": 6 * 3600,
+	"/book/info": 30 * 86400,
+	"/book/chapterinfo": 30 * 86400,
+};
+
+function ttlSeconds(
+	apiName: string,
+	payload: Record<string, unknown>,
+	config: WereadConfig,
+): number {
+	// 配置了统一 TTL（小时）就以配置为准，0 / 不填走内置分档
+	const override = config.cacheTtl ?? 0;
+	if (override > 0) return override * 3600;
+	if (apiName === "/readdata/detail") {
+		// 本月统计变化最快；累计 / 年度统计半天一次足够
+		return payload.mode === "monthly" ? 2 * 3600 : 12 * 3600;
+	}
+	return CACHE_TTL[apiName] ?? 6 * 3600;
+}
+
+/**
+ * 带缓存的网关调用。同一份数据在内存 / cache/weread/ 里命中就直接返回，
+ * 不再打到微信读书；抓取失败时退回旧缓存，避免因为限流把页面搞空。
+ */
+async function callGateway<T>(
+	apiName: string,
+	config: WereadConfig,
+	payload: Record<string, unknown> = {},
+): Promise<T | null> {
+	const apiKey = config.apiKey?.trim() || readEnvKey();
+	if (!apiKey) {
+		// 一次构建会调很多次，没配 Key 时只提醒一次就够
+		if (!warnedNoKey) {
+			warnedNoKey = true;
+			console.warn(
+				"[Weread] 未配置 API Key，图书页将降级为空书架（设置 WEREAD_API_KEY 环境变量，或直接填 wereadConfig.apiKey）",
+			);
+		}
+		return null;
+	}
+
+	return cachedCall<T>({
+		key: makeCacheKey(
+			apiName,
+			payload,
+			config.skillVersion || "1.0.5",
+			// 只传 Key 的短哈希：换账号时自动换一套缓存，同时 Key 本身不进文件名
+			crypto.createHash("sha256").update(apiKey).digest("hex").slice(0, 12),
+		),
+		dir: resolveCacheDir(config.cacheDir),
+		// WEREAD_CACHE=off 用来强制刷新（改了 Key / 想立刻看最新数据时）
+		enabled: config.cache !== false && process.env.WEREAD_CACHE !== "off",
+		ttl: ttlSeconds(apiName, payload, config),
+		stale: Math.max(0, config.cacheStaleDays ?? 30) * 86400,
+		load: () => requestGateway<T>(apiName, apiKey, config, payload),
+	});
 }
 
 // 从 readStat 的「读过」「读完」「笔记」里取数字（形如 "13本" "49条"）
@@ -227,21 +301,54 @@ function pickStat(entries: ReadStatEntry[] | undefined, name: string): number {
 	return Number.isFinite(value) ? value : 0;
 }
 
+/**
+ * 网关返回的字符串会被塞进 HTML / 属性，统一压掉控制字符并限长，
+ * 免得异常数据把页面撑爆或者带出奇怪字符。
+ */
+function cleanText(value: unknown, max: number): string {
+	if (typeof value !== "string") return "";
+	const text = Array.from(value)
+		.map((char) => {
+			const code = char.codePointAt(0) ?? 0;
+			// 控制字符、行分隔符一律换成空格，避免破坏排版
+			const isBlank =
+				code < 0x20 || code === 0x7f || code === 0x2028 || code === 0x2029;
+			return isBlank ? " " : char;
+		})
+		.join("")
+		.replace(/\s+/g, " ")
+		.trim();
+	return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/** 只接受 https 绝对地址：挡住 javascript: / data: 这类伪协议进到 href / src */
+function cleanUrl(value: unknown): string {
+	if (typeof value !== "string" || !value) return "";
+	try {
+		const url = new URL(value);
+		return url.protocol === "https:" ? url.toString() : "";
+	} catch {
+		return "";
+	}
+}
+
 // 把书架原始条目整理成页面用的结构
 function normalizeBooks(data: ShelfResponse | null): WereadBook[] {
 	const books = data?.books ?? [];
 	return books
 		.filter((book) => book.title)
 		.map((book) => ({
-			id: book.bookId ?? "",
-			title: book.title ?? "",
-			author: book.author ?? "",
-			cover: book.cover ?? "",
-			category: book.category ?? "",
+			id: cleanText(book.bookId, 32),
+			title: cleanText(book.title, 120),
+			author: cleanText(book.author, 80),
+			cover: cleanUrl(book.cover),
+			category: cleanText(book.category, 40),
 			link:
-				book.deepLink ||
-				book.readerLink ||
-				(book.bookId ? `https://weread.qq.com/book-detail?type=1&v=${book.bookId}` : ""),
+				cleanUrl(book.deepLink) ||
+				cleanUrl(book.readerLink) ||
+				(book.bookId
+					? `https://weread.qq.com/book-detail?type=1&v=${encodeURIComponent(cleanText(book.bookId, 32))}`
+					: ""),
 			lastReadAt: book.readUpdateTime ?? 0,
 			// 书架上的书只有两种状态：读完 / 在读
 			status: (book.finishReading === 1 ? "finished" : "reading") as WereadBookStatus,
@@ -280,7 +387,7 @@ async function attachBookMeta(
 				}),
 			]);
 
-			book.intro = info?.intro?.trim() ?? "";
+			book.intro = cleanText(info?.intro, 600);
 			book.rating = info?.newRating ?? 0;
 			book.ratingCount = info?.newRatingCount ?? 0;
 			book.wordCount = (chapters?.chapters ?? []).reduce(
