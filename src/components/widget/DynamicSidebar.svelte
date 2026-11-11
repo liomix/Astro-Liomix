@@ -284,9 +284,8 @@ function visibleImages(entry: DynamicEntry) {
 						aria-label={likeLabel}
 						title={likeLabel}
 					>
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.08-.66-.23-.45-.52-.86-.88-1.22L14 2 7.59 8.41C7.21 8.79 7 9.3 7 9.83v7.84C7 18.95 8.05 20 9.34 20h8.11c.7 0 1.36-.37 1.72-.97l2.66-6.15z" />
-						</svg>
+						<dynamic-lottie-icon data-animation="like-heart" style="font-size:1.35rem"></dynamic-lottie-icon>
+						<span class="pop-action-count" data-dynamic-like-count>0</span>
 					</button>
 					<a
 						class="pop-action"
@@ -295,9 +294,11 @@ function visibleImages(entry: DynamicEntry) {
 						title={commentLabel}
 						onclick={closeModal}
 					>
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z" />
-						</svg>
+						<dynamic-lottie-icon
+							data-animation="comment-chats"
+							data-speed="0.35"
+							style="font-size:1.25rem"></dynamic-lottie-icon>
+						<span class="pop-action-count" data-dynamic-comment-count>0</span>
 					</a>
 				</div>
 			</footer>
@@ -502,10 +503,12 @@ function visibleImages(entry: DynamicEntry) {
 
 	.pop-action {
 		display: inline-flex;
-		width: 2rem;
+		min-width: 2rem;
 		height: 2rem;
 		align-items: center;
 		justify-content: center;
+		gap: 0.25rem;
+		padding-inline: 0.45rem;
 		border: 0;
 		border-radius: 9999px;
 		background: transparent;
@@ -514,10 +517,11 @@ function visibleImages(entry: DynamicEntry) {
 		transition: color 0.16s ease, background-color 0.16s ease;
 	}
 
-	.pop-action svg {
-		width: 1.25rem;
-		height: 1.25rem;
-		fill: currentColor;
+	.pop-action-count {
+		font-size: 0.72rem;
+		font-weight: 600;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.pop-action:hover {
@@ -526,6 +530,7 @@ function visibleImages(entry: DynamicEntry) {
 	}
 
 	.pop-action.is-active {
+		background: var(--btn-regular-bg);
 		color: var(--primary);
 	}
 </style>

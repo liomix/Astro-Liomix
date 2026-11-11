@@ -4,7 +4,10 @@ import { i18n } from "@/i18n/translation";
 
 /**
  * 动态卡片底部操作条：点赞 / 评论
- * 交互逻辑统一在 dynamic-actions.ts 里通过事件委托处理
+ * 交互逻辑统一在 dynamic-actions.ts 里通过事件委托处理；
+ * 两个图标都是 <dynamic-lottie-icon>（点赞爱心 / 评论气泡），
+ * 元素本身在 dynamic-lottie-icon.ts 里注册，页面、模板克隆、侧栏弹窗共用。
+ * 数字由 formatCompactNumber 统一格式化（万级缩写成 1.6w）。
  */
 
 const likeLabel = i18n(I18nKey.dynamicLike);
@@ -20,11 +23,8 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		aria-label={likeLabel}
 		title={likeLabel}
 	>
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path
-				d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.08-.66-.23-.45-.52-.86-.88-1.22L14 2 7.59 8.41C7.21 8.79 7 9.3 7 9.83v7.84C7 18.95 8.05 20 9.34 20h8.11c.7 0 1.36-.37 1.72-.97l2.66-6.15z"
-			></path>
-		</svg>
+		<dynamic-lottie-icon data-animation="like-heart" style="font-size:1.45rem"></dynamic-lottie-icon>
+		<span class="dynamic-action-count" data-dynamic-like-count>0</span>
 	</button>
 
 	<button
@@ -34,9 +34,11 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		aria-label={commentLabel}
 		title={commentLabel}
 	>
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z" />
-		</svg>
+		<dynamic-lottie-icon
+			data-animation="comment-chats"
+			data-speed="0.35"
+			style="font-size:1.35rem"></dynamic-lottie-icon>
+		<span class="dynamic-action-count" data-dynamic-comment-count>0</span>
 	</button>
 </div>
 
@@ -50,10 +52,12 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 
 	.dynamic-action {
 		display: inline-flex;
-		width: 2.25rem;
+		min-width: 2.25rem;
 		height: 2.25rem;
 		align-items: center;
 		justify-content: center;
+		gap: 0.3rem;
+		padding-inline: 0.55rem;
 		border: 0;
 		border-radius: 9999px;
 		background: transparent;
@@ -62,10 +66,12 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		transition: color 0.16s ease, background-color 0.16s ease;
 	}
 
-	.dynamic-action svg {
-		width: 1.35rem;
-		height: 1.35rem;
-		fill: currentColor;
+	/* 数字：等宽数字，点一下位数不变时按钮宽度不跳 */
+	.dynamic-action-count {
+		font-size: 0.78rem;
+		font-weight: 600;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.dynamic-action:hover {
@@ -78,7 +84,9 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		outline-offset: 1px;
 	}
 
+	/* 图标是彩色素材，没法跟着 color 变，所以激活态靠底色 + 动画自身的颜色 */
 	.dynamic-action.is-active {
+		background: var(--btn-regular-bg);
 		color: var(--primary);
 	}
 </style>

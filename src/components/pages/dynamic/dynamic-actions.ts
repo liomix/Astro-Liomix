@@ -5,7 +5,17 @@
  * - 评论：展开/收起该条动态的内联评论
  */
 
+import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
+import { formatCompactNumber } from "@/utils/number-utils";
+
 const LIKES_KEY = "firefly-dynamic-likes";
+
+/**
+ * 这个模块同时被动态流和侧栏弹窗两个岛 import，dev 下 Vite 有机会把它实例化两份。
+ * 只用模块内的布尔量挡不住 —— 两份各挂一个捕获监听，点一次会连续点赞 + 取消，
+ * 表现就是「点了没反应」。所以再用一个挂在 window 上的标记做全局去重。
+ */
+const BOUND_KEY = "__fireflyDynamicActionsBound";
 
 let registered = false;
 
@@ -37,6 +47,32 @@ function likeId(element: Element): string | null {
 	return host?.dataset.likeId || null;
 }
 
+/**
+ * 点赞数：`data-like-base`（服务端可预置的基数，默认 0）+ 自己这一票。
+ * 静态站没有后端，这里就是个本地计数，数字只是让按钮不至于空着。
+ */
+function paintLikeCount(button: HTMLElement, liked: boolean): void {
+	const node = button.querySelector<HTMLElement>("[data-dynamic-like-count]");
+	if (!node) return;
+	const base = Number(button.dataset.likeBase ?? "") || 0;
+	node.textContent = formatCompactNumber(base + (liked ? 1 : 0));
+}
+
+/** 评论数：评论系统接上后才会有真实数字，现在按 data-comment-base 预置（默认 0） */
+function paintCommentCount(button: HTMLElement): void {
+	const node = button.querySelector<HTMLElement>("[data-dynamic-comment-count]");
+	if (!node) return;
+	const base = Number(button.dataset.commentBase ?? "") || 0;
+	node.textContent = formatCompactNumber(base);
+}
+
+/** 播一次图标动画：点赞是爱心弹出 + 粒子，评论是气泡 */
+function playIcon(button: HTMLElement): void {
+	button
+		.querySelector<HTMLElement & { play?: () => void }>("dynamic-lottie-icon")
+		?.play?.();
+}
+
 /** 把已点赞状态同步到（新渲染出来的）按钮上 */
 export function syncDynamicLikeStates(root: ParentNode = document): void {
 	const likes = readLikes();
@@ -47,7 +83,12 @@ export function syncDynamicLikeStates(root: ParentNode = document): void {
 			const liked = Boolean(id) && likes.has(id as string);
 			button.classList.toggle("is-active", liked);
 			button.setAttribute("aria-pressed", String(liked));
+			paintLikeCount(button, liked);
 		});
+	// 评论数不依赖点赞状态，单独刷一遍（模板克隆出来的条目初始只有占位 0）
+	root
+		.querySelectorAll<HTMLElement>("[data-dynamic-comment]")
+		.forEach((button) => paintCommentCount(button));
 }
 
 function toggleLike(button: HTMLElement): void {
@@ -60,6 +101,8 @@ function toggleLike(button: HTMLElement): void {
 	const liked = likes.has(id);
 	button.classList.toggle("is-active", liked);
 	button.setAttribute("aria-pressed", String(liked));
+	paintLikeCount(button, liked);
+	if (liked) playIcon(button);
 }
 
 function toggleComments(button: HTMLElement): void {
@@ -70,6 +113,7 @@ function toggleComments(button: HTMLElement): void {
 	if (!comments?.toggle) return;
 	comments.toggle();
 	button.classList.toggle("is-active", comments.dataset.expanded === "true");
+	playIcon(button);
 }
 
 function onClick(event: MouseEvent): void {
@@ -79,6 +123,12 @@ function onClick(event: MouseEvent): void {
 		"[data-dynamic-like], [data-dynamic-comment]",
 	);
 	if (!button) return;
+	// 同一个事件只处理一次：万一模块被实例化两份、挂了两个监听，
+	// 点赞会「点一次等于点两次」（加了又删），表现就是点了没反应
+	const flags = event as MouseEvent & { __dynamicActionHandled?: boolean };
+	if (flags.__dynamicActionHandled) return;
+	flags.__dynamicActionHandled = true;
+
 	// 按钮可能嵌在卡片内，阻止冒泡以免触发上层的链接/路由
 	event.preventDefault();
 	event.stopPropagation();
@@ -96,6 +146,12 @@ function onClick(event: MouseEvent): void {
 export function registerDynamicActions(): void {
 	if (registered) return;
 	registered = true;
+
+	const scope = window as unknown as Record<string, boolean | undefined>;
+	if (scope[BOUND_KEY]) return;
+	scope[BOUND_KEY] = true;
+
+	registerDynamicLottieIcons();
 	document.addEventListener("click", onClick, true);
 	syncDynamicLikeStates();
 }
