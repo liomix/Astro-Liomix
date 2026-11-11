@@ -5,12 +5,19 @@
  * 按 Telegram Android 客户端的私聊页复刻：
  *   气泡 17px 圆角 + 靠发送者一侧的 6px 小角（源码 SharedConfig.bubbleRadius = 17，
  *   近侧角 Math.min(6, bubbleRadius)）；对方白/深灰气泡靠左、自己浅绿/蓝气泡靠右；
- *   时间贴在气泡右下角，自己的消息后面跟已读双勾；底部是输入栏，右侧纸飞机
+ *   时间贴在气泡右下角（不放已读回执的双勾）；底部是输入栏，右侧纸飞机
  *   （空输入时灰、有文字才点亮成蓝色）。表情面板按 Telegram 的 emoji 键盘做，
  *   底部一排分类 tab 切换不同类型的表情。
  *
  * 群聊式头像：对方消息左侧跟一个首字母彩圆（Telegram 没有用户头像时的默认画法），
  * 连发多条只在最后一条下方露头像、只在第一条上方显示昵称 —— 和 Telegram 分组规则一致。
+ *
+ * 所有消息（示例消息和自己发出去的）都按 GitHub Flavored Markdown 解析
+ * （粗体、斜体、删除线、行内代码 / 代码块、列表、引用、链接、表格、换行），
+ * 解析结果先过一遍标签白名单再塞进气泡，避免脚本注入。
+ * 代码块会补一条「语言 + 复制」的顶栏：marked 只吐标准的 <pre><code class="language-x">，
+ * 顶栏和复制按钮在消毒之后由 DOM 拼（见 decorateCodeBlocks），白名单不用为 button 开口子。
+ * 输入框是会自动长高的 textarea：Enter 发送、Shift+Enter 换行，方便写多行 Markdown。
  *
  * 消息目前是内置示例（静态站没有后端），发送只是本地追加一条气泡，不落库。
  * 以后接真实评论数据时，只要把 messages 换成接口返回即可。
@@ -54,12 +61,12 @@ const messages: ChatMessage[] = [
 		side: "in",
 		author: "阿柴",
 		tone: 0,
-		text: "后来那个冷却时间你设了多久？",
+		text: "后来那个 `WEREAD_COOLDOWN` 你设了多久？",
 		offset: -8,
 	},
 	{
 		side: "out",
-		text: "15 分钟。触发一次就全局停手，宁可少抓几次也别把 Key 玩废",
+		text: "**15 分钟**。触发一次就全局停手，宁可少抓几次也别把 `Key` 玩废",
 		offset: -7,
 	},
 	{
@@ -68,6 +75,13 @@ const messages: ChatMessage[] = [
 		tone: 1,
 		text: "稳，这套我抄走了",
 		offset: -6,
+	},
+	{
+		side: "in",
+		author: "木子",
+		tone: 1,
+		text: "我那边先这么写的：\n\n```ts\nconst ttl = 15 * 60_000;\n```\n\n反正被限流以后，*少抓几次* 比什么都强。",
+		offset: -5,
 	},
 ];
 
@@ -179,7 +193,14 @@ const emojiCategories: EmojiCategory[] = [
 ];
 ---
 
-<div class="tg-chat" data-tg-chat data-tg-path={path}>
+<div
+	class="tg-chat"
+	data-tg-chat
+	data-tg-path={path}
+	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
+	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
+	data-tg-label-code={i18n(I18nKey.commentChatCode)}
+>
 	<div class="tg-scroll" data-tg-scroll>
 		<div class="tg-day"><span>{i18n(I18nKey.commentChatToday)}</span></div>
 
@@ -192,7 +213,9 @@ const emojiCategories: EmojiCategory[] = [
 						row.side === "in" && row.showAvatar && "tg-row--tail",
 					]}
 				>
-					{row.side === "in" && (
+					{/* 只有一组连发的最后一条才露头像；其余各条靠 padding-left 留空位，
+					   不能把头像留在 DOM 里 —— 它仍占着 flex 宽度，会和 padding 叠一起把气泡挤到右边 */}
+					{row.side === "in" && row.showAvatar && (
 						<span
 							class={`tg-avatar tg-avatar--${row.tone ?? 0}`}
 							aria-hidden="true"
@@ -207,15 +230,9 @@ const emojiCategories: EmojiCategory[] = [
 							</span>
 						)}
 						<div class="tg-bubble">
-							<span class="tg-text">{row.text}</span>
+							<div class="tg-text tg-text--md" data-tg-markdown>{row.text}</div>
 							<span class="tg-meta">
 								<span class="tg-time" data-tg-time data-tg-offset={row.offset} />
-								{row.side === "out" && (
-									<svg class="tg-ticks" viewBox="0 0 18 12" aria-hidden="true">
-										<path d="M1.2 6.6 5 10.4 12.1 2.4" />
-										<path d="M7.1 6.6 10.9 10.4 18 2.4" />
-									</svg>
-								)}
 							</span>
 						</div>
 					</div>
@@ -291,15 +308,15 @@ const emojiCategories: EmojiCategory[] = [
 			</button>
 
 			<div class="tg-input-wrap">
-				<input
+				<textarea
 					class="tg-input"
-					type="text"
 					name="message"
+					rows="1"
 					autocomplete="off"
+					writingsuggestions="false"
 					placeholder={i18n(I18nKey.commentChatPlaceholder)}
 					aria-label={i18n(I18nKey.commentChatPlaceholder)}
-					data-tg-input
-				/>
+					data-tg-input></textarea>
 				<button
 					type="button"
 					class="tg-emoji"
@@ -342,13 +359,9 @@ const emojiCategories: EmojiCategory[] = [
 	<div class="tg-row tg-row--out">
 		<div class="tg-col">
 			<div class="tg-bubble">
-				<span class="tg-text"></span>
+				<div class="tg-text tg-text--md"></div>
 				<span class="tg-meta">
 					<span class="tg-time"></span>
-					<svg class="tg-ticks" viewBox="0 0 18 12" aria-hidden="true">
-						<path d="M1.2 6.6 5 10.4 12.1 2.4"></path>
-						<path d="M7.1 6.6 10.9 10.4 18 2.4"></path>
-					</svg>
 				</span>
 			</div>
 		</div>
@@ -356,11 +369,270 @@ const emojiCategories: EmojiCategory[] = [
 </template>
 
 <script>
+	import { Marked } from "marked";
+
 	const pad = (value: number) => String(value).padStart(2, "0");
 
 	function stamp(offsetMinutes: number): string {
 		const date = new Date(Date.now() + offsetMinutes * 60_000);
 		return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+	}
+
+	/* ---------------- Markdown ---------------- */
+
+	/** 只建一次实例：GFM（表格 / 删除线 / 自动链接）+ 单换行也算换行 */
+	const md = new Marked({ gfm: true, breaks: true });
+
+	/** 语言标识 → 顶栏显示名；表里没有的原样显示，没写语言的用「代码」兜底 */
+	const LANG_NAMES: Record<string, string> = {
+		js: "JavaScript",
+		javascript: "JavaScript",
+		ts: "TypeScript",
+		typescript: "TypeScript",
+		jsx: "JSX",
+		tsx: "TSX",
+		py: "Python",
+		python: "Python",
+		sh: "Shell",
+		bash: "Bash",
+		zsh: "Zsh",
+		shell: "Shell",
+		powershell: "PowerShell",
+		ps1: "PowerShell",
+		json: "JSON",
+		jsonc: "JSON",
+		html: "HTML",
+		xml: "XML",
+		svg: "SVG",
+		css: "CSS",
+		scss: "SCSS",
+		less: "Less",
+		md: "Markdown",
+		markdown: "Markdown",
+		yml: "YAML",
+		yaml: "YAML",
+		toml: "TOML",
+		ini: "INI",
+		sql: "SQL",
+		go: "Go",
+		golang: "Go",
+		rust: "Rust",
+		rs: "Rust",
+		java: "Java",
+		kt: "Kotlin",
+		kotlin: "Kotlin",
+		swift: "Swift",
+		c: "C",
+		cpp: "C++",
+		cs: "C#",
+		csharp: "C#",
+		php: "PHP",
+		rb: "Ruby",
+		ruby: "Ruby",
+		lua: "Lua",
+		diff: "Diff",
+		patch: "Diff",
+		dockerfile: "Dockerfile",
+		makefile: "Makefile",
+		vue: "Vue",
+		svelte: "Svelte",
+		astro: "Astro",
+		graphql: "GraphQL",
+		gql: "GraphQL",
+		text: "",
+		plaintext: "",
+	};
+	/** 气泡里允许出现的标签，marked 的其余输出一律处理掉 */
+	const SAFE_TAGS = new Set([
+		"P",
+		"BR",
+		"STRONG",
+		"EM",
+		"DEL",
+		"CODE",
+		"PRE",
+		"A",
+		"UL",
+		"OL",
+		"LI",
+		"BLOCKQUOTE",
+		"H1",
+		"H2",
+		"H3",
+		"H4",
+		"H5",
+		"H6",
+		"HR",
+		"TABLE",
+		"THEAD",
+		"TBODY",
+		"TR",
+		"TH",
+		"TD",
+		"IMG",
+	]);
+
+	/** 这些标签连内容一起丢掉，不只是拆壳（否则脚本正文会当成文字留在气泡里） */
+	const DROP_TAGS = new Set([
+		"SCRIPT",
+		"STYLE",
+		"IFRAME",
+		"OBJECT",
+		"EMBED",
+		"FORM",
+		"INPUT",
+		"TEXTAREA",
+		"SELECT",
+		"BUTTON",
+		"LINK",
+		"META",
+		"BASE",
+		"SVG",
+		"MATH",
+	]);
+
+	/**
+	 * 用浏览器自己的解析器过一遍白名单，比正则可靠：
+	 * 先把 HTML 塞进 template（不执行、不加载资源），再逐个节点判断。
+	 * 不认识的标签拆壳保留文字；危险标签整段删除；属性只留必要的那几个。
+	 */
+	function sanitizeHtml(html: string): string {
+		const template = document.createElement("template");
+		template.innerHTML = html;
+
+		const walk = (parent: Node) => {
+			for (const child of Array.from(parent.childNodes)) {
+				if (child.nodeType === Node.COMMENT_NODE) {
+					child.remove();
+					continue;
+				}
+				if (child.nodeType !== Node.ELEMENT_NODE) continue;
+
+				const el = child as Element;
+				const tag = el.tagName.toUpperCase();
+
+				if (DROP_TAGS.has(tag)) {
+					el.remove();
+					continue;
+				}
+
+				// 先净化里面的内容，再把外壳拆掉（拆完文字直接挂在父节点上）
+				walk(el);
+				if (!SAFE_TAGS.has(tag)) {
+					el.replaceWith(...Array.from(el.childNodes));
+					continue;
+				}
+
+				for (const attr of Array.from(el.attributes)) {
+					const name = attr.name.toLowerCase();
+					const keep =
+						(tag === "A" && (name === "href" || name === "title")) ||
+						(tag === "IMG" && (name === "src" || name === "alt" || name === "title")) ||
+						(tag === "CODE" && name === "class") ||
+						(tag === "TH" && name === "align") ||
+						(tag === "TD" && name === "align");
+					if (!keep) el.removeAttribute(attr.name);
+				}
+
+				if (tag === "A") {
+					const href = el.getAttribute("href") ?? "";
+					// 只放行 http(s) / mailto / 站内锚点，javascript: 之类直接摘掉链接
+					if (!/^(?:https?:|mailto:|#|\/)/i.test(href)) {
+						el.removeAttribute("href");
+					}
+					el.setAttribute("target", "_blank");
+					el.setAttribute("rel", "noopener noreferrer nofollow");
+				}
+
+				// 图片只认 http(s) 和站内地址；地址不合法就连图带标签一起删掉，
+				// 不留一个破图占位。外链图不发送 Referer，也不阻塞首屏。
+				if (tag === "IMG") {
+					const src = el.getAttribute("src") ?? "";
+					if (!/^(?:https?:\/\/|\/[^/])/i.test(src)) {
+						el.remove();
+						continue;
+					}
+					el.setAttribute("loading", "lazy");
+					el.setAttribute("decoding", "async");
+					el.setAttribute("referrerpolicy", "no-referrer");
+				}
+			}
+		};
+
+		walk(template.content);
+		return template.innerHTML;
+	}
+
+	/** 把 Markdown 渲染成可安全插入气泡的 HTML */
+	function renderMarkdown(text: string): string {
+		return sanitizeHtml(md.parse(text) as string);
+	}
+
+	/** 代码块顶栏要用的三条文案，由 Astro 那边按语言渲染好传进来 */
+	interface CodeLabels {
+		copy: string;
+		copied: string;
+		code: string;
+	}
+
+	/**
+	 * 给代码块补一条「语言 + 复制」的顶栏。
+	 * 这一步放在消毒之后：白名单要是放行 button，注入面就跟着变大，
+	 * 索性让 marked 只吐标准的 <pre><code class="language-x">，按钮由我们自己拼。
+	 */
+	function decorateCodeBlocks(root: HTMLElement, labels: CodeLabels): void {
+		for (const pre of root.querySelectorAll("pre")) {
+			const code = pre.querySelector("code");
+			if (!code) continue;
+
+			const lang = (
+				code.className.match(/language-([\w+#.-]+)/)?.[1] ?? ""
+			).toLowerCase();
+
+			const block = document.createElement("div");
+			block.className = "tg-code";
+
+			const head = document.createElement("div");
+			head.className = "tg-code-head";
+
+			const name = document.createElement("span");
+			name.className = "tg-code-lang";
+			name.textContent = LANG_NAMES[lang] ?? (lang || labels.code);
+
+			const copy = document.createElement("button");
+			copy.type = "button";
+			copy.className = "tg-code-copy";
+			copy.dataset.tgCopy = "";
+			copy.textContent = labels.copy;
+
+			head.append(name, copy);
+			pre.replaceWith(block);
+			block.append(head, pre);
+		}
+	}
+
+	/** 渲染一段 Markdown 到气泡里：解析 → 消毒 → 补代码块顶栏 */
+	function setMarkdown(target: HTMLElement, text: string, labels: CodeLabels): void {
+		target.innerHTML = renderMarkdown(text);
+		decorateCodeBlocks(target, labels);
+	}
+
+	/** 复制文本：优先 Clipboard API，拿不到权限（老浏览器 / 非安全上下文）就退回 execCommand */
+	async function copyText(text: string): Promise<boolean> {
+		try {
+			await navigator.clipboard.writeText(text);
+			return true;
+		} catch {
+			const area = document.createElement("textarea");
+			area.value = text;
+			area.setAttribute("readonly", "");
+			area.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
+			document.body.append(area);
+			area.select();
+			const ok = document.execCommand("copy");
+			area.remove();
+			return ok;
+		}
 	}
 
 	function init() {
@@ -369,7 +641,7 @@ const emojiCategories: EmojiCategory[] = [
 
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
-		const input = chat.querySelector<HTMLInputElement>("[data-tg-input]");
+		const input = chat.querySelector<HTMLTextAreaElement>("[data-tg-input]");
 		const emojiButton = chat.querySelector<HTMLButtonElement>("[data-tg-emoji]");
 		const emojiPanel = chat.querySelector<HTMLElement>("[data-tg-emoji-panel]");
 		const attachButton = chat.querySelector<HTMLButtonElement>("[data-tg-attach]");
@@ -384,6 +656,39 @@ const emojiCategories: EmojiCategory[] = [
 			node.textContent = stamp(Number(node.dataset.tgOffset) || 0);
 		});
 
+		// 代码块顶栏的文案由服务端按当前语言渲染，避免在客户端再引一套 i18n
+		const labels: CodeLabels = {
+			copy: chat.dataset.tgLabelCopy || "Copy",
+			copied: chat.dataset.tgLabelCopied || "Copied",
+			code: chat.dataset.tgLabelCode || "Code",
+		};
+
+		// 示例消息的正文同样按 Markdown 解析：SSR 出来的只是原文，
+		// 这里先读 textContent 再覆盖，原文不会被当成 HTML 二次转义
+		chat.querySelectorAll<HTMLElement>("[data-tg-markdown]").forEach((node) => {
+			setMarkdown(node, node.textContent ?? "", labels);
+		});
+
+		// 复制按钮用事件委托：消息是后插进来的，不能逐条绑
+		chat.addEventListener("click", (event) => {
+			const target = event.target as Element | null;
+			const button = target?.closest<HTMLButtonElement>("[data-tg-copy]");
+			if (!button) return;
+			const code = button.closest(".tg-code")?.querySelector("code");
+			if (!code) return;
+
+			const source = (code.textContent ?? "").replace(/\s+$/, "");
+			void copyText(source).then((ok) => {
+				if (!ok) return;
+				button.textContent = labels.copied;
+				button.dataset.copied = "true";
+				window.setTimeout(() => {
+					button.textContent = labels.copy;
+					button.dataset.copied = "false";
+				}, 1600);
+			});
+		});
+
 		const toBottom = () => {
 			scroller.scrollTop = scroller.scrollHeight;
 		};
@@ -393,8 +698,27 @@ const emojiCategories: EmojiCategory[] = [
 		const syncSend = () => {
 			chat.dataset.hasText = input.value.trim() ? "true" : "false";
 		};
-		input.addEventListener("input", syncSend);
+
+		// textarea 会随内容长高（上限交给 CSS 的 max-height，超出后内部滚动）
+		const resizeInput = () => {
+			input.style.height = "auto";
+			input.style.height = `${input.scrollHeight}px`;
+		};
+
+		input.addEventListener("input", () => {
+			syncSend();
+			resizeInput();
+		});
+
+		// Enter 发送、Shift+Enter 换行 —— textarea 默认会把 Enter 当换行，得拦下来
+		input.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+			event.preventDefault();
+			form.requestSubmit();
+		});
+
 		syncSend();
+		resizeInput();
 
 		/* ---------------- 表情面板 ---------------- */
 
@@ -522,14 +846,18 @@ const emojiCategories: EmojiCategory[] = [
 			const row = (template.content.cloneNode(true) as DocumentFragment)
 				.firstElementChild as HTMLElement | null;
 			if (!row) return;
-			const bubble = row.querySelector<HTMLElement>(".tg-text");
+			const body = row.querySelector<HTMLElement>(".tg-text");
 			const time = row.querySelector<HTMLElement>(".tg-time");
-			if (bubble) bubble.textContent = text;
+			if (body) {
+				// 模板里的 .tg-text 已经带 tg-text--md，直接按 Markdown 渲染进去
+				setMarkdown(body, text, labels);
+			}
 			if (time) time.textContent = stamp(0);
 
 			scroller.append(row);
 			input.value = "";
 			syncSend();
+			resizeInput();
 			closeEmoji();
 			// 等浏览器完成一次布局再滚，否则新气泡高度还算不出来
 			requestAnimationFrame(toBottom);

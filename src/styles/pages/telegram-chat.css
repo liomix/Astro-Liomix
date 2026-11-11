@@ -12,7 +12,7 @@
 	--tg-out-bubble: #effdde;
 	--tg-text: #1a1a1a;
 	--tg-meta: #a0acb6;
-	--tg-tick: #4fae4e;
+	--tg-link: #168acd;
 	--tg-panel: #ffffff;
 	--tg-input-bg: #f1f1f1;
 	--tg-accent: #3390ec;
@@ -25,7 +25,7 @@
 	--tg-out-bubble: #2b5278;
 	--tg-text: #f4f4f5;
 	--tg-meta: #6d7f8f;
-	--tg-tick: #61b3f0;
+	--tg-link: #6ab3f3;
 	--tg-panel: #17212b;
 	--tg-input-bg: #242f3d;
 	--tg-accent: #5288c1;
@@ -244,10 +244,220 @@ body:has(.page-comment-embed) {
 	background: var(--tg-out-bubble);
 }
 
+/* 正文全是 Markdown 渲染出来的 HTML（换行已经是 <br> / 段落了），
+   这里不能再叠 pre-wrap，否则会多出一倍行高 */
 .tg-text {
 	flex: 1 1 auto;
 	min-width: 0;
-	white-space: pre-wrap;
+}
+
+/* ---------------- 气泡里的 Markdown ---------------- */
+
+/* 首尾不留外边距，气泡本身有 padding，否则上下会各多出一段空白 */
+.tg-text--md > :first-child {
+	margin-top: 0;
+}
+
+.tg-text--md > :last-child {
+	margin-bottom: 0;
+}
+
+.tg-text--md p {
+	margin: 0 0 0.32rem;
+}
+
+.tg-text--md strong {
+	font-weight: 600;
+}
+
+.tg-text--md del {
+	opacity: 0.65;
+}
+
+.tg-text--md a {
+	color: var(--tg-link);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+/* Markdown 里的 ![](…) 图片：不超出气泡，圆角跟气泡呼应 */
+.tg-text--md img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin: 0.25rem 0;
+	border-radius: 0.6rem;
+}
+
+.tg-text--md p > img:first-child {
+	margin-top: 0;
+}
+
+.tg-text--md code {
+	padding: 0.05rem 0.28rem;
+	border-radius: 0.35rem;
+	background: color-mix(in srgb, var(--tg-text) 10%, transparent);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.82em;
+}
+
+.tg-text--md pre {
+	max-width: 100%;
+	margin: 0.3rem 0;
+	padding: 0.45rem 0.55rem;
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--tg-text) 10%, transparent);
+	overflow-x: auto;
+}
+
+/* 代码块里的 code 不再叠一层底色，行高也按代码的习惯放大一点 */
+.tg-text--md pre code {
+	padding: 0;
+	background: none;
+	font-size: 0.78rem;
+	line-height: 1.5;
+	white-space: pre;
+}
+
+/* 代码块外壳：顶部一条「语言 + 复制」，下面是可横滚的代码。
+   这层 DOM 是脚本在消毒之后拼的（TelegramChat.astro 的 decorateCodeBlocks），
+   所以白名单不用为 button 开口子 */
+.tg-text--md .tg-code {
+	margin: 0.3rem 0;
+	border-radius: 0.55rem;
+	background: color-mix(in srgb, var(--tg-text) 10%, transparent);
+	overflow: hidden;
+}
+
+/* 壳子已经画了底色和圆角，里面的 pre 只负责滚动 */
+.tg-text--md .tg-code pre {
+	margin: 0;
+	padding: 0.45rem 0.55rem;
+	border-radius: 0;
+	background: none;
+}
+
+/* 首尾的代码块不要再多出一段外边距（通用规则写在前面，会被上面那条压掉） */
+.tg-text--md > .tg-code:first-child {
+	margin-top: 0;
+}
+
+.tg-text--md > .tg-code:last-child {
+	margin-bottom: 0;
+}
+
+.tg-code-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.1rem 0.3rem 0.1rem 0.55rem;
+	border-bottom: 1px solid color-mix(in srgb, var(--tg-text) 10%, transparent);
+	color: var(--tg-meta);
+	font-size: 0.68rem;
+	line-height: 1.8;
+}
+
+.tg-code-lang {
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+
+.tg-code-copy {
+	flex: none;
+	padding: 0 0.4rem;
+	border: 0;
+	border-radius: 0.35rem;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+.tg-code-copy:hover {
+	background: color-mix(in srgb, var(--tg-text) 10%, transparent);
+	color: var(--tg-text);
+}
+
+/* 复制成功后短暂变成主题色，1.6s 后脚本会自己复位 */
+.tg-code-copy[data-copied="true"] {
+	color: var(--tg-accent);
+}
+
+.tg-code-copy:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+.tg-text--md ul,
+.tg-text--md ol {
+	margin: 0.25rem 0;
+	padding-left: 1.15rem;
+}
+
+.tg-text--md li {
+	margin: 0.1rem 0;
+}
+
+/* 列表项被拆成 <li><p>…</p></li> 时不要再撑行高 */
+.tg-text--md li > p {
+	margin: 0;
+}
+
+.tg-text--md blockquote {
+	margin: 0.3rem 0;
+	padding: 0.05rem 0 0.05rem 0.55rem;
+	border-left: 2px solid color-mix(in srgb, var(--tg-link) 55%, transparent);
+	color: color-mix(in srgb, var(--tg-text) 78%, transparent);
+}
+
+.tg-text--md hr {
+	margin: 0.45rem 0;
+	border: 0;
+	border-top: 1px solid color-mix(in srgb, var(--tg-text) 18%, transparent);
+}
+
+.tg-text--md h1,
+.tg-text--md h2,
+.tg-text--md h3,
+.tg-text--md h4,
+.tg-text--md h5,
+.tg-text--md h6 {
+	margin: 0.4rem 0 0.2rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.tg-text--md h1,
+.tg-text--md h2 {
+	font-size: 0.98rem;
+}
+
+/* 窄气泡里表格容易撑破：定死布局宽度让单元格自己换行，不搞横向滚动
+   （给 table 加 display:block 会打乱行/单元格的排版，得不偿失） */
+.tg-text--md table {
+	width: 100%;
+	margin: 0.3rem 0;
+	border-collapse: collapse;
+	table-layout: fixed;
+	font-size: 0.78rem;
+}
+
+.tg-text--md th,
+.tg-text--md td {
+	padding: 0.15rem 0.35rem;
+	border: 1px solid color-mix(in srgb, var(--tg-text) 16%, transparent);
+	text-align: left;
+	word-break: break-word;
+}
+
+.tg-text--md th {
+	background: color-mix(in srgb, var(--tg-text) 7%, transparent);
+	font-weight: 600;
 }
 
 /* 时间 + 已读勾：右对齐，永远贴在气泡底部 */
@@ -265,15 +475,7 @@ body:has(.page-comment-embed) {
 	user-select: none;
 }
 
-.tg-ticks {
-	width: 0.95rem;
-	height: 0.65rem;
-	fill: none;
-	stroke: var(--tg-tick);
-	stroke-linecap: round;
-	stroke-linejoin: round;
-	stroke-width: 1.7;
-}
+/* 已读回执那两颗勾已经去掉，时间单独贴气泡右下角 */
 
 @keyframes tg-message-in {
 	from {
@@ -296,7 +498,7 @@ body:has(.page-comment-embed) {
 
 .tg-composer {
 	display: flex;
-	align-items: center;
+	align-items: flex-end;
 	gap: 0.2rem;
 	padding: 0.45rem 0.5rem;
 	border-top: 1px solid var(--tg-divider);
@@ -341,18 +543,27 @@ body:has(.page-comment-embed) {
 	min-width: 0;
 }
 
+/* 输入框：单行时是个胶囊，内容变多自动往上长（最多约 5 行，再多就内部滚动）。
+   用 textarea 而不是 input，否则 Markdown 的换行、列表、代码块都没法输入 */
 .tg-input {
+	display: block;
+	box-sizing: border-box;
 	width: 100%;
-	height: 2.1rem;
+	min-height: 2.1rem;
+	max-height: 7.4rem;
 	/* 右侧留出表情按钮的位置，文字不会压到图标上 */
-	padding: 0 2.2rem 0 0.8rem;
+	padding: 0.45rem 2.2rem 0.45rem 0.8rem;
 	border: 0;
-	border-radius: 9999px;
+	border-radius: 1.05rem;
 	background: var(--tg-input-bg);
 	color: var(--tg-text);
 	font: inherit;
 	font-size: 0.85rem;
+	line-height: 1.4;
+	resize: none;
+	overflow-y: auto;
 	outline: none;
+	scrollbar-width: thin;
 }
 
 .tg-input::placeholder {
@@ -366,8 +577,8 @@ body:has(.page-comment-embed) {
 /* 输入框右侧的表情按钮（贴在里面，和 Telegram 一致） */
 .tg-emoji {
 	position: absolute;
-	top: 50%;
 	right: 0.12rem;
+	bottom: 0.15rem;
 	display: inline-flex;
 	width: 1.8rem;
 	height: 1.8rem;
@@ -379,7 +590,6 @@ body:has(.page-comment-embed) {
 	background: transparent;
 	color: var(--tg-meta);
 	cursor: pointer;
-	transform: translateY(-50%);
 	transition:
 		background-color 0.16s ease,
 		color 0.16s ease;
@@ -572,10 +782,6 @@ body:has(.page-comment-embed) {
 	border-radius: 9999px;
 	background: rgb(0 0 0 / 0.34);
 	color: #fff;
-}
-
-.tg-bubble--photo .tg-ticks {
-	stroke: #fff;
 }
 
 /* 发送按钮：纸飞机常驻（不做语音入口，空输入时是灰的，有文字才点亮成蓝色） */
