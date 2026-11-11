@@ -1,0 +1,58 @@
+---
+/**
+ * 评论抽屉 iframe 专用极简布局
+ * ---------------------------------------------------------------------------
+ * 不套 Layout.astro：那套会带上 #progress-bar、左下角迷你播放器、樱花 / 波浪特效、
+ * Fancybox 等全站级 DOM，塞进评论抽屉里全是噪音。
+ * 这里只要三样东西 —— 主题 CSS 变量（main.css + variables.styl）、深浅色状态、
+ * 以及一个干净的 body。
+ *
+ * 深浅色优先读父窗口的 <html class="dark">（同源可访问），这样首次渲染就不会
+ * 出现「父页面深色、抽屉里先闪一下白色」；独立访问时回退到 localStorage。
+ */
+import "@/styles/main.css";
+import "@/styles/variables.styl";
+
+interface Props {
+	title?: string;
+	/** 站点语言，默认 zh-CN */
+	lang?: string;
+}
+
+const { title = "", lang = "zh-CN" } = Astro.props;
+---
+
+<html lang={lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<script is:inline>
+			(function () {
+				var dark = null;
+				try {
+					if (window.parent && window.parent !== window) {
+						dark = window.parent.document.documentElement.classList.contains("dark");
+					}
+				} catch {
+					dark = null;
+				}
+				if (dark === null) {
+					var stored = localStorage.getItem("theme") || "light";
+					if (stored === "system" || stored === "scheduled") {
+						dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+					} else {
+						dark = stored === "dark";
+					}
+				}
+				document.documentElement.classList.toggle("dark", dark);
+				document.documentElement.dataset.theme = dark ? "dark" : "light";
+				var hue = localStorage.getItem("hue");
+				if (hue) document.documentElement.style.setProperty("--hue", hue);
+			})();
+		</script>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>

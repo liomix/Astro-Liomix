@@ -1,13 +1,10 @@
-/* 动态页内嵌评论 iframe 页专属：去掉外层留白，仅保留评论本身 */
+/* 动态页评论 iframe 页的基础样式。
+   尺寸、背景、滚动都由 Telegram 风格的聊天组件接管（见 telegram-chat.css），
+   这里只负责去掉页面默认外边距，避免 iframe 四周出现白边 */
 
 html:has(.page-comment-embed),
 body:has(.page-comment-embed) {
-	overflow: hidden;
-	background: transparent !important;
-}
-
-.page-comment-embed #post-comments {
 	margin: 0;
-	border: 0;
-	box-shadow: none;
+	padding: 0;
+	overflow: hidden;
 }

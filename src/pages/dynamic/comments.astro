@@ -1,24 +1,24 @@
 ---
-import Comment from "@/components/comment/index.astro";
-import { commentConfig, dynamicConfig, siteConfig } from "@/config";
-import Layout from "@/layouts/Layout.astro";
+import TelegramChat from "@/components/pages/dynamic/TelegramChat.astro";
+import { dynamicConfig, siteConfig } from "@/config";
+import CommentLayout from "@/layouts/CommentLayout.astro";
 import "@/styles/pages/dynamic-comments.css";
+import "@/styles/pages/telegram-chat.css";
 
-if (
-	!siteConfig.pages.dynamic ||
-	dynamicConfig.showComment === false ||
-	!commentConfig.type ||
-	commentConfig.type === "none"
-) {
+if (!siteConfig.pages.dynamic || dynamicConfig.showComment === false) {
 	return Astro.redirect("/404/");
 }
+
+// 抽屉用 ?path= 传入当前动态的评论地址；现在消息是内置示例，
+// 这个值只挂到 root 的 data 属性上，等接了真实数据源再按它拉取
+const commentPath = Astro.url.searchParams.get("path") || "/dynamic/";
 ---
 
-<Layout title="">
+<CommentLayout title={dynamicConfig.title || "Comments"}>
 	<main class="page-comment-embed">
-		<Comment customPath="/dynamic/" />
+		<TelegramChat path={commentPath} />
 	</main>
-</Layout>
+</CommentLayout>
 
 <script>
 	window.addEventListener("message", (event) => {
@@ -31,17 +31,4 @@ if (
 		document.documentElement.classList.toggle("dark", Boolean(event.data.dark));
 		document.documentElement.dataset.theme = event.data.dark ? "dark" : "light";
 	});
-
-	const reportHeight = () => {
-		window.parent.postMessage(
-			{
-				type: "dynamic-comment-height",
-				height: document.documentElement.scrollHeight,
-			},
-			window.location.origin,
-		);
-	};
-	new ResizeObserver(reportHeight).observe(document.body);
-	window.addEventListener("load", reportHeight);
 </script>
-

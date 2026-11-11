@@ -4,7 +4,6 @@ import { Icon } from "astro-icon/components";
 import AvatarImage from "@/components/common/AvatarImage.astro";
 import DynamicActions from "@/components/pages/dynamic/DynamicActions.astro";
 import DynamicGallery from "@/components/pages/dynamic/DynamicGallery.astro";
-import DynamicInlineComments from "@/components/pages/dynamic/DynamicInlineComments.astro";
 import { dynamicConfig, profileConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -16,15 +15,18 @@ import { url } from "@/utils/url-utils";
 interface Props {
 	entry: CollectionEntry<"dynamic">;
 	detailUrl?: string;
-	showInlineComments?: boolean;
+	showComments?: boolean;
 	commentPath?: string;
+	/** 本站没接评论服务时评论抽屉里的提示 */
+	commentEmptyText?: string;
 }
 
 const {
 	entry,
 	detailUrl,
-	showInlineComments = false,
+	showComments = false,
 	commentPath,
+	commentEmptyText = "",
 } = Astro.props;
 const { Content } = await render(entry);
 const anchorId = dynamicAnchor(entry.id);
@@ -43,6 +45,10 @@ const profileUrl = url(dynamicConfig.profileUrl || "/");
 	data-dynamic-entry
 	data-like-id={entry.id}
 	data-year={entry.data.published.getUTCFullYear()}
+	data-comment-src={showComments && commentPath
+		? `/dynamic/comments/?path=${encodeURIComponent(commentPath)}`
+		: undefined}
+	data-comment-empty={commentEmptyText}
 >
 	<article aria-labelledby={`${anchorId}-author`}>
 		<header class="page-entry-header">
@@ -83,12 +89,5 @@ const profileUrl = url(dynamicConfig.profileUrl || "/");
 			</a>
 			<DynamicActions />
 		</footer>
-
-		{showInlineComments && commentPath && (
-			<DynamicInlineComments
-				src={`/dynamic/comments/?path=${encodeURIComponent(commentPath)}`}
-				showToggle={false}
-			/>
-		)}
 	</article>
 </dynamic-entry>

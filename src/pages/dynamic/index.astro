@@ -2,12 +2,13 @@
 import { Icon } from "astro-icon/components";
 import DynamicFeed from "@/components/pages/dynamic/DynamicFeed.svelte";
 import DynamicItemTemplate from "@/components/pages/dynamic/DynamicItemTemplate.astro";
-import { commentConfig, dynamicConfig, siteConfig } from "@/config";
+import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/dynamic.css";
+import { resolveRawAvatarUrl } from "@/utils/avatar-utils";
 import { url } from "@/utils/url-utils";
 
 if (!siteConfig.pages.dynamic) {
@@ -18,15 +19,23 @@ const title = dynamicConfig.title || i18n(I18nKey.dynamic);
 const description =
 	dynamicConfig.description || i18n(I18nKey.dynamicDescription);
 const itemsPerPage = Math.max(1, dynamicConfig.itemsPerPage ?? 10);
-const showInlineComments = Boolean(
-	dynamicConfig.showComment !== false &&
-		commentConfig.type &&
-		commentConfig.type !== "none",
-);
+// 评论区是抽屉里那套 Telegram 风格聊天界面（内置示例消息），不再依赖第三方评论服务，
+// 只由 dynamicConfig.showComment 控制开关
+const showComments = dynamicConfig.showComment !== false;
 const dataUrl = dynamicConfig.apiUrl?.startsWith("http")
 	? dynamicConfig.apiUrl
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
 const memos = dynamicConfig.memos;
+
+// 评论抽屉顶栏的头像：视频头像不能塞进 <img>，优先取它的封面帧；
+// 静态头像直接用它自己。都拿不到就留空，客户端退回「首字母彩圆」
+const avatarIsStillImage = /\.(?:png|jpe?g|webp|avif|gif|svg)$/i.test(
+	profileConfig.avatar || "",
+);
+const stillAvatar =
+	profileConfig.avatarPoster ||
+	(avatarIsStillImage ? profileConfig.avatar : "");
+const chatAvatarUrl = resolveRawAvatarUrl(stillAvatar || "");
 ---
 
 <MainGridLayout title={title} description={description}>
@@ -77,7 +86,12 @@ const memos = dynamicConfig.memos;
 				client:load
 				source={dataUrl}
 				{itemsPerPage}
-				showComments={showInlineComments}
+				showComments={showComments}
+				commentCloseLabel={i18n(I18nKey.tabClose)}
+				commentOnlineLabel={i18n(I18nKey.commentChatOnline)}
+				commentName={profileConfig.name}
+				commentAvatarUrl={chatAvatarUrl}
+				commentEmptyText={i18n(I18nKey.commentNotConfigured)}
 				emptyText={i18n(I18nKey.dynamicEmpty)}
 				noResultsText={i18n(I18nKey.dynamicNoResults)}
 				loadingText={i18n(I18nKey.dynamicLoading)}

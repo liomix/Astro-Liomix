@@ -5,10 +5,10 @@ import {
 	registerDynamicActions,
 	syncDynamicLikeStates,
 } from "@/components/pages/dynamic/dynamic-actions";
+import { closeCommentDrawer } from "@/components/pages/dynamic/dynamic-comment-drawer";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { registerDynamicGallery } from "./dynamic-gallery";
-import { registerDynamicInlineComments } from "./dynamic-inline-comments";
 
 type DynamicImage = {
 	alt: string;
@@ -40,6 +40,16 @@ interface Props {
 	noResultsText: string;
 	loadingText: string;
 	allYearsText: string;
+	/** 评论抽屉关闭按钮的无障碍文案（按站点语言由 Astro 传入） */
+	commentCloseLabel: string;
+	/** 聊天顶栏头像下方的在线状态文案 */
+	commentOnlineLabel: string;
+	/** 聊天顶栏标题（站点昵称），相当于 Telegram 里的聊天对象名字 */
+	commentName: string;
+	/** 聊天顶栏头像图（视频头像取封面帧），空则回退首字母彩圆 */
+	commentAvatarUrl: string;
+	/** 抽屉没有内容时的提示 */
+	commentEmptyText: string;
 	memos?: MemosConfig;
 }
 
@@ -51,6 +61,11 @@ const {
 	noResultsText,
 	loadingText,
 	allYearsText,
+	commentCloseLabel,
+	commentOnlineLabel,
+	commentName,
+	commentAvatarUrl,
+	commentEmptyText,
 	memos,
 }: Props = $props();
 
@@ -197,23 +212,22 @@ function createItem(entry: DynamicData) {
 		}
 	}
 
-	const comments = root.querySelector<HTMLElement>("dynamic-inline-comments");
-	if (comments) {
-		if (showComments) {
-			comments.dataset.src = `/dynamic/comments/?path=${encodeURIComponent(
-				`/dynamic/${entry.id}/`,
-			)}`;
-		} else {
-			// 评论系统关闭时移掉空壳元素，底部评论按钮保留（点击无动作）
-			comments.remove();
-		}
+	// 评论地址挂到条目上：底部评论按钮点开的是右侧抽屉，抽屉按这个地址装 iframe
+	// （iframe 里是 Telegram 风格的聊天界面，消息目前为内置示例）
+	if (showComments) {
+		root.dataset.commentSrc = `/dynamic/comments/?path=${encodeURIComponent(
+			`/dynamic/${entry.id}/`,
+		)}`;
 	}
+	root.dataset.commentEmpty = commentEmptyText;
 	return fragment;
 }
 
 async function renderItems(items: DynamicData[]) {
 	await tick();
 	if (!list || !template) return;
+	// 分页 / 筛选会换掉整批条目，抽屉还开着的话它对应的按钮已经不存在了
+	closeCommentDrawer(false);
 	list.replaceChildren();
 	for (const entry of items) {
 		const item = createItem(entry);
@@ -244,8 +258,12 @@ $effect(() => {
 
 onMount(() => {
 	registerDynamicGallery();
-	registerDynamicInlineComments();
-	registerDynamicActions();
+	registerDynamicActions({
+		commentCloseLabel,
+		commentOnlineLabel,
+		commentName,
+		commentAvatarUrl,
+	});
 	const page = list.closest(".page-shell");
 	template =
 		page?.querySelector<HTMLTemplateElement>("[data-dynamic-item-template]") ??

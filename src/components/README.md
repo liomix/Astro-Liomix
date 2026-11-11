@@ -5,7 +5,8 @@
 - `widget/Dynamic.astro`：显示最新动态的侧边栏组件。
 - `pages/dynamic/DynamicFeed.svelte`：负责动态 JSON 加载、搜索、年份筛选和分页。
 - `pages/dynamic/DynamicGallery.astro`：动态图片网格、轮播和灯箱。
-- `pages/dynamic/DynamicInlineComments.astro`：单条动态的按需评论区。
+- `pages/dynamic/dynamic-comment-drawer.ts`：右侧评论抽屉（点评论按钮从屏幕右侧抽出，内容用 iframe 装评论页）。
+- `pages/dynamic/TelegramChat.astro`：评论抽屉里的 Telegram 风格聊天界面（气泡 / 时间 / 已读双勾 / 输入栏，消息为内置示例）。
 - `pages/dynamic/DynamicItem.astro`：动态条目的服务端渲染组件。
 - `pages/dynamic/DynamicItemTemplate.astro`：动态条目的客户端渲染模板。
 

@@ -1,0 +1,642 @@
+/* Telegram 风格聊天区（评论抽屉 iframe 页专用）
+   ---------------------------------------------------------------------------
+   色值取自 Telegram Android 默认主题：
+     浅色  聊天底 #e6ebee / 对方 #ffffff / 自己 #effdde / 已读勾 #4fae4e
+     深色  聊天底 #0e1621 / 对方 #182533 / 自己 #2b5278 / 输入栏 #17212b
+   气泡圆角 17px，靠发送者那一侧的底角收到 6px（SharedConfig.bubbleRadius = 17，
+   近侧角 min(6, bubbleRadius)），这是 Telegram 气泡最好认的特征。 */
+
+:root {
+	--tg-chat-bg: #e6ebee;
+	--tg-in-bubble: #ffffff;
+	--tg-out-bubble: #effdde;
+	--tg-text: #1a1a1a;
+	--tg-meta: #a0acb6;
+	--tg-tick: #4fae4e;
+	--tg-panel: #ffffff;
+	--tg-input-bg: #f1f1f1;
+	--tg-accent: #3390ec;
+	--tg-divider: rgb(0 0 0 / 0.08);
+}
+
+:root.dark {
+	--tg-chat-bg: #0e1621;
+	--tg-in-bubble: #182533;
+	--tg-out-bubble: #2b5278;
+	--tg-text: #f4f4f5;
+	--tg-meta: #6d7f8f;
+	--tg-tick: #61b3f0;
+	--tg-panel: #17212b;
+	--tg-input-bg: #242f3d;
+	--tg-accent: #5288c1;
+	--tg-divider: rgb(255 255 255 / 0.08);
+}
+
+/* 页面撑满 iframe，滚动交给消息区自己处理 */
+html:has(.page-comment-embed),
+body:has(.page-comment-embed) {
+	height: 100%;
+	overflow: hidden;
+	background: var(--tg-chat-bg) !important;
+}
+
+.page-comment-embed {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	background: var(--tg-chat-bg);
+}
+
+.tg-chat {
+	display: flex;
+	height: 100%;
+	flex-direction: column;
+	background: var(--tg-chat-bg);
+	color: var(--tg-text);
+	font-family:
+		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+		"PingFang SC", "Microsoft YaHei", sans-serif;
+	font-size: 0.875rem;
+	line-height: 1.45;
+}
+
+/* ---------------- 消息区 ---------------- */
+
+.tg-scroll {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.6rem 0.7rem 0.85rem;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--tg-meta) 45%, transparent) transparent;
+}
+
+.tg-scroll::-webkit-scrollbar {
+	width: 5px;
+}
+
+.tg-scroll::-webkit-scrollbar-thumb {
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-meta) 45%, transparent);
+}
+
+/* 日期分隔：居中的小胶囊 */
+.tg-day {
+	display: flex;
+	justify-content: center;
+	margin: 0.35rem 0 0.5rem;
+}
+
+.tg-day span {
+	padding: 0.15rem 0.6rem;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-text) 24%, transparent);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+:root.dark .tg-day span {
+	background: color-mix(in srgb, #000 42%, transparent);
+	color: #dfe6ec;
+}
+
+/* 一行消息：靠左 / 靠右。头像与气泡底边对齐（Telegram 头像贴在本条消息底部） */
+.tg-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.35rem;
+	max-width: 100%;
+}
+
+.tg-row--in {
+	justify-content: flex-start;
+}
+
+.tg-row--out {
+	justify-content: flex-end;
+}
+
+/* 同一个人连发时后几条不重复露头像，但要留出等宽空位，
+   否则气泡会跳到左边、看起来参差不齐 */
+.tg-row--in:not(.tg-row--tail) {
+	padding-left: calc(1.75rem + 0.35rem);
+}
+
+/* 头像 + （昵称 / 气泡）这一列 */
+.tg-col {
+	display: flex;
+	min-width: 0;
+	max-width: 84%;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.12rem;
+}
+
+.tg-row--out .tg-col {
+	max-width: 82%;
+	align-items: flex-end;
+}
+
+/* 对方没有头像时的首字母彩圆：Telegram 默认按用户分配一组渐变，
+   这里给 4 种色调，示例消息按人固定一种 */
+.tg-avatar {
+	display: inline-flex;
+	width: 1.75rem;
+	height: 1.75rem;
+	flex: 0 0 1.75rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	color: #fff;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1;
+	user-select: none;
+}
+
+.tg-avatar--0 {
+	background: linear-gradient(140deg, #f5a9a9, #e06c6c);
+}
+
+.tg-avatar--1 {
+	background: linear-gradient(140deg, #a8e096, #5cb85c);
+}
+
+.tg-avatar--2 {
+	background: linear-gradient(140deg, #bcb0f2, #7c6fce);
+}
+
+.tg-avatar--3 {
+	background: linear-gradient(140deg, #f7cc83, #e39428);
+}
+
+/* 昵称：群聊里显示在气泡上方，颜色跟头像同一色调 */
+.tg-author {
+	max-width: 100%;
+	overflow: hidden;
+	color: #cf5f5f;
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tg-author--1 {
+	color: #4a9e46;
+}
+
+.tg-author--2 {
+	color: #7c6fce;
+}
+
+.tg-author--3 {
+	color: #c8811e;
+}
+
+:root.dark .tg-author {
+	color: #f09292;
+}
+
+:root.dark .tg-author--1 {
+	color: #82c97a;
+}
+
+:root.dark .tg-author--2 {
+	color: #ab9ee8;
+}
+
+:root.dark .tg-author--3 {
+	color: #e8b563;
+}
+
+/* 气泡：文字与时间用 flex 换行排版，短消息时间在右下同一行、
+   长消息自动掉到下一行右对齐 —— 跟 Telegram 的内联时间一致 */
+.tg-bubble {
+	display: flex;
+	max-width: 100%;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 0 0.3rem;
+	padding: 0.4rem 0.55rem 0.3rem;
+	border-radius: 17px;
+	background: var(--tg-in-bubble);
+	box-shadow: 0 1px 1px rgb(0 0 0 / 0.06);
+	word-break: break-word;
+	animation: tg-message-in 0.18s ease-out both;
+}
+
+.tg-row--in .tg-bubble {
+	/* 靠发送者一侧（左下）收成小角 */
+	border-bottom-left-radius: 6px;
+}
+
+.tg-row--out .tg-bubble {
+	border-bottom-right-radius: 6px;
+	background: var(--tg-out-bubble);
+}
+
+.tg-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	white-space: pre-wrap;
+}
+
+/* 时间 + 已读勾：右对齐，永远贴在气泡底部 */
+.tg-meta {
+	display: inline-flex;
+	flex: 0 0 auto;
+	align-items: center;
+	gap: 0.15rem;
+	margin-left: auto;
+	padding-top: 0.1rem;
+	color: var(--tg-meta);
+	font-size: 0.68rem;
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+	user-select: none;
+}
+
+.tg-ticks {
+	width: 0.95rem;
+	height: 0.65rem;
+	fill: none;
+	stroke: var(--tg-tick);
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.7;
+}
+
+@keyframes tg-message-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* ---------------- 输入栏 ---------------- */
+
+/* 表情面板挂在这一层上，面板往上弹（bottom:100%），不影响消息区高度 */
+.tg-bottom {
+	position: relative;
+	flex: none;
+}
+
+.tg-composer {
+	display: flex;
+	align-items: center;
+	gap: 0.2rem;
+	padding: 0.45rem 0.5rem;
+	border-top: 1px solid var(--tg-divider);
+	background: var(--tg-panel);
+}
+
+/* 左侧回形针（发送图片），Telegram 里这个图标是主题蓝 */
+.tg-tool {
+	display: inline-flex;
+	width: 2rem;
+	height: 2rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-accent);
+	cursor: pointer;
+	transition: background-color 0.16s ease;
+}
+
+.tg-tool svg {
+	width: 1.35rem;
+	height: 1.35rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.7;
+}
+
+.tg-tool:hover {
+	background: color-mix(in srgb, var(--tg-accent) 12%, transparent);
+}
+
+.tg-input-wrap {
+	position: relative;
+	display: flex;
+	flex: 1;
+	min-width: 0;
+}
+
+.tg-input {
+	width: 100%;
+	height: 2.1rem;
+	/* 右侧留出表情按钮的位置，文字不会压到图标上 */
+	padding: 0 2.2rem 0 0.8rem;
+	border: 0;
+	border-radius: 9999px;
+	background: var(--tg-input-bg);
+	color: var(--tg-text);
+	font: inherit;
+	font-size: 0.85rem;
+	outline: none;
+}
+
+.tg-input::placeholder {
+	color: var(--tg-meta);
+}
+
+.tg-input:focus-visible {
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--tg-accent) 45%, transparent);
+}
+
+/* 输入框右侧的表情按钮（贴在里面，和 Telegram 一致） */
+.tg-emoji {
+	position: absolute;
+	top: 50%;
+	right: 0.12rem;
+	display: inline-flex;
+	width: 1.8rem;
+	height: 1.8rem;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transform: translateY(-50%);
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+.tg-emoji svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-width: 1.7;
+}
+
+.tg-emoji:hover {
+	color: var(--tg-accent);
+}
+
+.tg-chat[data-emoji-open="true"] .tg-emoji {
+	color: var(--tg-accent);
+}
+
+/* 选文件用的隐藏 input，不参与布局 */
+.tg-file {
+	display: none;
+}
+
+/* 表情面板：往上弹出，和键盘一样占满宽度。
+   上面是可滚动的表情网格，底部是分类 tab（Telegram 的 emoji 键盘布局） */
+.tg-emoji-panel {
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	left: 0;
+	display: flex;
+	max-height: 42vh;
+	flex-direction: column;
+	overflow: hidden;
+	border-top: 1px solid var(--tg-divider);
+	background: var(--tg-panel);
+	box-shadow: 0 -10px 26px -22px rgb(0 0 0 / 0.6);
+	animation: tg-panel-in 0.16s ease-out both;
+}
+
+.tg-emoji-panel[hidden] {
+	display: none;
+}
+
+.tg-emoji-body {
+	flex: 1;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--tg-meta) 45%, transparent) transparent;
+}
+
+.tg-emoji-body::-webkit-scrollbar {
+	width: 5px;
+}
+
+.tg-emoji-body::-webkit-scrollbar-thumb {
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-meta) 45%, transparent);
+}
+
+.tg-emoji-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 0.1rem;
+	padding: 0.4rem;
+}
+
+/* 作者样式里的 display 会盖掉 UA 的 [hidden] 规则，得显式写一遍 */
+.tg-emoji-grid[hidden] {
+	display: none;
+}
+
+/* 底部 tab 栏：窄屏放不下时可以横向滚，不显示滚动条 */
+.tg-emoji-tabs {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 0.05rem;
+	padding: 0.2rem 0.35rem;
+	border-top: 1px solid var(--tg-divider);
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.tg-emoji-tabs::-webkit-scrollbar {
+	display: none;
+}
+
+.tg-emoji-tab {
+	display: inline-flex;
+	min-width: 1.9rem;
+	height: 1.9rem;
+	flex: 1 1 0;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+.tg-emoji-tab-icon {
+	width: 1.15rem;
+	height: 1.15rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.6;
+}
+
+.tg-emoji-tab:hover {
+	color: var(--tg-text);
+}
+
+/* 选中的分类：图标染成主题蓝 + 一层淡底，和 Telegram 底部 tab 的高亮一致 */
+.tg-emoji-tab[aria-selected="true"] {
+	background: color-mix(in srgb, var(--tg-accent) 14%, transparent);
+	color: var(--tg-accent);
+}
+
+.tg-emoji-tab:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+.tg-emoji-item {
+	height: 2.1rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0.5rem;
+	background: transparent;
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.tg-emoji-item:hover {
+	background: var(--tg-input-bg);
+}
+
+.tg-emoji-item:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+@keyframes tg-panel-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* 发出去的图片：气泡只留 3px 边，时间压在图片右下角 */
+.tg-bubble--photo {
+	position: relative;
+	padding: 3px;
+}
+
+.tg-photo {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	max-height: 14rem;
+	height: auto;
+	border-radius: 14px;
+}
+
+.tg-bubble--photo .tg-meta {
+	position: absolute;
+	right: 0.4rem;
+	bottom: 0.35rem;
+	padding: 0.05rem 0.32rem;
+	border-radius: 9999px;
+	background: rgb(0 0 0 / 0.34);
+	color: #fff;
+}
+
+.tg-bubble--photo .tg-ticks {
+	stroke: #fff;
+}
+
+/* 发送按钮：纸飞机常驻（不做语音入口，空输入时是灰的，有文字才点亮成蓝色） */
+.tg-send {
+	display: inline-flex;
+	flex: none;
+	width: 2.1rem;
+	height: 2.1rem;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease,
+		transform 0.16s ease;
+}
+
+.tg-send svg {
+	width: 1.3rem;
+	height: 1.3rem;
+}
+
+.tg-send-plane {
+	display: block;
+}
+
+.tg-chat[data-has-text="true"] .tg-send {
+	background: var(--tg-accent);
+	color: #fff;
+}
+
+/* 空输入时没有可发的内容，不做 hover 变色，免得像是在暗示可点 */
+.tg-chat[data-has-text="false"] .tg-send {
+	cursor: default;
+}
+
+.tg-chat[data-has-text="true"] .tg-send:hover {
+	color: #fff;
+	background: color-mix(in srgb, var(--tg-accent) 88%, #000);
+}
+
+.tg-send:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-bubble {
+		animation: none;
+	}
+
+	.tg-emoji-panel {
+		animation: none;
+	}
+
+	.tg-send {
+		transition: none;
+	}
+}

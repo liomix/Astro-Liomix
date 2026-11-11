@@ -1,0 +1,545 @@
+---
+/**
+ * Telegram 风格聊天界面（评论抽屉的内容页）
+ * ---------------------------------------------------------------------------
+ * 按 Telegram Android 客户端的私聊页复刻：
+ *   气泡 17px 圆角 + 靠发送者一侧的 6px 小角（源码 SharedConfig.bubbleRadius = 17，
+ *   近侧角 Math.min(6, bubbleRadius)）；对方白/深灰气泡靠左、自己浅绿/蓝气泡靠右；
+ *   时间贴在气泡右下角，自己的消息后面跟已读双勾；底部是输入栏，右侧纸飞机
+ *   （空输入时灰、有文字才点亮成蓝色）。表情面板按 Telegram 的 emoji 键盘做，
+ *   底部一排分类 tab 切换不同类型的表情。
+ *
+ * 群聊式头像：对方消息左侧跟一个首字母彩圆（Telegram 没有用户头像时的默认画法），
+ * 连发多条只在最后一条下方露头像、只在第一条上方显示昵称 —— 和 Telegram 分组规则一致。
+ *
+ * 消息目前是内置示例（静态站没有后端），发送只是本地追加一条气泡，不落库。
+ * 以后接真实评论数据时，只要把 messages 换成接口返回即可。
+ */
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
+interface Props {
+	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
+	path?: string;
+}
+
+const { path = "/dynamic/" } = Astro.props;
+
+interface ChatMessage {
+	/** in = 对方（来访者）/ out = 自己 */
+	side: "in" | "out";
+	/** 对方昵称；out 消息不需要 */
+	author?: string;
+	/** 头像色调，对应 .tg-avatar--0…3 的渐变 */
+	tone?: number;
+	text: string;
+	/** 相对当前时间的分钟偏移，脚本会换算成 HH:mm */
+	offset: number;
+}
+
+const messages: ChatMessage[] = [
+	{
+		side: "in",
+		author: "阿柴",
+		tone: 0,
+		text: "你这篇写缓存的我看两遍了，四层兜底那段讲得真清楚 👍",
+		offset: -11,
+	},
+	{
+		side: "out",
+		text: "谢谢！主要是踩坑踩出来的，被限流那次印象太深了",
+		offset: -10,
+	},
+	{
+		side: "in",
+		author: "阿柴",
+		tone: 0,
+		text: "后来那个冷却时间你设了多久？",
+		offset: -8,
+	},
+	{
+		side: "out",
+		text: "15 分钟。触发一次就全局停手，宁可少抓几次也别把 Key 玩废",
+		offset: -7,
+	},
+	{
+		side: "in",
+		author: "木子",
+		tone: 1,
+		text: "稳，这套我抄走了",
+		offset: -6,
+	},
+];
+
+/** 同一个人连续发言时，只有第一条显示昵称、最后一条露头像（Telegram 的分组规则） */
+const rows = messages.map((message, index) => {
+	const prev = messages[index - 1];
+	const next = messages[index + 1];
+	const samePrev = message.side === "in" && prev?.side === "in" && prev.author === message.author;
+	const sameNext = message.side === "in" && next?.side === "in" && next.author === message.author;
+	return {
+		...message,
+		showAuthor: message.side === "in" && !samePrev,
+		showAvatar: message.side === "in" && !sameNext,
+		initial: (message.author || "?").slice(0, 1),
+	};
+});
+
+/**
+ * 表情面板按 Telegram 的 emoji 键盘分栏：底部一排分类 tab，点哪个显示哪一类。
+ * 图标用单色描边 SVG（Telegram 的 tab 就是单色线稿，不是彩色 emoji）。
+ * 没有「旗帜」一栏 —— 里面全是国家/地区旗帜，站内不适合出现。
+ */
+interface EmojiCategory {
+	id: string;
+	label: string;
+	/** tab 图标（svg 子节点，样式由 .tg-emoji-tab-icon 统一描边） */
+	icon: string;
+	emojis: string[];
+}
+
+const emojiCategories: EmojiCategory[] = [
+	{
+		id: "smileys",
+		label: i18n(I18nKey.commentChatCatSmileys),
+		icon: '<circle cx="12" cy="12" r="8.6"/><path d="M8.6 14.3a4.2 4.2 0 0 0 6.8 0"/><circle cx="9.2" cy="10" r="0.9" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10" r="0.9" fill="currentColor" stroke="none"/>',
+		emojis: [
+			"😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
+			"😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
+			"😘", "😋", "😛", "😜", "🤪", "🤨", "🧐", "🤓",
+			"😎", "🥳", "😏", "😒", "🙄", "😴", "🥲", "😭",
+		],
+	},
+	{
+		id: "animals",
+		label: i18n(I18nKey.commentChatCatAnimals),
+		icon: '<circle cx="7" cy="9.6" r="1.6"/><circle cx="11" cy="8.2" r="1.6"/><circle cx="15.4" cy="9" r="1.6"/><circle cx="12.2" cy="15.6" r="3.1"/><circle cx="18" cy="12.6" r="1.5"/>',
+		emojis: [
+			"🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼",
+			"🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🙈",
+			"🐔", "🐧", "🐦", "🦆", "🦉", "🦄", "🐝", "🦋",
+			"🐌", "🐞", "🐢", "🐍", "🐙", "🦀", "🐳", "🐬",
+		],
+	},
+	{
+		id: "food",
+		label: i18n(I18nKey.commentChatCatFood),
+		icon: '<path d="M6.4 9.2h9.2v5.2a4 4 0 0 1-4 4h-1.2a4 4 0 0 1-4-4z"/><path d="M15.6 10.4h1.5a2.4 2.4 0 0 1 0 4.8h-1.5"/><path d="M5.4 20.4h11"/>',
+		emojis: [
+			"🍎", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒",
+			"🥑", "🍅", "🌽", "🥕", "🍞", "🧀", "🍳", "🥓",
+			"🍔", "🍟", "🍕", "🌭", "🍜", "🍣", "🍰", "🍩",
+			"☕", "🍵", "🧋", "🍺", "🍷", "🥂", "🍫", "🍿",
+		],
+	},
+	{
+		id: "activity",
+		label: i18n(I18nKey.commentChatCatActivity),
+		icon: '<circle cx="12" cy="12" r="8.4"/><path d="M12 3.6c3 2.4 3 14.4 0 16.8M3.6 12h16.8"/>',
+		emojis: [
+			"⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏓", "🏸",
+			"🥊", "🎯", "🎳", "🎮", "🎲", "🧩", "🎨", "🎬",
+			"🎤", "🎧", "🎸", "🎹", "🥁", "🎺", "🏆", "🥇",
+			"🎉", "🎊", "🎈", "🎁", "🎂", "🎪", "🎡", "🎠",
+		],
+	},
+	{
+		id: "travel",
+		label: i18n(I18nKey.commentChatCatTravel),
+		icon: '<path d="M3.4 20.4 21 12 3.4 3.6l3.1 7.2 9 1.2-9 1.2z"/>',
+		emojis: [
+			"🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑",
+			"🚒", "🚐", "🚚", "🚜", "🛴", "🚲", "🛵", "🏍️",
+			"✈️", "🚀", "🛸", "🚁", "⛵", "🚤", "🚂", "🚄",
+			"🗺️", "🗽", "🗼", "🏰", "🏖️", "🏔️", "🌋", "🌈",
+		],
+	},
+	{
+		id: "objects",
+		label: i18n(I18nKey.commentChatCatObjects),
+		icon: '<path d="M9.4 17.6h5.2"/><path d="M10.2 20.2h3.6"/><path d="M12 3.4a5.8 5.8 0 0 1 3.4 10.5v1.2a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-1.2A5.8 5.8 0 0 1 12 3.4Z"/>',
+		emojis: [
+			"💡", "🔦", "🕯️", "💻", "🖥️", "⌨️", "🖱️", "📱",
+			"📷", "🎥", "📺", "📻", "⏰", "⏳", "🔋", "🔌",
+			"📦", "📫", "📝", "✏️", "📌", "📎", "🔖", "📚",
+			"💰", "💳", "🔑", "🔨", "🛠️", "🧲", "🧪", "🔬",
+		],
+	},
+	{
+		id: "symbols",
+		label: i18n(I18nKey.commentChatCatSymbols),
+		icon: '<path d="M12 20.2 4.9 13.1a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.5Z"/>',
+		emojis: [
+			"❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍",
+			"💔", "💕", "💖", "💗", "💘", "💝", "✨", "⭐",
+			"🌟", "💫", "⚡", "🔥", "💥", "💦", "🌀", "☀️",
+			"🌙", "☁️", "❄️", "✅", "❌", "❓", "❗", "💯",
+		],
+	},
+];
+---
+
+<div class="tg-chat" data-tg-chat data-tg-path={path}>
+	<div class="tg-scroll" data-tg-scroll>
+		<div class="tg-day"><span>{i18n(I18nKey.commentChatToday)}</span></div>
+
+		{
+			rows.map((row) => (
+				<div
+					class:list={[
+						"tg-row",
+						row.side === "in" ? "tg-row--in" : "tg-row--out",
+						row.side === "in" && row.showAvatar && "tg-row--tail",
+					]}
+				>
+					{row.side === "in" && (
+						<span
+							class={`tg-avatar tg-avatar--${row.tone ?? 0}`}
+							aria-hidden="true"
+						>
+							{row.initial}
+						</span>
+					)}
+					<div class="tg-col">
+						{row.showAuthor && (
+							<span class={`tg-author tg-author--${row.tone ?? 0}`}>
+								{row.author}
+							</span>
+						)}
+						<div class="tg-bubble">
+							<span class="tg-text">{row.text}</span>
+							<span class="tg-meta">
+								<span class="tg-time" data-tg-time data-tg-offset={row.offset} />
+								{row.side === "out" && (
+									<svg class="tg-ticks" viewBox="0 0 18 12" aria-hidden="true">
+										<path d="M1.2 6.6 5 10.4 12.1 2.4" />
+										<path d="M7.1 6.6 10.9 10.4 18 2.4" />
+									</svg>
+								)}
+							</span>
+						</div>
+					</div>
+				</div>
+			))
+		}
+	</div>
+
+	<div class="tg-bottom">
+		<div class="tg-emoji-panel" data-tg-emoji-panel hidden>
+			<div class="tg-emoji-body" data-tg-emoji-body>
+				{
+					emojiCategories.map((category, index) => (
+						<div
+							class="tg-emoji-grid"
+							id={`tg-emoji-cat-${category.id}`}
+							data-tg-emoji-cat={category.id}
+							hidden={index !== 0}
+						>
+							{category.emojis.map((emoji) => (
+								<button
+									type="button"
+									class="tg-emoji-item"
+									data-tg-emoji-insert
+									aria-label={emoji}
+								>
+									{emoji}
+								</button>
+							))}
+						</div>
+					))
+				}
+			</div>
+
+			<div class="tg-emoji-tabs" role="tablist">
+				{
+					emojiCategories.map((category, index) => (
+						<button
+							type="button"
+							class="tg-emoji-tab"
+							role="tab"
+							data-tg-emoji-tab={category.id}
+							aria-selected={index === 0 ? "true" : "false"}
+							aria-controls={`tg-emoji-cat-${category.id}`}
+							title={category.label}
+							aria-label={category.label}
+						>
+							<svg
+								class="tg-emoji-tab-icon"
+								viewBox="0 0 24 24"
+								aria-hidden="true"
+								set:html={category.icon}
+							/>
+						</button>
+					))
+				}
+			</div>
+		</div>
+
+		<form class="tg-composer" data-tg-composer>
+			<button
+				type="button"
+				class="tg-tool"
+				data-tg-attach
+				title={i18n(I18nKey.commentChatAttach)}
+				aria-label={i18n(I18nKey.commentChatAttach)}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						d="M20.4 11.3 12 19.7a5.6 5.6 0 0 1-7.9-7.9l8.6-8.6a3.7 3.7 0 0 1 5.3 5.3l-8.5 8.5a1.9 1.9 0 0 1-2.6-2.6l7.6-7.6"
+					/>
+				</svg>
+			</button>
+
+			<div class="tg-input-wrap">
+				<input
+					class="tg-input"
+					type="text"
+					name="message"
+					autocomplete="off"
+					placeholder={i18n(I18nKey.commentChatPlaceholder)}
+					aria-label={i18n(I18nKey.commentChatPlaceholder)}
+					data-tg-input
+				/>
+				<button
+					type="button"
+					class="tg-emoji"
+					data-tg-emoji
+					aria-expanded="false"
+					title={i18n(I18nKey.commentChatEmoji)}
+					aria-label={i18n(I18nKey.commentChatEmoji)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<circle cx="12" cy="12" r="8.6"></circle>
+						<path d="M8.6 14.3a4.2 4.2 0 0 0 6.8 0"></path>
+						<circle cx="9.2" cy="10" r="0.9" fill="currentColor" stroke="none"
+						></circle>
+						<circle cx="14.8" cy="10" r="0.9" fill="currentColor" stroke="none"
+						></circle>
+					</svg>
+				</button>
+			</div>
+
+			<button class="tg-send" type="submit" aria-label={i18n(I18nKey.commentChatSend)} data-tg-send>
+				<svg class="tg-send-plane" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M3.4 20.4 21 12 3.4 3.6l3.1 7.2 9 1.2-9 1.2z" fill="currentColor" />
+				</svg>
+			</button>
+
+			<input
+				type="file"
+				accept="image/*"
+				class="tg-file"
+				data-tg-file
+				tabindex="-1"
+				aria-hidden="true"
+			/>
+		</form>
+	</div>
+</div>
+
+<!-- 自己发出去的气泡模板，脚本克隆用 -->
+<template data-tg-out-template>
+	<div class="tg-row tg-row--out">
+		<div class="tg-col">
+			<div class="tg-bubble">
+				<span class="tg-text"></span>
+				<span class="tg-meta">
+					<span class="tg-time"></span>
+					<svg class="tg-ticks" viewBox="0 0 18 12" aria-hidden="true">
+						<path d="M1.2 6.6 5 10.4 12.1 2.4"></path>
+						<path d="M7.1 6.6 10.9 10.4 18 2.4"></path>
+					</svg>
+				</span>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script>
+	const pad = (value: number) => String(value).padStart(2, "0");
+
+	function stamp(offsetMinutes: number): string {
+		const date = new Date(Date.now() + offsetMinutes * 60_000);
+		return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+	}
+
+	function init() {
+		const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
+		if (!chat) return;
+
+		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
+		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
+		const input = chat.querySelector<HTMLInputElement>("[data-tg-input]");
+		const emojiButton = chat.querySelector<HTMLButtonElement>("[data-tg-emoji]");
+		const emojiPanel = chat.querySelector<HTMLElement>("[data-tg-emoji-panel]");
+		const attachButton = chat.querySelector<HTMLButtonElement>("[data-tg-attach]");
+		const fileInput = chat.querySelector<HTMLInputElement>("[data-tg-file]");
+		const template = document.querySelector<HTMLTemplateElement>(
+			"[data-tg-out-template]",
+		);
+		if (!scroller || !form || !input || !template) return;
+
+		// 示例消息的时间按“刚刚发生的对话”倒推，硬编码的 21:04 半夜看会很怪
+		chat.querySelectorAll<HTMLElement>("[data-tg-offset]").forEach((node) => {
+			node.textContent = stamp(Number(node.dataset.tgOffset) || 0);
+		});
+
+		const toBottom = () => {
+			scroller.scrollTop = scroller.scrollHeight;
+		};
+		toBottom();
+
+		// 空输入时纸飞机是灰的、有内容才点亮成蓝色
+		const syncSend = () => {
+			chat.dataset.hasText = input.value.trim() ? "true" : "false";
+		};
+		input.addEventListener("input", syncSend);
+		syncSend();
+
+		/* ---------------- 表情面板 ---------------- */
+
+		const setEmojiOpen = (open: boolean) => {
+			if (!emojiPanel || !emojiButton) return;
+			emojiPanel.hidden = !open;
+			emojiButton.setAttribute("aria-expanded", open ? "true" : "false");
+			chat.dataset.emojiOpen = open ? "true" : "false";
+			if (open) toBottom();
+		};
+
+		const closeEmoji = () => setEmojiOpen(false);
+
+		emojiButton?.addEventListener("click", () => {
+			setEmojiOpen(Boolean(emojiPanel?.hidden));
+		});
+
+		// 分类 tab：点哪个就露出对应那一类，其余收起（Telegram emoji 键盘的行为）
+		const emojiBody = chat.querySelector<HTMLElement>("[data-tg-emoji-body]");
+		const emojiTabs = Array.from(
+			chat.querySelectorAll<HTMLElement>("[data-tg-emoji-tab]"),
+		);
+		const emojiGrids = Array.from(
+			chat.querySelectorAll<HTMLElement>("[data-tg-emoji-cat]"),
+		);
+
+		const selectCategory = (id: string) => {
+			for (const tab of emojiTabs) {
+				tab.setAttribute(
+					"aria-selected",
+					tab.dataset.tgEmojiTab === id ? "true" : "false",
+				);
+			}
+			for (const grid of emojiGrids) {
+				grid.hidden = grid.dataset.tgEmojiCat !== id;
+			}
+			// 换分类时回到该类的顶部，否则会停在上一类的滚动位置
+			if (emojiBody) emojiBody.scrollTop = 0;
+		};
+
+		for (const tab of emojiTabs) {
+			tab.addEventListener("click", () => {
+				const id = tab.dataset.tgEmojiTab;
+				if (id) selectCategory(id);
+			});
+		}
+
+		// 点表情插入到光标处（和 Telegram 一样贴光标，不是无脑追加到末尾），
+		// 面板保持打开，可以连着点几个
+		chat.querySelectorAll<HTMLElement>("[data-tg-emoji-insert]").forEach((item) => {
+			item.addEventListener("click", () => {
+				const emoji = item.textContent?.trim() ?? "";
+				if (!emoji) return;
+				const start = input.selectionStart ?? input.value.length;
+				const end = input.selectionEnd ?? start;
+				input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+				const caret = start + emoji.length;
+				input.focus({ preventScroll: true });
+				input.setSelectionRange(caret, caret);
+				syncSend();
+			});
+		});
+
+		document.addEventListener("pointerdown", (event) => {
+			if (!emojiPanel || emojiPanel.hidden) return;
+			const target = event.target as Node | null;
+			if (!target) return;
+			if (
+				emojiPanel.contains(target) ||
+				emojiButton?.contains(target) ||
+				attachButton?.contains(target)
+			) {
+				return;
+			}
+			closeEmoji();
+		});
+
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") closeEmoji();
+		});
+
+		// ---------------- 发送图片 ----------------
+
+		const appendPhoto = (file: File) => {
+			const row = (template.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return;
+			const text = row.querySelector<HTMLElement>(".tg-text");
+			const bubble = row.querySelector<HTMLElement>(".tg-bubble");
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (text && bubble) {
+				const photo = document.createElement("img");
+				photo.className = "tg-photo";
+				photo.alt = file.name;
+				photo.src = URL.createObjectURL(file);
+				// 图加载完就能释放 blob，不必等页面关掉
+				photo.addEventListener(
+					"load",
+					() => URL.revokeObjectURL(photo.src),
+					{ once: true },
+				);
+				text.replaceWith(photo);
+				bubble.classList.add("tg-bubble--photo");
+			}
+			if (time) time.textContent = stamp(0);
+
+			scroller.append(row);
+			requestAnimationFrame(toBottom);
+		};
+
+		attachButton?.addEventListener("click", () => fileInput?.click());
+		fileInput?.addEventListener("change", () => {
+			const file = fileInput.files?.[0];
+			if (!file) return;
+			appendPhoto(file);
+			// 清空才能连续选同一张图
+			fileInput.value = "";
+		});
+
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+			const text = input.value.trim();
+			if (!text) return;
+
+			const row = (template.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return;
+			const bubble = row.querySelector<HTMLElement>(".tg-text");
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (bubble) bubble.textContent = text;
+			if (time) time.textContent = stamp(0);
+
+			scroller.append(row);
+			input.value = "";
+			syncSend();
+			closeEmoji();
+			// 等浏览器完成一次布局再滚，否则新气泡高度还算不出来
+			requestAnimationFrame(toBottom);
+			input.focus({ preventScroll: true });
+		});
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init, { once: true });
+	} else {
+		init();
+	}
+</script>

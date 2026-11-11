@@ -2,9 +2,14 @@
  * 动态卡片底部操作条：点赞 / 评论
  * 用 document 级事件委托统一处理，动态页（模板克隆）与侧栏弹窗（Svelte）共用
  * - 点赞：纯本地记录（localStorage），静态站无后端
- * - 评论：展开/收起该条动态的内联评论
+ * - 评论：从右侧抽出评论抽屉（CommentDrawer），见 dynamic-comment-drawer.ts
  */
 
+import {
+	bindCommentDrawer,
+	closeCommentDrawer,
+	openCommentDrawer,
+} from "@/components/pages/dynamic/dynamic-comment-drawer";
 import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
 import { formatCompactNumber } from "@/utils/number-utils";
 
@@ -106,14 +111,21 @@ function toggleLike(button: HTMLElement): void {
 }
 
 function toggleComments(button: HTMLElement): void {
+	// 评论地址挂在条目上（由 SSR 或模板克隆时写入）；本站没接评论服务时为空，
+	// 那时抽屉照样抽出，里面给一句「评论系统未配置」的空态
 	const entry = button.closest<HTMLElement>("[data-dynamic-entry]");
-	const comments = entry?.querySelector<HTMLElement & { toggle?: () => void }>(
-		"dynamic-inline-comments",
-	);
-	if (!comments?.toggle) return;
-	comments.toggle();
-	button.classList.toggle("is-active", comments.dataset.expanded === "true");
+	if (!entry) return;
+	// 已经贴着这条动态打开着 → 收起；否则（含切到另一条）打开并换内容
+	if (button.classList.contains("is-active")) {
+		closeCommentDrawer();
+		return;
+	}
 	playIcon(button);
+	openCommentDrawer(
+		entry.dataset.commentSrc ?? "",
+		button,
+		entry.dataset.commentEmpty ?? "",
+	);
 }
 
 function onClick(event: MouseEvent): void {
@@ -143,7 +155,23 @@ function onClick(event: MouseEvent): void {
 }
 
 /** 注册一次即可，在动态页与侧栏弹窗里都可调用 */
-export function registerDynamicActions(): void {
+export function registerDynamicActions(
+	options: {
+		commentCloseLabel?: string;
+		commentOnlineLabel?: string;
+		commentName?: string;
+		commentAvatarUrl?: string;
+	} = {},
+): void {
+	// 抽屉的关闭 / 在线文案、聊天对象名字与头像由页面侧传入，
+	// 先写进去再判断是否已绑定（同一页面换文章时也要刷新）
+	bindCommentDrawer({
+		closeLabel: options.commentCloseLabel,
+		onlineLabel: options.commentOnlineLabel,
+		name: options.commentName,
+		avatarUrl: options.commentAvatarUrl,
+	});
+
 	if (registered) return;
 	registered = true;
 
