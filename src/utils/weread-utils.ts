@@ -23,6 +23,9 @@ const GATEWAY = "https://i.weread.qq.com/api/agent/gateway";
 /** 没配 Key 只提醒一次，避免一次构建刷几十行日志 */
 let warnedNoKey = false;
 
+/** dev 下忽略 `WEREAD_CACHE=off` 时只提醒一次 */
+let warnedDevCacheOff = false;
+
 // 书籍的阅读状态，书架上只会出现这两种：
 //   reading  在读 —— 还在书架上、没读完
 //   read     读过 —— 已移出书架的历史书（当前只同步书架，暂不会出现）
@@ -169,6 +172,19 @@ function readEnvKey(): string {
 }
 
 /**
+ * 是否跑在 `astro dev` 开发服务器里。
+ * 构建时是 false；tsx 脚本（books:refresh 等）里 import.meta.env 不存在，也返回 false。
+ */
+function isDevServer(): boolean {
+	try {
+		const env = import.meta.env as { DEV?: boolean } | undefined;
+		return Boolean(env?.DEV);
+	} catch {
+		return false;
+	}
+}
+
+/**
  * 真正打网关：网络 / 超时 / errcode 一律返回 value: null，由调用方降级，
  * 保证图书页在 API 不可用时也能构建成功。
  * denied 用来标记「限流型」失败（429 / 403），交给缓存层触发冷却，别再硬试。
@@ -277,6 +293,21 @@ async function callGateway<T>(
 		return null;
 	}
 
+	// astro dev 下只读缓存：平时会频繁刷新页面，缓存一过期就重新请求的话，
+	// 一个下午就能把账号刷到限流。这里把新鲜期拉到无限——只要磁盘上存着一份就绝不请求。
+	// 缓存缺失（首次运行，或刚跑过 books:refresh）时仍会抓一次，所以数据不会缺。
+	// 要更新数据：pnpm books:refresh（或 books:refresh:all），别指望刷新页面。
+	const devReadOnly = isDevServer();
+	const wantsNoCache = process.env.WEREAD_CACHE === "off" || config.cache === false;
+	if (devReadOnly && wantsNoCache && !warnedDevCacheOff) {
+		warnedDevCacheOff = true;
+		console.warn(
+			"[Weread] dev 下强制只读缓存（忽略 WEREAD_CACHE=off / cache:false），避免刷新页面反复请求把账号刷到限流；要更新数据请跑 pnpm books:refresh",
+		);
+	}
+	// 构建时的 WEREAD_CACHE=off 仍然有效，用来强制刷新一份全新的产物
+	const cacheOff = wantsNoCache && !devReadOnly;
+
 	return cachedCall<T>({
 		key: makeCacheKey(
 			apiName,
@@ -286,9 +317,11 @@ async function callGateway<T>(
 			crypto.createHash("sha256").update(apiKey).digest("hex").slice(0, 12),
 		),
 		dir: resolveCacheDir(config.cacheDir),
-		// WEREAD_CACHE=off 用来强制刷新（改了 Key / 想立刻看最新数据时）
-		enabled: config.cache !== false && process.env.WEREAD_CACHE !== "off",
-		ttl: ttlSeconds(apiName, payload, config),
+		// dev 下 cacheOff 恒为 false，所以这里一直是「读缓存」，缓存缺失时才抓
+		enabled: !cacheOff,
+		ttl: devReadOnly
+			? Number.POSITIVE_INFINITY
+			: ttlSeconds(apiName, payload, config),
 		stale: Math.max(0, config.cacheStaleDays ?? 30) * 86400,
 		load: () => requestGateway<T>(apiName, apiKey, config, payload),
 	});

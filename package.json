@@ -22,6 +22,8 @@
     "lint": "biome check --write ./src ./scripts",
     "preinstall": "npx only-allow pnpm",
     "lqips": "npx tsx scripts/generate-lqips.ts",
+    "books:refresh": "npx tsx src/utils/weread-cache.ts",
+    "books:refresh:all": "npx tsx src/utils/weread-cache.ts --all",
     "avatar:convert": "node scripts/convert-avatar.mjs",
     "github-cards": "npx tsx scripts/generate-github-card-data.ts"
   },

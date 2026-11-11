@@ -51,7 +51,12 @@ export const wereadConfig: WereadConfig = {
 	// ── 缓存 ──────────────────────────────────────────────────────────────
 	// 数据会缓存在 cache/weread/ 里（已 gitignore），同一份数据不会反复打网关，
 	// 减少被限流 / 封 Key 的风险。缓存里只有响应体，不含 API Key。
-	// 想立刻看最新数据：临时 `WEREAD_CACHE=off pnpm dev`，或直接删掉 cache/weread/。
+	// **astro dev 下只读缓存**：只要磁盘上有一份就不再请求网关，刷新页面多少遍都一样，
+	// 所以本地调试刷页面不会消耗账号配额。
+	// 想更新数据（只走命令行）：
+	//   pnpm books:refresh     清书架 / 统计，保留书籍详情 → 下次请求（或 pnpm build）重抓
+	//   pnpm books:refresh:all 连书籍详情一起清
+	// 构建时还可以 WEREAD_CACHE=off pnpm build 强制全量重抓。
 	cache: true,
 
 	// 统一缓存新鲜期（小时），0 表示按接口分档：

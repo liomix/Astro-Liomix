@@ -12,6 +12,11 @@
  *   3. 陈旧兜底  —— 抓取失败（超时 / 429 / errcode）时继续用过期缓存，最多 staleDays
  *   4. 冷却窗口  —— 被网关拒绝后写 _cooldown.json，冷却期内干脆不发请求，避免越封越久
  *
+ * 想「立刻更新数据」：跑 `pnpm books:refresh`（入口在本文件末尾），它会删掉会变的那部分
+ * 缓存并写一个 _refresh 标记；这里读到标记就丢掉内存缓存 + 跳过冷却，所以正在跑的
+ * dev server 不用重启，下一次请求就是新数据。要发布则再 `pnpm build`
+ * （或 `books:refresh:all` 连书籍详情一起清）。
+ *
  * 安全：
  *   - 缓存里只存响应体，**不存请求头**，API Key 永远不落盘
  *   - 文件 0o600、原子写（tmp + rename），并发构建不会写出半个 JSON
@@ -29,6 +34,13 @@ export const DEFAULT_CACHE_DIR = path.join(PROJECT_ROOT, "cache", "weread");
 
 /** 被网关拒绝后暂停多久（秒），避免「越试越封」 */
 const DENIED_COOLDOWN = 15 * 60;
+
+/** 「立刻更新」标记文件：由 clearWereadCache() 写入 */
+const REFRESH_MARKER = "_refresh";
+/** 冷却标记文件 */
+const COOLDOWN_FILE = "_cooldown.json";
+/** 会变的数据：书架 + 阅读统计（含年度热力图）。书籍详情几乎不变，默认保留 */
+const VOLATILE = /^(shelf-sync|readdata)-/;
 
 /** 网关结果：value 为 null 表示这次没拿到；denied 表示被限流 / 拒绝 */
 export interface FetchOutcome<T> {
@@ -160,12 +172,12 @@ async function writeEntry(dir: string, key: string, value: unknown): Promise<voi
 }
 
 // ---------------------------------------------------------------------------
-// 冷却窗口
+// 冷却窗口 / 强制刷新标记
 // ---------------------------------------------------------------------------
 
 async function readCooldown(dir: string): Promise<Cooldown | null> {
 	try {
-		const raw = await fs.readFile(path.join(dir, "_cooldown.json"), "utf-8");
+		const raw = await fs.readFile(path.join(dir, COOLDOWN_FILE), "utf-8");
 		const parsed = JSON.parse(raw) as Cooldown;
 		if (typeof parsed?.until !== "number") return null;
 		return parsed.until > Date.now() ? parsed : null;
@@ -182,13 +194,34 @@ async function writeCooldown(dir: string, reason: string): Promise<void> {
 			reason,
 		};
 		await fs.writeFile(
-			path.join(dir, "_cooldown.json"),
+			path.join(dir, COOLDOWN_FILE),
 			JSON.stringify(body),
 			{ mode: 0o600 },
 		);
 	} catch {
 		// 忽略
 	}
+}
+
+/**
+ * 消费「立刻更新」标记：`pnpm books:refresh` 只删得掉磁盘，
+ * 删不掉正在跑的 dev server 内存里的那份，所以脚本会写一个 _refresh 标记，
+ * 这里第一次读到就清空内存、忽略冷却，然后把标记删掉（只生效一次）。
+ */
+async function consumeRefreshMarker(dir: string): Promise<boolean> {
+	const marker = path.join(dir, REFRESH_MARKER);
+	try {
+		await fs.access(marker);
+	} catch {
+		return false;
+	}
+	memory.clear();
+	try {
+		await fs.rm(marker, { force: true });
+	} catch {
+		// 删不掉也无所谓，下次再读到会重来一遍
+	}
+	return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -212,8 +245,11 @@ export async function cachedCall<T>(
 		return outcome.value;
 	}
 
-	const remembered = memory.get(key);
-	const entry = remembered ?? (await readEntry(dir, key));
+	// `pnpm books:refresh` 写的标记：这一次调用丢掉内存缓存、跳过冷却
+	const forced = await consumeRefreshMarker(dir);
+
+	const remembered = forced ? undefined : memory.get(key);
+	const entry = remembered ?? (forced ? null : await readEntry(dir, key));
 	// 从磁盘读到的那份顺手放进内存，本次进程后续调用就不用再碰磁盘
 	if (!remembered && entry) memory.set(key, entry);
 
@@ -225,14 +261,16 @@ export async function cachedCall<T>(
 	}
 
 	// 冷却期内一律不发请求：有旧数据就用旧数据，没有就降级
-	const cooldown = await readCooldown(dir);
-	if (cooldown) {
-		stats.skipped++;
-		if (entry && age < stale) {
-			stats.stale++;
-			return entry.value as T;
+	if (!forced) {
+		const cooldown = await readCooldown(dir);
+		if (cooldown) {
+			stats.skipped++;
+			if (entry && age < stale) {
+				stats.stale++;
+				return entry.value as T;
+			}
+			return null;
 		}
-		return null;
 	}
 
 	// 并发合并：同一次构建里两处要同一份数据时只发一个请求
@@ -273,4 +311,96 @@ export async function cachedCall<T>(
 /** 清空内存缓存（测试 / 手动刷新用） */
 export function clearWereadMemoryCache(): void {
 	memory.clear();
+}
+
+/**
+ * 清磁盘缓存，`pnpm books:refresh` 用它（更新数据只走命令行，页面不提供按钮）。
+ * 默认只清会变的部分（书架 / 统计 / 冷却），`all` 为 true 时连书籍详情一起清。
+ * 清完会写 _refresh 标记，正在跑的进程下一次调用就会丢掉内存缓存、跳过冷却——
+ * 因为 dev 下只读缓存（新鲜期视为无限），必须靠删文件 + 这个标记才能触发重抓。
+ */
+export async function clearWereadCache(
+	options: { all?: boolean; dir?: string } = {},
+): Promise<{ removed: number; kept: number }> {
+	const dir = resolveCacheDir(options.dir);
+
+	let entries: string[] = [];
+	try {
+		entries = await fs.readdir(dir);
+	} catch {
+		entries = [];
+	}
+
+	let removed = 0;
+	let kept = 0;
+
+	if (options.all) {
+		await fs.rm(dir, { recursive: true, force: true });
+		removed = entries.length;
+	} else {
+		for (const name of entries) {
+			if (name === REFRESH_MARKER) continue;
+			if (name === COOLDOWN_FILE || VOLATILE.test(name)) {
+				await fs.rm(path.join(dir, name), { force: true });
+				removed++;
+			} else {
+				kept++;
+			}
+		}
+	}
+
+	await fs.mkdir(dir, { recursive: true });
+	await fs.writeFile(path.join(dir, REFRESH_MARKER), String(Date.now()), {
+		mode: 0o600,
+	});
+
+	return { removed, kept };
+}
+
+// ---------------------------------------------------------------------------
+// 命令行入口
+// 直接用 node / tsx 跑本文件时才执行，被 import 时完全不触发。
+//   pnpm books:refresh        只清会变的部分（书架 / 统计 / 冷却），保留书籍详情
+//   pnpm books:refresh:all    整个 cache/weread 清空，连书籍详情一起重清
+// dev 下缓存是只读的（新鲜期视为无限），所以更新数据只能靠这里：
+// 删缓存 + 写 _refresh 标记 → 下次页面请求重抓一次，之后回到只读。
+// ---------------------------------------------------------------------------
+
+/** 本文件是否被当作脚本直接执行（而不是被 import） */
+function isDirectRun(): boolean {
+	// 非 Node 运行时（比如 SSR 边缘环境）没有 process，直接当作「不是脚本入口」
+	if (typeof process === "undefined") return false;
+	const entry = process.argv?.[1];
+	if (!entry) return false;
+	const normalize = (target: string) =>
+		path.resolve(target).replace(/\\/g, "/").toLowerCase();
+	return normalize(entry) === normalize(fileURLToPath(import.meta.url));
+}
+
+async function refreshCacheCli(): Promise<void> {
+	const all = process.argv.includes("--all");
+	const { removed, kept } = await clearWereadCache({ all });
+	const where = path
+		.relative(PROJECT_ROOT, DEFAULT_CACHE_DIR)
+		.replace(/\\/g, "/");
+
+	if (removed === 0 && kept === 0) {
+		console.log(`[books-refresh] ${where} 还是空的，下次构建会全新拉取`);
+	}
+	console.log(
+		`[books-refresh] 清除 ${removed} 个文件${all ? "（整目录）" : ""}${
+			kept ? `，保留 ${kept} 个书籍详情缓存` : ""
+		}`,
+	);
+	console.log(
+		"[books-refresh] 正在跑的 dev server 下次刷新页面就会重抓一次（之后回到只读）；要发布就再跑一次 pnpm build",
+	);
+}
+
+if (isDirectRun()) {
+	// 不在模块顶层 await：这个文件也会被页面 import，保持同步模块更省事
+	refreshCacheCli().catch((error) => {
+		console.error("[books-refresh] 清理失败：", error);
+		process.exitCode = 1;
+	});
 }

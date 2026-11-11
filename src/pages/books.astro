@@ -35,6 +35,11 @@ if (import.meta.env.DEV) {
 			cache.denied ? ` / 被拒 ${cache.denied} 次` : ""
 		}${cache.skipped ? ` / 冷却跳过 ${cache.skipped} 次` : ""}`,
 	);
+	if (cache.fetch > 0) {
+		console.log(
+			"[Weread] dev 只读缓存：本次有缓存缺失才请求了网关；平时刷新页面不会重复请求，要更新数据请跑 pnpm books:refresh",
+		);
+	}
 }
 
 const limit = Math.max(0, wereadConfig.limit ?? 0);
