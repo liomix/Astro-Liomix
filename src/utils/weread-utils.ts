@@ -36,6 +36,14 @@ export interface WereadBook {
 	lastReadAt: number;
 	// 阅读状态：在读 / 读完
 	status: WereadBookStatus;
+	// 书籍简介（/book/info 的 intro），可能为空
+	intro: string;
+	// 全书字数：章节目录里各章 wordCount 之和，0 表示没取到
+	wordCount: number;
+	// 微信读书推荐值，0~1000（912 = 9.12 分），0 表示暂无评分
+	rating: number;
+	// 参与评分的人数，0 表示没取到
+	ratingCount: number;
 }
 
 export interface WereadStats {
@@ -92,6 +100,18 @@ interface ReadDataResponse {
 	preferCategory?: Array<{ categoryTitle?: string; readingTime?: number }>;
 	errcode?: number;
 	errmsg?: string;
+}
+
+// 书籍详情：简介与推荐值
+interface BookInfoResponse {
+	intro?: string;
+	newRating?: number;
+	newRatingCount?: number;
+}
+
+// 章节目录：没有「全书字数」字段，只能把每章的 wordCount 累加
+interface ChapterInfoResponse {
+	chapters?: Array<{ wordCount?: number }>;
 }
 
 // 解析接口错误
@@ -198,8 +218,54 @@ function normalizeBooks(data: ShelfResponse | null): WereadBook[] {
 			lastReadAt: book.readUpdateTime ?? 0,
 			// 书架上的书只有两种状态：读完 / 在读
 			status: (book.finishReading === 1 ? "finished" : "reading") as WereadBookStatus,
+			intro: "",
+			wordCount: 0,
+			rating: 0,
+			ratingCount: 0,
 		}))
 		.sort((a, b) => b.lastReadAt - a.lastReadAt);
+}
+
+// 补详情时最多同时发几个请求，避免一次并行几十个把网关打挂
+const META_CONCURRENCY = 4;
+
+/**
+ * 给每本书补上简介、字数、评分（详情弹窗用）。
+ * 一次构建要发 books.length × 2 个请求，所以并发控制在 4，失败也不影响书架本身。
+ */
+async function attachBookMeta(
+	config: WereadConfig,
+	books: WereadBook[],
+): Promise<void> {
+	if (books.length === 0) return;
+
+	let cursor = 0;
+	const worker = async () => {
+		while (cursor < books.length) {
+			const book = books[cursor++];
+			if (!book.id) continue;
+			const [info, chapters] = await Promise.all([
+				callGateway<BookInfoResponse>("/book/info", config, {
+					bookId: book.id,
+				}),
+				callGateway<ChapterInfoResponse>("/book/chapterinfo", config, {
+					bookId: book.id,
+				}),
+			]);
+
+			book.intro = info?.intro?.trim() ?? "";
+			book.rating = info?.newRating ?? 0;
+			book.ratingCount = info?.newRatingCount ?? 0;
+			book.wordCount = (chapters?.chapters ?? []).reduce(
+				(sum, chapter) => sum + (chapter.wordCount ?? 0),
+				0,
+			);
+		}
+	};
+
+	await Promise.all(
+		Array.from({ length: Math.min(META_CONCURRENCY, books.length) }, worker),
+	);
 }
 
 /**
@@ -220,6 +286,12 @@ export async function fetchWereadData(
 	]);
 
 	const books = normalizeBooks(shelf);
+
+	// 详情弹窗要的简介 / 字数 / 评分：只补真正会展示的那几本
+	if (config.showDetail !== false && books.length > 0) {
+		const limit = Math.max(0, config.limit ?? 0);
+		await attachBookMeta(config, limit > 0 ? books.slice(0, limit) : books);
+	}
 
 	let stats: WereadStats | null = null;
 	if (monthly || overall) {

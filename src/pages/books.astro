@@ -31,12 +31,52 @@ const limit = Math.max(0, wereadConfig.limit ?? 0);
 const books = limit > 0 ? data.books.slice(0, limit) : data.books;
 const stats = wereadConfig.showStats === false ? null : data.stats;
 
-// 书架组件（客户端）不引 i18n 日期工具，这里预先格式化好「最近阅读」
+// 书架组件是客户端组件，这里把详情弹窗要用的文字预先格式化好：
+// 字数按语系换算（中日韩用「万」，其它用「千」），评分是 0~1000 的推荐值
+const lang = (siteConfig.lang || "zh_cn").toLowerCase();
+const useWan = /^(zh|ja|ko)/.test(lang);
+const wordTemplate = i18n(I18nKey.booksWordCount);
+const scoreTemplate = i18n(I18nKey.booksScore);
+const ratingTemplate = i18n(I18nKey.booksRatingCount);
+// 韩语的「万」是 만，其它 CJK 语系直接用「万」
+const countUnit = lang.startsWith("ko") ? "만" : "万";
+
+function formatWords(count: number): string {
+	if (!count) return "";
+	const n = useWan
+		? (count / 10000).toFixed(1)
+		: Math.round(count / 1000).toString();
+	return wordTemplate.replace("{n}", n);
+}
+
+function formatScore(rating: number): string {
+	if (!rating) return "";
+	return scoreTemplate.replace("{n}", (rating / 100).toFixed(1));
+}
+
+// 「2376人评分」；上万折成「15.5万人评分」，没有人数就返回空串
+function formatRatingCount(count: number): string {
+	if (!count) return "";
+	let text = String(count);
+	if (count >= 10000) {
+		text = useWan
+			? `${(count / 10000).toFixed(1)}${countUnit}`
+			: `${Math.round(count / 1000)}k`;
+	}
+	return ratingTemplate.replace("{n}", text);
+}
+
 const shelfBooks = books.map((book) => ({
-	...book,
-	lastReadText: book.lastReadAt
-		? formatDateI18n(new Date(book.lastReadAt * 1000))
-		: "",
+	id: book.id,
+	title: book.title,
+	author: book.author,
+	cover: book.cover,
+	link: book.link,
+	status: book.status,
+	intro: book.intro,
+	wordsText: formatWords(book.wordCount),
+	scoreText: formatScore(book.rating),
+	ratingLabel: formatRatingCount(book.ratingCount),
 }));
 
 // 书架只按阅读状态收录，这三种各有多少本

@@ -22,6 +22,10 @@ export interface WereadConfig {
 	// 是否显示顶部的阅读统计条（本月 / 累计 / 日均 / 读完）
 	showStats?: boolean;
 
+	// 是否补全书籍详情（简介 / 字数 / 评分），默认 true。
+	// 每本书要额外发 2 个请求，书架很大时可以关掉来加快构建
+	showDetail?: boolean;
+
 	// 请求超时时间（毫秒），超时后页面降级为空书架而非构建失败
 	timeout?: number;
 }

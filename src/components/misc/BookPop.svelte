@@ -2,9 +2,13 @@
 /**
  * 图书详情弹窗（3D 书架里点「已经滑出来的那本书」时弹出）
  * ----------------------------------------------------------------------------
- * 原生 <dialog>：封面 + 书名/作者 + 分类/最近阅读 + 去微信读书阅读。
- * 父组件只管把 `book` 置为要展示的书、置为 null 关闭；关闭动作走 `onClose`，
- * 这样 Esc、点遮罩、点关闭按钮三条路径都能同步回父组件的状态。
+ * 原生 <dialog>。布局是两行网格：
+ *   第一行  封面 | 标题·作者·字数评分 + 关闭按钮
+ *   第二行  横跨整行的简介（上面一条细分割线）
+ * 关闭按钮是网格里的普通 flex 项，不参与绝对定位，所以封面比例怎么变它都不乱跑。
+ *
+ * 背景：封面自身放大 + 高斯模糊，再压一层深色半透明（scrim），
+ * 颜色透得出来、上面的白字也始终读得清（浅色封面对白字同样安全）。
  */
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
@@ -14,12 +18,14 @@ interface BookInfo {
 	title: string;
 	author: string;
 	cover: string;
-	category: string;
-	link: string;
-	/** 阅读状态：在读 / 读过 / 读完 */
-	status: "reading" | "read" | "finished";
-	/** 预格式化的最近阅读时间，空串表示没有记录 */
-	lastReadText: string;
+	/** 书籍简介，可能为空 */
+	intro: string;
+	/** 预格式化的字数，如「22.4 万字」 */
+	wordsText: string;
+	/** 预格式化的评分，如「9.1 分」 */
+	scoreText: string;
+	/** 预格式化的评分人数标签，如「2376人评分」，空串表示没取到 */
+	ratingLabel?: string;
 }
 
 interface Props {
@@ -30,20 +36,11 @@ interface Props {
 
 let { book, onClose }: Props = $props();
 
-const readingLabel = i18n(I18nKey.booksReading);
-const readLabel = i18n(I18nKey.booksReadCount);
-const finishedLabel = i18n(I18nKey.booksFinished);
-
-// 读完 / 读过 / 在读三种状态各自的文案
-function statusLabel(status: BookInfo["status"]): string {
-	if (status === "finished") return finishedLabel;
-	if (status === "read") return readLabel;
-	return readingLabel;
-}
-const openLabel = i18n(I18nKey.booksOpen);
 const closeLabel = i18n(I18nKey.announcementClose);
-const categoryLabel = i18n(I18nKey.categories);
-const lastReadLabel = i18n(I18nKey.booksLastRead);
+/** 信息栏三个字段的小标题 */
+const authorLabel = i18n(I18nKey.author);
+const wordsLabel = i18n(I18nKey.booksWordsLabel);
+const scoreLabel = i18n(I18nKey.booksScoreLabel);
 
 let dialogEl = $state<HTMLDialogElement | null>(null);
 /** 关闭动画期间还要继续显示上一次的书，所以单独留一份 */
@@ -59,6 +56,51 @@ $effect(() => {
 	}
 });
 
+/**
+ * 单行文本超宽时循环滚动。
+ * 轨道里放了两份同样的文字，第一份带右内边距；滚过「一份宽」后画面正好接上，
+ * 所以能无缝无限循环。没超宽就只显示第一份，完全静止。
+ */
+function marquee(node: HTMLElement) {
+	let frame = 0;
+	let dead = false;
+
+	const measure = () => {
+		if (dead) return;
+		const content = node.querySelector<HTMLElement>(".marquee-track > span");
+		if (!content) return;
+		const gap = Number.parseFloat(getComputedStyle(content).paddingRight) || 0;
+		const textWidth = content.offsetWidth - gap;
+		const over = textWidth > node.clientWidth + 1;
+		node.classList.toggle("is-scrolling", over);
+		if (!over) return;
+		node.style.setProperty("--marquee-shift", `-${content.offsetWidth}px`);
+		node.style.setProperty(
+			"--marquee-dur",
+			`${Math.max(6, content.offsetWidth / 26).toFixed(1)}s`,
+		);
+	};
+
+	const schedule = () => {
+		cancelAnimationFrame(frame);
+		frame = requestAnimationFrame(measure);
+	};
+
+	measure();
+	// 字体、图片加载完宽度会变，再量一次
+	if (document.fonts) void document.fonts.ready.then(schedule);
+	const observer = new ResizeObserver(schedule);
+	observer.observe(node);
+
+	return {
+		destroy() {
+			dead = true;
+			cancelAnimationFrame(frame);
+			observer.disconnect();
+		},
+	};
+}
+
 // 点遮罩关闭（点内容区时 target 是子元素，不会误触）
 function handleClick(event: MouseEvent) {
 	if (event.target === dialogEl) dialogEl?.close();
@@ -72,79 +114,95 @@ function handleClick(event: MouseEvent) {
 	onclick={handleClick}
 	onclose={onClose}
 >
-	<button
-		type="button"
-		class="book-pop-close"
-		onclick={() => dialogEl?.close()}
-		aria-label={closeLabel}
-	>
-		<svg viewBox="0 0 24 24" aria-hidden="true">
-			<path d="M6 6 L18 18 M18 6 L6 18" />
-		</svg>
-	</button>
+	{#if shown?.cover}
+		<div
+			class="book-pop-blur"
+			style={`background-image:url(${JSON.stringify(shown.cover)})`}
+			aria-hidden="true"
+		></div>
+	{/if}
 
 	{#if shown}
-		<div class="book-pop-body">
-			<figure class="book-pop-cover">
-				{#if shown.cover}
-					<img
-						src={shown.cover}
-						alt={shown.title}
-						loading="lazy"
-						decoding="async"
-						referrerpolicy="no-referrer"
-					/>
-				{:else}
-					<span class="book-pop-cover-blank" aria-hidden="true">书</span>
-				{/if}
-			</figure>
-
-			<div class="book-pop-info">
-				<span
-					class="book-pop-status"
-					class:is-finished={shown.status === "finished"}
-					class:is-read={shown.status === "read"}
-				>
-					{statusLabel(shown.status)}
-				</span>
-
-				<h2 class="book-pop-title" id="book-pop-title">{shown.title}</h2>
-				{#if shown.author}
-					<p class="book-pop-author">{shown.author}</p>
-				{/if}
-
-				{#if shown.category || shown.lastReadText}
-					<dl class="book-pop-meta">
-						{#if shown.category}
-							<div class="book-pop-meta-row">
-								<dt>{categoryLabel}</dt>
-								<dd>{shown.category}</dd>
-							</div>
+		{#key shown.id}
+			<div class="book-pop-scroll">
+				<div class="book-pop-grid">
+					<figure class="book-pop-cover">
+						{#if shown.cover}
+							<img
+								src={shown.cover}
+								alt={shown.title}
+								loading="lazy"
+								decoding="async"
+								referrerpolicy="no-referrer"
+							/>
+						{:else}
+							<span class="book-pop-cover-blank" aria-hidden="true">书</span>
 						{/if}
-						{#if shown.lastReadText}
-							<div class="book-pop-meta-row">
-								<dt>{lastReadLabel}</dt>
-								<dd>{shown.lastReadText}</dd>
-							</div>
-						{/if}
-					</dl>
-				{/if}
+					</figure>
 
-				{#if shown.link}
-					<a
-						class="book-pop-open"
-						href={shown.link}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						<span>{openLabel}</span>
-						<svg viewBox="0 0 24 24" aria-hidden="true">
-							<path d="M5 12h14M13 6l6 6-6 6" />
-						</svg>
-					</a>
-				{/if}
+					<div class="book-pop-head">
+						<div class="book-pop-col">
+							<h2 class="book-pop-title scroll-line" id="book-pop-title" use:marquee>
+								<span class="marquee-track">
+									<span>{shown.title}</span>
+									<span aria-hidden="true">{shown.title}</span>
+								</span>
+							</h2>
+
+							<div class="book-pop-fields">
+								{#if shown.author}
+									<div class="book-pop-field">
+										<span class="book-pop-label">{authorLabel}</span>
+										<span class="book-pop-value scroll-line" use:marquee>
+											<span class="marquee-track">
+												<span>{shown.author}</span>
+												<span aria-hidden="true">{shown.author}</span>
+											</span>
+										</span>
+									</div>
+								{/if}
+
+								{#if shown.wordsText}
+									<div class="book-pop-field">
+										<span class="book-pop-label">{wordsLabel}</span>
+										<span class="book-pop-value">{shown.wordsText}</span>
+									</div>
+								{/if}
+
+								{#if shown.scoreText}
+									<div class="book-pop-field">
+										<span class="book-pop-label">{shown.ratingLabel || scoreLabel}</span>
+										<span class="book-pop-value book-pop-value-score">
+											<svg class="book-pop-star" viewBox="0 0 24 24" aria-hidden="true">
+												<path
+													d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"
+												/>
+											</svg>
+											{shown.scoreText}
+										</span>
+									</div>
+								{/if}
+							</div>
+						</div>
+
+						<button
+							type="button"
+							class="book-pop-close"
+							onclick={() => dialogEl?.close()}
+							aria-label={closeLabel}
+						>
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<path d="M6 6 L18 18 M18 6 L6 18" />
+							</svg>
+						</button>
+					</div>
+
+					{#if shown.intro}
+						<p class="book-pop-intro">{shown.intro}</p>
+					{/if}
+				</div>
 			</div>
-		</div>
+		{/key}
 	{/if}
 </dialog>
 
@@ -155,28 +213,70 @@ function handleClick(event: MouseEvent) {
 	}
 
 	.book-pop {
-		/* 不要覆盖 UA 的 position：模态 dialog 默认是 fixed，绝对定位的关闭按钮即以它为基准 */
-		width: min(92vw, 30rem);
-		max-width: min(92vw, 30rem);
-		max-height: min(86vh, 34rem);
-		/* Tailwind preflight 会重置 UA 的 margin:auto，这里显式补回以保持居中 */
+		/* 白字 + 深色蒙版：任何封面上都读得清，颜色又透得出来 */
+		--pop-ink: rgb(255 255 255 / 0.97);
+		--pop-ink-2: rgb(255 255 255 / 0.84);
+		--pop-ink-3: rgb(255 255 255 / 0.7);
+		--pop-scrim: rgb(10 11 15 / 0.56);
+		--pop-edge: rgb(255 255 255 / 0.14);
+
+		/* 不要覆盖 UA 的 position：模态 dialog 默认 fixed，定位靠 inset + margin */
+		width: min(88vw, 26rem);
+		max-width: min(88vw, 26rem);
+		/* 竖长卡片：高度固定，且始终大于宽度 */
+		height: min(88vh, 34rem);
 		inset: 0;
-		margin: auto;
+		/* 中上弹出：上边留 7vh，左右自动居中，下方留空 */
+		margin: 7vh auto auto;
 		padding: 0;
-		border: 1px solid var(--line-divider);
-		border-radius: 1.25rem;
-		background: var(--card-bg);
-		box-shadow: 0 24px 60px -18px rgb(0 0 0 / 0.38);
+		border: 1px solid var(--pop-edge);
+		border-radius: 1.35rem;
+		background: rgb(14 15 20);
+		box-shadow:
+			0 36px 80px -20px rgb(0 0 0 / 0.7),
+			inset 0 1px 0 rgb(255 255 255 / 0.08);
+		display: flex;
+		flex-direction: column;
+		color: var(--pop-ink);
 		overflow: hidden;
+		isolation: isolate;
+	}
+
+	:global(:root.dark) .book-pop {
+		--pop-scrim: rgb(5 5 8 / 0.62);
 	}
 
 	.book-pop:not([open]) {
 		display: none;
 	}
 
+	/* 只改弹窗本身：遮罩保持原来那层淡深色，不碰页面 */
 	.book-pop::backdrop {
-		background: rgb(15 23 42 / 0.34);
+		background: rgb(8 10 14 / 0.52);
 		backdrop-filter: blur(3px);
+	}
+
+	/* ── 背景：封面放大后重度高斯模糊，再压一层深色 ── */
+	.book-pop-blur {
+		position: absolute;
+		inset: -30%;
+		z-index: -1;
+		background-position: center;
+		background-size: cover;
+		filter: blur(64px) saturate(1.75);
+		transform: scale(1.12);
+		pointer-events: none;
+	}
+
+	.book-pop::before {
+		position: absolute;
+		inset: 0;
+		/* 中心稍亮、四周压暗，模糊铺开后不至于糊成一块死板的灰 */
+		background:
+			radial-gradient(130% 110% at 38% 32%, transparent 0%, rgb(0 0 0 / 0.28) 100%),
+			var(--pop-scrim);
+		content: "";
+		pointer-events: none;
 	}
 
 	.book-pop[open] {
@@ -194,176 +294,208 @@ function handleClick(event: MouseEvent) {
 		}
 	}
 
-	.book-pop-body {
-		display: flex;
-		gap: 1.15rem;
-		max-height: inherit;
-		padding: 1.35rem 1.35rem 1.4rem;
+	.book-pop-scroll {
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 	}
 
+	/* ── 两行网格：封面｜标题区 + 关闭 → 简介（横跨整行） ── */
+	.book-pop-grid {
+		position: relative;
+		display: grid;
+		/* 第一列必须是定长：写成 auto 时，带百分比宽度的封面会让列宽按图片原始宽度撑开，
+		   结果封面缩在左边、右边留一大块空白。 */
+		grid-template-columns: 9rem minmax(0, 1fr);
+		grid-template-areas:
+			"cover head"
+			"intro intro";
+		align-items: start;
+		gap: 0.95rem 1.4rem;
+		padding: 1.3rem 1.35rem 1.35rem;
+	}
+
 	.book-pop-cover {
-		flex: none;
-		width: clamp(5.5rem, 30%, 7.6rem);
+		grid-area: cover;
+		align-self: start;
+		width: 100%;
 		margin: 0;
 		overflow: hidden;
 		border-radius: 0.6rem;
-		aspect-ratio: 3 / 4;
-		background: var(--btn-regular-bg);
+		background: rgb(255 255 255 / 0.08);
 		box-shadow:
-			0 0 0 1px rgb(0 0 0 / 6%),
-			0 16px 30px -18px rgb(0 0 0 / 55%);
+			0 0 0 1px rgb(255 255 255 / 0.12),
+			0 16px 30px -14px rgb(0 0 0 / 0.7);
 	}
 
+	/* 保持封面原始比例，不裁切 */
 	.book-pop-cover img {
 		display: block;
 		width: 100%;
-		height: 100%;
-		object-fit: cover;
+		height: auto;
 	}
 
 	.book-pop-cover-blank {
 		display: grid;
-		height: 100%;
+		aspect-ratio: 3 / 4;
 		place-items: center;
-		color: var(--content-meta);
-		font-size: 1.5rem;
+		color: var(--pop-ink-3);
+		font-size: 1.4rem;
 	}
 
-	.book-pop-info {
+	.book-pop-head {
+		grid-area: head;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
+		min-width: 0;
+	}
+
+	.book-pop-col {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+		gap: 0.6rem;
+		min-width: 0;
+	}
+
+	/* ── 信息栏：小标题 + 大数值，三段纵向排开 ── */
+	.book-pop-fields {
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0.7rem;
 		min-width: 0;
-		padding-right: 1.5rem;
 	}
 
-	.book-pop-status {
-		align-self: flex-start;
-		padding: 0.1rem 0.45rem;
-		border-radius: 9999px;
-		background: var(--btn-regular-bg);
-		color: var(--content-meta);
+	.book-pop-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+
+	.book-pop-label {
+		color: var(--pop-ink-3);
 		font-size: 0.7rem;
+		font-weight: 500;
+		letter-spacing: 0.1em;
 		line-height: 1.5;
 	}
 
-	.book-pop-status.is-finished {
-		background: color-mix(in srgb, var(--primary) 14%, transparent);
-		color: var(--primary);
+	.book-pop-value {
+		color: var(--pop-ink);
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.01em;
+		line-height: 1.35;
+		font-variant-numeric: tabular-nums;
+		text-shadow: 0 1px 3px rgb(0 0 0 / 0.42);
 	}
 
-	/* 读过：介于读完（主题色）与在读（中性）之间 */
-	.book-pop-status.is-read {
-		background: color-mix(in srgb, var(--primary) 7%, var(--btn-regular-bg));
-		color: color-mix(in srgb, var(--primary) 45%, var(--content-meta));
+	.book-pop-value-score {
+		display: flex;
+		align-items: center;
+		gap: 0.34rem;
+	}
+
+	.book-pop-star {
+		width: 1rem;
+		height: 1rem;
+		fill: #f7c546;
+		filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
+	}
+
+	/* ── 单行滚动行 ── */
+	.scroll-line {
+		display: block;
+		max-width: 100%;
+		margin: 0;
+		overflow: hidden;
+		white-space: nowrap;
+	}
+
+	/* 滚动时右侧淡出，长文本看起来是「流出去」而不是被切断。
+	   is-scrolling 由 action 在运行时加，编译器看不到，所以用 :global 声明 */
+	:global(.scroll-line.is-scrolling) {
+		mask-image: linear-gradient(90deg, #000 calc(100% - 1.4rem), transparent);
+	}
+
+	.marquee-track {
+		display: inline-flex;
+		align-items: baseline;
+	}
+
+	.marquee-track > span {
+		flex: none;
+		/* 两段文字之间的接缝，滚动位移正好等于「一段宽 + 这个间距」 */
+		padding-right: 2.5rem;
+	}
+
+	/* 没超宽：只留第一份，静止显示 */
+	.scroll-line:not(.is-scrolling) .marquee-track > span:nth-child(2) {
+		display: none;
+	}
+
+	:global(.scroll-line.is-scrolling .marquee-track) {
+		animation: book-pop-marquee var(--marquee-dur, 12s) linear infinite;
+	}
+
+	@keyframes book-pop-marquee {
+		from {
+			transform: translateX(0);
+		}
+		to {
+			transform: translateX(var(--marquee-shift, -50%));
+		}
 	}
 
 	.book-pop-title {
-		margin: 0.1rem 0 0;
-		color: rgb(0 0 0 / 90%);
-		font-size: 1.15rem;
+		color: var(--pop-ink);
+		font-size: 1.3rem;
 		font-weight: 700;
+		letter-spacing: 0.01em;
 		line-height: 1.35;
-		text-wrap: pretty;
+		text-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
 	}
 
-	:global(:root.dark) .book-pop-title {
-		color: rgb(255 255 255 / 92%);
-	}
-
-	.book-pop-author {
-		margin: 0;
-		overflow: hidden;
-		color: var(--content-meta);
-		font-size: 0.8rem;
-		line-height: 1.5;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.book-pop-meta {
-		display: flex;
-		flex-direction: column;
-		gap: 0.3rem;
+	/* 简介是唯一允许换行的行，横跨整宽 */
+	.book-pop-intro {
+		display: -webkit-box;
+		grid-area: intro;
 		margin: 0.55rem 0 0;
-	}
-
-	.book-pop-meta-row {
-		display: flex;
-		gap: 0.6rem;
-		min-width: 0;
-		font-size: 0.78rem;
-		line-height: 1.5;
-	}
-
-	.book-pop-meta-row dt {
-		flex: none;
-		color: var(--content-meta);
-	}
-
-	.book-pop-meta-row dd {
-		min-width: 0;
-		margin: 0;
 		overflow: hidden;
-		color: var(--deep-text);
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.book-pop-open {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.35rem;
-		margin-top: auto;
-		padding-top: 0.9rem;
-		color: var(--primary);
-		font-size: 0.82rem;
-		font-weight: 600;
-		text-decoration: none;
-		transition: gap 0.2s ease;
-	}
-
-	.book-pop-open svg {
-		width: 0.95rem;
-		height: 0.95rem;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 2;
-		stroke-linecap: round;
-		stroke-linejoin: round;
-	}
-
-	.book-pop-open:hover {
-		gap: 0.6rem;
+		color: var(--pop-ink-2);
+		font-size: 0.92rem;
+		line-height: 1.8;
+		white-space: normal;
+		text-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 10;
+		line-clamp: 10;
 	}
 
 	.book-pop-close {
-		position: absolute;
-		top: 0.7rem;
-		right: 0.7rem;
-		z-index: 1;
+		flex: none;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 1.7rem;
-		height: 1.7rem;
-		border: 0;
+		width: 1.9rem;
+		height: 1.9rem;
+		padding: 0;
+		border: 1px solid rgb(255 255 255 / 0.12);
 		border-radius: 9999px;
-		background: transparent;
-		color: inherit;
-		opacity: 0.55;
+		background: rgb(255 255 255 / 0.1);
+		color: var(--pop-ink-2);
 		cursor: pointer;
 		transition:
-			opacity 0.15s ease,
-			background-color 0.15s ease;
+			background-color 0.15s ease,
+			color 0.15s ease;
 	}
 
 	.book-pop-close:hover {
-		opacity: 1;
-		background: var(--btn-plain-bg-hover);
+		background: rgb(255 255 255 / 0.2);
+		color: var(--pop-ink);
 	}
 
 	.book-pop-close svg {
@@ -375,20 +507,48 @@ function handleClick(event: MouseEvent) {
 		stroke-linecap: round;
 	}
 
-	.book-pop-open:focus-visible,
 	.book-pop-close:focus-visible {
-		outline: 2px solid var(--primary);
+		outline: 2px solid rgb(255 255 255 / 0.7);
 		outline-offset: 2px;
 	}
 
 	@media (max-width: 480px) {
-		.book-pop-body {
-			gap: 0.9rem;
-			padding: 1.15rem 1.1rem 1.2rem;
+		.book-pop-grid {
+			grid-template-columns: 6.5rem minmax(0, 1fr);
+			gap: 0.8rem 1rem;
+			padding: 1.05rem 1.05rem 1.1rem;
 		}
 
 		.book-pop-title {
 			font-size: 1.05rem;
+		}
+
+		.book-pop-fields {
+			gap: 0.55rem;
+		}
+
+		.book-pop-label {
+			font-size: 0.64rem;
+		}
+
+		.book-pop-value {
+			font-size: 0.95rem;
+		}
+
+		.book-pop-star {
+			width: 0.9rem;
+			height: 0.9rem;
+		}
+
+		.book-pop-intro {
+			font-size: 0.86rem;
+			-webkit-line-clamp: 8;
+			line-clamp: 8;
+		}
+
+		.book-pop-close {
+			width: 1.7rem;
+			height: 1.7rem;
 		}
 	}
 
@@ -397,8 +557,8 @@ function handleClick(event: MouseEvent) {
 			animation: none;
 		}
 
-		.book-pop-open {
-			transition: none;
+		:global(.scroll-line.is-scrolling .marquee-track) {
+			animation: none;
 		}
 	}
 </style>

@@ -35,6 +35,10 @@ export const wereadConfig: WereadConfig = {
 	// 是否显示阅读统计条
 	showStats: true,
 
+	// 补全书籍详情（简介 / 字数 / 评分）给详情弹窗用。
+	// 每本书多 2 个构建期请求，书架很多时可以关掉
+	showDetail: true,
+
 	// 请求超时（毫秒）
 	timeout: 8000,
 };

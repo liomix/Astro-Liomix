@@ -157,9 +157,9 @@
 	--shelf-milk: #f7f5ec;
 	--shelf-cap: #e3dfd3;
 	/* 轮廓线：书脊/封面的描边，比纸色深一档，书与书之间才分得开 */
-	--shelf-edge: rgb(120 111 92 / 46%);
-	--shelf-edge-strong: rgb(96 88 72 / 62%);
-	--shelf-shade: rgb(72 66 52 / 16%);
+	--shelf-edge: rgb(120 111 92 / 32%);
+	--shelf-edge-strong: rgb(96 88 72 / 46%);
+	--shelf-shade: rgb(72 66 52 / 14%);
 	--shelf-light: rgb(255 255 255 / 78%);
 	--shelf-ink: #33312b;
 	--shelf-muted: #8b8577;
@@ -176,9 +176,9 @@
 	--shelf-paper: #2c2b26;
 	--shelf-milk: #232320;
 	--shelf-cap: #3a3933;
-	--shelf-edge: rgb(255 255 255 / 24%);
-	--shelf-edge-strong: rgb(255 255 255 / 34%);
-	--shelf-shade: rgb(0 0 0 / 46%);
+	--shelf-edge: rgb(255 255 255 / 18%);
+	--shelf-edge-strong: rgb(255 255 255 / 26%);
+	--shelf-shade: rgb(0 0 0 / 40%);
 	--shelf-light: rgb(255 255 255 / 10%);
 	--shelf-ink: #ece9df;
 	--shelf-muted: #a19b8c;
@@ -439,8 +439,10 @@
 
 .cover-art {
 	position: relative;
-	flex: none;
+	/* 允许在书变高时被轻微压缩，避免把底部编号挤出封面 */
+	flex: 0 1 auto;
 	width: 100%;
+	min-height: 0;
 	margin-top: calc(7px * var(--shelf-s, 1));
 	overflow: hidden;
 	aspect-ratio: 118 / 166;

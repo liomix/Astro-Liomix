@@ -4,9 +4,9 @@
  * ----------------------------------------------------------------------------
  * 几何常量取自 lib/archive_shelf_geometry.dart，并按本项目的版式放大过：
  *   depthX 0.66 / depthY -0.30（斜投影方向）、rowStep 2.5（波形轨距）、
- *   cover = w*.33∈[118,195]、spine = cover*.095∈[13,19]、pitch = spine+11、
+ *   cover = w*.42∈[150,268]、spine = cover*.095∈[14,23]、pitch = spine+11、
  *   height = (cover-20)*166/118 + 54、pull = cover*.84。
- * 舞台铺满卡片宽度：书长到 195 的封面上限后不再变大，多余的宽度摊成更多本书。
+ * 舞台铺满卡片宽度：书长到 268 的封面上限后不再变大，多余的宽度摊成更多本书。
  * 书脊与封面里的字号、内边距都乘同一个系数 cover/128，书本放大时排版一起放大。
  * 单本书 = 书脊面 + 封面 + 顶面，三个面都是平行四边形，
  * 用 CSS matrix() 直接画（不做真透视，和原实现一样是斜投影）。
@@ -22,12 +22,17 @@ export interface ShelfBook {
 	title: string;
 	author: string;
 	cover: string;
-	category: string;
 	link: string;
 	/** 阅读状态：在读 / 读过 / 读完 */
 	status: "reading" | "read" | "finished";
-	/** 预格式化的最近阅读时间，空串表示没有记录 */
-	lastReadText: string;
+	/** 书籍简介，可能为空 */
+	intro: string;
+	/** 预格式化的字数，如「22.4 万字」，空串表示未知 */
+	wordsText: string;
+	/** 预格式化的评分，如「9.1 分」，空串表示暂无评分 */
+	scoreText: string;
+	/** 预格式化的评分人数标签，如「2376人评分」，空串表示没取到 */
+	ratingLabel: string;
 }
 
 interface Props {
@@ -96,14 +101,22 @@ const geo = $derived.by(() => {
 	// 舞台铺满卡片，所以视口可以很宽；这里只是兜底上限，防止超宽屏把书撑得离谱
 	const w = Math.min(width || 360, MAX_VIEWPORT);
 	// 书只跟着宽度长到一定程度：再宽就多摊几本，而不是把书继续放大
-	const cover = clamp(w * 0.33, 118, 195);
-	const spine = clamp(cover * 0.095, 13, 19);
+	const cover = clamp(w * 0.42, 150, 268);
+	const spine = clamp(cover * 0.095, 14, 23);
 	const pitch = spine + SPINE_GAP;
 	const height = ((cover - 20) * 166) / 118 + 54;
 	const footprint = spine + cover * DEPTH_X;
 	const pull = cover * 0.84;
-	// 书的原点（书脊左上角在静止状态下）落在这条基线上
-	const baseY = -cover * DEPTH_Y + height * 0.6 + 12;
+	/**
+	 * 书的原点（书脊左上角在静止状态下）落在这条基线上。
+	 * 焦点书会被抽出 pull、抬高 height*0.6，它的顶面还要沿深度方向上斜切
+	 * cover*|DEPTH_Y|，所以这里从「焦点书的最高点」反推原点：
+	 *   baseY = 抬高量 + 抽出后剩下的深度 + 顶部留白
+	 * 这样书列整体贴住舞台顶部，不会沉在下方、上方空出一大块。
+	 * （原来的 0.3*cover + 12 会多留 cover*0.25 的空隙。）
+	 */
+	const TOP_PAD = 8;
+	const baseY = height * 0.6 + (cover - pull) * -DEPTH_Y + TOP_PAD;
 	const startX = w / 2 - footprint / 2 + pull * DEPTH_X;
 	// 循环池左右各留多少槽位，保证任意焦点下都能把视口铺满
 	const edge = Math.ceil((w / 2 + footprint + pull * DEPTH_X) / pitch) + 2;
