@@ -17,8 +17,12 @@ const BOUND_KEY = "__fireflyCommentDrawerBound";
 
 /** 关闭按钮的无障碍文案，由 Astro 侧按站点语言传入（客户端不引 i18n 语言包） */
 let closeLabel = "Close";
-/** 顶部栏的头像下方在线状态文案 */
-let onlineLabel = "online";
+/**
+ * 顶栏头像下方那行联系方式。
+ * Telegram 在这个位置显示「online」，本站放站长邮箱 —— 固定值、和界面语言无关，
+ * 所以不进 i18n；要换地址改这一行即可。
+ */
+const CHAT_HANDLE = "liomix2077@qq.com";
 /** 聊天对象的名字（顶栏标题），默认取触发按钮的 aria-label */
 let chatName = "";
 /** 聊天对象的头像图，空则退回首字母彩圆 */
@@ -35,24 +39,30 @@ function getDrawer(): HTMLElement | null {
 function syncFrameTheme(): void {
 	const win = frame?.contentWindow;
 	if (!win) return;
+	// 主题色相也一起带过去：iframe 是独立文档，父窗口改 --hue 它自己看不到
+	const hue = getComputedStyle(document.documentElement)
+		.getPropertyValue("--hue")
+		.trim();
 	win.postMessage(
 		{
 			type: "dynamic-comment-theme",
 			dark: document.documentElement.classList.contains("dark"),
+			hue,
 		},
 		window.location.origin,
 	);
 }
 
-/** 跟随站点明暗切换（documentElement 的 class 变化） */
+/** 跟随站点明暗 / 主题色切换（documentElement 的 class 与内联 style 变化） */
 function observeTheme(): void {
 	if (themeObserver) return;
 	themeObserver = new MutationObserver(() => {
 		if (frame) syncFrameTheme();
 	});
+	// --hue 是脚本用 style.setProperty 写进 <html> 的行内样式，所以 style 也要监听
 	themeObserver.observe(document.documentElement, {
 		attributes: true,
-		attributeFilter: ["class"],
+		attributeFilter: ["class", "style"],
 	});
 }
 
@@ -151,11 +161,10 @@ function createDrawer(): HTMLElement {
 	);
 	close?.setAttribute("aria-label", closeLabel);
 	close?.addEventListener("click", () => closeCommentDrawer());
-	// 在线状态文案跟站点语言走，默认给个英文兜底
 	const status = drawer.querySelector<HTMLElement>(
 		"[data-comment-drawer-status]",
 	);
-	if (status) status.textContent = onlineLabel;
+	if (status) status.textContent = CHAT_HANDLE;
 
 	document.body.append(drawer);
 	return drawer;
@@ -279,26 +288,18 @@ function onResize(): void {
 export function bindCommentDrawer(
 	options: {
 		closeLabel?: string;
-		onlineLabel?: string;
 		name?: string;
 		avatarUrl?: string;
 	} = {},
 ): void {
 	if (typeof window === "undefined") return;
 	if (options.closeLabel) closeLabel = options.closeLabel;
-	if (options.onlineLabel) onlineLabel = options.onlineLabel;
 	if (options.name) chatName = options.name;
 	if (options.avatarUrl) avatarUrl = options.avatarUrl;
 
-	// 抽屉已经建好（同一页里换了一篇文章）时，把顶栏文案 / 头像刷新一遍
+	// 抽屉已经建好（同一页里换了一篇文章）时，把顶栏标题 / 头像刷新一遍
 	const drawer = getDrawer();
-	if (drawer) {
-		const status = drawer.querySelector<HTMLElement>(
-			"[data-comment-drawer-status]",
-		);
-		if (status) status.textContent = onlineLabel;
-		syncAvatar(drawer, chatName);
-	}
+	if (drawer) syncAvatar(drawer, chatName);
 
 	const scope = window as unknown as Record<string, boolean | undefined>;
 	if (scope[BOUND_KEY]) return;

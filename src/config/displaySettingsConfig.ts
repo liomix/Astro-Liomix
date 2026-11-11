@@ -62,8 +62,9 @@ export const displaySettingsConfig: DisplaySettingsConfig =
 		// 设为 false 关闭所有滑块，或用对象形式单独控制每个滑块
 		overlaySwitchable: {
 			opacity: true,
-			blur: true,
+			transparency: true,
 			cardOpacity: true,
+			panelTransparency: true,
 		},
 
 		// ── 特效 (Effects) ────────────────────────────────────

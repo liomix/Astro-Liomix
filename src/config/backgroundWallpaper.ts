@@ -185,13 +185,18 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		zIndex: -1,
 		// 壁纸透明度
 		opacity: 0.8,
-		// 背景模糊度
-		blur: 10,
+		// 背景透明度，0-1之间：1 = 完全透明（清晰），0 = 最大模糊
+		// 换算关系：blur = (1 - transparency) * 20px，0.5 即原来的 blur(10px)
+		transparency: 0.5,
 		// 卡片透明度，0-1之间，值越小越透明
 		cardOpacity: 0.6,
+		// 弹窗（设置 / 搜索 / 翻译等浮动面板）透明度，0-1之间：
+		// 1 = 完全透明，0 = 完全不透明（内部换算成 --panel-transparent-opacity 的 alpha）
+		// 只在透明模式下生效；0.4 即 alpha 0.6，与卡片的默认观感一致
+		panelTransparency: 0.4,
 	},
 	// 全屏壁纸模式特有配置
-	// 壁纸模糊度(blur)、卡片透明度(cardOpacity)、层级(zIndex) 复用上方 overlay 模式的配置；
+	// 背景透明度(transparency)、卡片透明度(cardOpacity)、层级(zIndex) 复用上方 overlay 模式的配置；
 	// 背景透明度(opacity)不适用（全屏壁纸不透明）；导航栏透明模式由 fullscreen.navbar.transparentMode 控制，脱离 banner 的 navbar 配置
 	fullscreen: {
 		// 布局模式："classic" 经典文档流全屏壁纸，"hero" 固定全屏首屏壁纸
@@ -205,7 +210,7 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 导航栏毛玻璃模糊度，0 即关闭（玻璃态生效）
 			blur: 12,
 		},
-		// 首页下滑时壁纸模糊渐变开关（从 0 渐变为 overlay.blur 的最大模糊）
+		// 首页下滑时壁纸模糊渐变开关（从 0 渐变为 overlay.transparency 换算出的最大模糊）
 		// 关闭后该设备上全屏壁纸保持清晰（首页与非首页都不模糊），设置面板的模糊度滑块也会隐藏
 		blurRamp: {
 			enable: {

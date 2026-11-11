@@ -23,11 +23,15 @@ const wallpaperPosition = state.isFullscreenMode
 	? (backgroundWallpaper.fullscreen?.position ??
 		backgroundWallpaper.banner?.position)
 	: backgroundWallpaper.banner?.position;
+// 配置里存的是「背景透明度」（1 = 完全不模糊），CSS 用的是 blur 像素，
+// 这里做一次换算，避免首屏渲染时闪一下默认模糊值（JS 初始化后会再写一遍同样的值）
+const overlayTransparency = backgroundWallpaper.overlay?.transparency ?? 0.5;
+const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
 ---
 
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
 {(state.isWallpaperSwitchable || state.isBannerMode || state.isFullscreenMode || state.isOverlayMode) && (
-<div id="wallpaper-wrapper" class="absolute z-10 w-full overflow-hidden" style="--overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 0.8}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${backgroundWallpaper.overlay?.blur ?? 0}px;">
+<div id="wallpaper-wrapper" class="absolute z-10 w-full overflow-hidden" style="--overlay-opacity: ${backgroundWallpaper.overlay?.opacity ?? 0.8}; --overlay-z-index: ${backgroundWallpaper.overlay?.zIndex ?? -1}; --overlay-blur: ${overlayBlur};">
 <!-- 背景图片显示 -->
     {state.hasMultipleImages ? (
     /* 轮播模式：渲染所有图片为 slide-item */

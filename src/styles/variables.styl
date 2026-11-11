@@ -10,6 +10,9 @@
   --page-bg: oklch(0.95 0 0)
   --card-bg: white
   --card-bg-transparent: unquote("rgb(255 255 255 / var(--card-transparent-opacity, 0.6))")
+  /* 弹窗（浮动面板）背景：由「弹窗透明度」控制，变量里存的是不透明度（alpha），
+     JS 侧按 1 - transparency 换算后写入；没调过就回落到卡片透明度，默认观感和卡片一致 */
+  --panel-bg-transparent: unquote("rgb(255 255 255 / var(--panel-transparent-opacity, var(--card-transparent-opacity, 0.6)))")
   
   --btn-content: oklch(0.55 0.12 var(--hue))
   --btn-regular-bg: oklch(0.95 0.025 var(--hue))
@@ -94,6 +97,7 @@
   --page-bg: oklch(0.16 0 0)
   --card-bg: oklch(0.23 0 0)
   --card-bg-transparent: unquote("rgb(23 23 23 / var(--card-transparent-opacity, 0.6))")
+  --panel-bg-transparent: unquote("rgb(23 23 23 / var(--panel-transparent-opacity, var(--card-transparent-opacity, 0.6)))")
 
   /* 导航栏玻璃高光与发丝线（暗色） */
   --navbar-glass-highlight: rgba(255, 255, 255, 0.06)

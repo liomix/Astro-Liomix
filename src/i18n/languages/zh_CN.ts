@@ -101,7 +101,6 @@ export const zh_CN: Translation = {
 	[Key.commentSection]: "评论区",
 	[Key.commentSubtitle]: "分享你的想法，与大家交流讨论",
 	[Key.commentNotConfigured]: "评论系统暂未配置",
-	[Key.commentChatOnline]: "在线",
 	[Key.commentChatToday]: "今天",
 	[Key.commentChatPlaceholder]: "消息",
 	[Key.commentChatSend]: "发送",
@@ -437,8 +436,9 @@ export const zh_CN: Translation = {
 	[Key.effectsSettings]: "特效",
 	[Key.overlaySettings]: "透明设置",
 	[Key.overlayOpacity]: "壁纸透明度",
-	[Key.overlayBlur]: "背景模糊度",
+	[Key.overlayTransparency]: "背景透明度",
 	[Key.overlayCardOpacity]: "卡片透明度",
+	[Key.overlayPanelTransparency]: "弹窗透明度",
 
 	// 设置面板标签
 	[Key.settingsTabAppearance]: "外观",

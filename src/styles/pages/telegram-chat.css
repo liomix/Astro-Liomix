@@ -1,10 +1,13 @@
 /* Telegram 风格聊天区（评论抽屉 iframe 页专用）
    ---------------------------------------------------------------------------
    色值取自 Telegram Android 默认主题：
-     浅色  聊天底 #e6ebee / 对方 #ffffff / 自己 #effdde / 已读勾 #4fae4e
-     深色  聊天底 #0e1621 / 对方 #182533 / 自己 #2b5278 / 输入栏 #17212b
+     浅色  聊天底 #e6ebee / 对方 #ffffff / 自己 #effdde
+     深色  聊天底 #0e1621 / 对方 #182533 / 自己 #2b5278
    气泡圆角 17px，靠发送者那一侧的底角收到 6px（SharedConfig.bubbleRadius = 17，
-   近侧角 min(6, bubbleRadius)），这是 Telegram 气泡最好认的特征。 */
+   近侧角 min(6, bubbleRadius)），这是 Telegram 气泡最好认的特征。
+
+   例外是输入栏（评论框）：它的强调色和输入框底色不由 Telegram 定，而是按站点
+   主题色相（--hue）算出来 —— 设置面板里换主题色，输入栏会跟着变。 */
 
 :root {
 	--tg-chat-bg: #e6ebee;
@@ -14,8 +17,13 @@
 	--tg-meta: #a0acb6;
 	--tg-link: #168acd;
 	--tg-panel: #ffffff;
-	--tg-input-bg: #f1f1f1;
-	--tg-accent: #3390ec;
+	/* 评论框的强调色 / 底色都跟着站点主题色相走，不再钉死 Telegram 的蓝 */
+	--tg-accent: oklch(0.58 0.13 var(--hue, 250));
+	--tg-input-bg: color-mix(
+		in oklch,
+		oklch(0.7 0.14 var(--hue, 250)) 12%,
+		var(--tg-panel)
+	);
 	--tg-divider: rgb(0 0 0 / 0.08);
 }
 
@@ -27,8 +35,13 @@
 	--tg-meta: #6d7f8f;
 	--tg-link: #6ab3f3;
 	--tg-panel: #17212b;
-	--tg-input-bg: #242f3d;
-	--tg-accent: #5288c1;
+	/* 深色下压到 0.66：发送按钮是实心底色 + 白色纸飞机，太亮会糊成一片 */
+	--tg-accent: oklch(0.66 0.13 var(--hue, 250));
+	--tg-input-bg: color-mix(
+		in oklch,
+		oklch(0.7 0.14 var(--hue, 250)) 18%,
+		var(--tg-panel)
+	);
 	--tg-divider: rgb(255 255 255 / 0.08);
 }
 
@@ -560,6 +573,8 @@ body:has(.page-comment-embed) {
 	font: inherit;
 	font-size: 0.85rem;
 	line-height: 1.4;
+	/* 光标也染成主题色，不然默认黑光标和输入框对不上 */
+	caret-color: var(--tg-accent);
 	resize: none;
 	overflow-y: auto;
 	outline: none;

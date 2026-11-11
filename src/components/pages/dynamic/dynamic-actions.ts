@@ -158,16 +158,14 @@ function onClick(event: MouseEvent): void {
 export function registerDynamicActions(
 	options: {
 		commentCloseLabel?: string;
-		commentOnlineLabel?: string;
 		commentName?: string;
 		commentAvatarUrl?: string;
 	} = {},
 ): void {
-	// 抽屉的关闭 / 在线文案、聊天对象名字与头像由页面侧传入，
+	// 抽屉的关闭文案、聊天对象名字与头像由页面侧传入，
 	// 先写进去再判断是否已绑定（同一页面换文章时也要刷新）
 	bindCommentDrawer({
 		closeLabel: options.commentCloseLabel,
-		onlineLabel: options.commentOnlineLabel,
 		name: options.commentName,
 		avatarUrl: options.commentAvatarUrl,
 	});

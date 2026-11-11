@@ -85,7 +85,6 @@ enum I18nKey {
 	commentNotConfigured = "commentNotConfigured",
 	guestbookCommentHint = "guestbookCommentHint",
 	// 动态页评论抽屉（Telegram 风格聊天）
-	commentChatOnline = "commentChatOnline",
 	commentChatToday = "commentChatToday",
 	commentChatPlaceholder = "commentChatPlaceholder",
 	commentChatSend = "commentChatSend",
@@ -436,8 +435,9 @@ enum I18nKey {
 	effectsSettings = "effectsSettings",
 	overlaySettings = "overlaySettings",
 	overlayOpacity = "overlayOpacity",
-	overlayBlur = "overlayBlur",
+	overlayTransparency = "overlayTransparency",
 	overlayCardOpacity = "overlayCardOpacity",
+	overlayPanelTransparency = "overlayPanelTransparency",
 
 	// 设置面板标签
 	settingsTabAppearance = "settingsTabAppearance",

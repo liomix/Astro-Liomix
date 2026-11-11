@@ -4,8 +4,13 @@ export type OverlaySwitchable =
 	| boolean
 	| {
 			opacity?: boolean; // 壁纸透明度调节开关
-			blur?: boolean; // 背景模糊度调节开关
+			transparency?: boolean; // 背景透明度调节开关
+			/** @deprecated 旧字段名，等价于 transparency，仅为兼容旧配置保留 */
+			blur?: boolean;
 			cardOpacity?: boolean; // 卡片透明度调节开关
+			panelTransparency?: boolean; // 弹窗透明度调节开关
+			/** @deprecated 旧字段名，等价于 panelTransparency，仅为兼容旧配置保留 */
+			panelOpacity?: boolean;
 	  };
 
 export type DisplaySettingsConfig = {

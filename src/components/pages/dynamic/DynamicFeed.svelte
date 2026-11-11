@@ -42,8 +42,6 @@ interface Props {
 	allYearsText: string;
 	/** 评论抽屉关闭按钮的无障碍文案（按站点语言由 Astro 传入） */
 	commentCloseLabel: string;
-	/** 聊天顶栏头像下方的在线状态文案 */
-	commentOnlineLabel: string;
 	/** 聊天顶栏标题（站点昵称），相当于 Telegram 里的聊天对象名字 */
 	commentName: string;
 	/** 聊天顶栏头像图（视频头像取封面帧），空则回退首字母彩圆 */
@@ -62,7 +60,6 @@ const {
 	loadingText,
 	allYearsText,
 	commentCloseLabel,
-	commentOnlineLabel,
 	commentName,
 	commentAvatarUrl,
 	commentEmptyText,
@@ -260,7 +257,6 @@ onMount(() => {
 	registerDynamicGallery();
 	registerDynamicActions({
 		commentCloseLabel,
-		commentOnlineLabel,
 		commentName,
 		commentAvatarUrl,
 	});

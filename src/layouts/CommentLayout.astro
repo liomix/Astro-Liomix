@@ -12,6 +12,7 @@
  */
 import "@/styles/main.css";
 import "@/styles/variables.styl";
+import { siteConfig } from "@/config";
 
 interface Props {
 	title?: string;
@@ -20,9 +21,11 @@ interface Props {
 }
 
 const { title = "", lang = "zh-CN" } = Astro.props;
+/** 站点默认主题色相：用户没在设置里改过色时用它，保证 iframe 里 --hue 一定有值 */
+const defaultHue = siteConfig.themeColor.hue;
 ---
 
-<html lang={lang}>
+<html lang={lang} data-default-hue={defaultHue}>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,7 +50,16 @@ const { title = "", lang = "zh-CN" } = Astro.props;
 				}
 				document.documentElement.classList.toggle("dark", dark);
 				document.documentElement.dataset.theme = dark ? "dark" : "light";
-				var hue = localStorage.getItem("hue");
+				// --hue 决定整套主题色（--primary / 输入栏强调色都按它算）。
+				// 父窗口改过色就跟着走，没改过用 html 上的默认值 —— 不能留空，
+				// 否则 var(--hue) 失效，oklch() 整条声明会被丢弃
+				var hue = null;
+				try {
+					hue = localStorage.getItem("hue");
+				} catch {
+					hue = null;
+				}
+				if (!hue) hue = document.documentElement.dataset.defaultHue;
 				if (hue) document.documentElement.style.setProperty("--hue", hue);
 			})();
 		</script>

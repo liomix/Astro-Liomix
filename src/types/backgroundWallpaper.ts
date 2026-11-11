@@ -98,8 +98,13 @@ export type BackgroundWallpaperConfig = {
 	overlay?: {
 		zIndex?: number; // 层级，确保壁纸在合适的层级显示
 		opacity?: number; // 壁纸透明度，0-1之间
-		blur?: number; // 背景模糊程度，单位px
+		// 背景透明度，0-1之间：1 = 完全透明（壁纸清晰、不模糊），0 = 完全遮住（最大模糊）
+		// 内部换算成 filter: blur((1 - transparency) * 20px)
+		transparency?: number;
 		cardOpacity?: number; // 卡片背景透明度，0-1之间
+		panelTransparency?: number; // 弹窗（浮动面板）透明度，0-1：1 = 全透，0 = 全实
+		/** @deprecated 旧字段（不透明度 alpha），读取时会换算成 1 - panelOpacity */
+		panelOpacity?: number;
 	};
 	// 全屏壁纸模式特有配置
 	fullscreen?: {
@@ -110,7 +115,7 @@ export type BackgroundWallpaperConfig = {
 			transparentMode?: "semi" | "semifull"; // 导航栏透明模式："semi" 半透明，"semifull" 动态透明（仅首页顶部透明）
 			blur?: number; // 导航栏毛玻璃模糊度，0 即关闭（玻璃态生效）
 		};
-		// 首页下滑时壁纸模糊渐变开关（从 0 渐变为 overlay.blur 的最大模糊）
+		// 首页下滑时壁纸模糊渐变开关（从 0 渐变为 overlay.transparency 换算出的最大模糊）
 		blurRamp?: {
 			enable:
 				| boolean

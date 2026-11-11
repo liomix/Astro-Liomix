@@ -712,7 +712,7 @@ dynamic-feed {
 		visibility 0s;
 }
 
-/* 抽屉顶栏：Telegram 聊天页的标题栏（头像 + 名称 + 在线状态 + 关闭） */
+/* 抽屉顶栏：Telegram 聊天页的标题栏（头像 + 名称 + 联系方式 + 关闭） */
 .comment-drawer-head {
 	display: flex;
 	flex: none;
@@ -771,15 +771,14 @@ dynamic-feed {
 	white-space: nowrap;
 }
 
-/* “在线”用 Telegram 的状态蓝 */
+/* 头像下方那行联系方式（邮箱）：跟着站点主题色走，抽屉窄的时候省略号截断 */
 .comment-drawer-status {
-	color: #3390ec;
+	overflow: hidden;
+	color: var(--btn-content);
 	font-size: 0.7rem;
 	line-height: 1.15;
-}
-
-:root.dark .comment-drawer-status {
-	color: #6ab3f3;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .comment-drawer-close {

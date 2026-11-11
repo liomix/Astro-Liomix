@@ -101,7 +101,6 @@ export const ko: Translation = {
 	[Key.commentSection]: "댓글",
 	[Key.commentSubtitle]: "생각을 공유하고 모두와 이야기해 보세요",
 	[Key.commentNotConfigured]: "댓글 시스템이 설정되지 않았습니다",
-	[Key.commentChatOnline]: "온라인",
 	[Key.commentChatToday]: "오늘",
 	[Key.commentChatPlaceholder]: "메시지",
 	[Key.commentChatSend]: "보내기",
@@ -445,8 +444,9 @@ export const ko: Translation = {
 	[Key.effectsSettings]: "효과",
 	[Key.overlaySettings]: "투명도 설정",
 	[Key.overlayOpacity]: "배경화면 불투명도",
-	[Key.overlayBlur]: "배경 흐림",
+	[Key.overlayTransparency]: "배경 투명도",
 	[Key.overlayCardOpacity]: "카드 불투명도",
+	[Key.overlayPanelTransparency]: "팝업 투명도",
 
 	// Settings Panel Tabs
 	[Key.settingsTabAppearance]: "외형",

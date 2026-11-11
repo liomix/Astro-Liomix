@@ -101,7 +101,6 @@ export const zh_TW: Translation = {
 	[Key.commentSection]: "評論區",
 	[Key.commentSubtitle]: "分享你的想法，與大家交流討論",
 	[Key.commentNotConfigured]: "評論系統暫未配置",
-	[Key.commentChatOnline]: "線上",
 	[Key.commentChatToday]: "今天",
 	[Key.commentChatPlaceholder]: "訊息",
 	[Key.commentChatSend]: "傳送",
@@ -439,8 +438,9 @@ export const zh_TW: Translation = {
 	[Key.effectsSettings]: "特效",
 	[Key.overlaySettings]: "透明設定",
 	[Key.overlayOpacity]: "桌布透明度",
-	[Key.overlayBlur]: "背景模糊度",
+	[Key.overlayTransparency]: "背景透明度",
 	[Key.overlayCardOpacity]: "卡片透明度",
+	[Key.overlayPanelTransparency]: "彈窗透明度",
 
 	// 設定面板標籤
 	[Key.settingsTabAppearance]: "外觀",

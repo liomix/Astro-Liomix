@@ -168,7 +168,7 @@ export function initFullscreenWallpaper(): void {
 	syncFullscreenOverlays(); // 初始加载时同步非首页覆盖层状态
 	syncFullscreenBlur(); // 初始加载时同步壁纸模糊状态
 
-	// 设置面板调整模糊滑块（--overlay-blur 变化）时，同步全屏壁纸的 --fullscreen-blur，
+	// 设置面板调整背景透明度滑块（--overlay-blur 变化）时，同步全屏壁纸的 --fullscreen-blur，
 	// 否则非首页的模糊只在滚动/切页时才更新，滑块会表现为失效
 	const wrapper = document.getElementById("wallpaper-wrapper");
 	if (!wrapper) return;

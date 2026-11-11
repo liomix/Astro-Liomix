@@ -101,7 +101,6 @@ export const ru: Translation = {
 	[Key.commentSection]: "Комментарии",
 	[Key.commentSubtitle]: "Поделитесь своими мыслями и обсудите с остальными",
 	[Key.commentNotConfigured]: "Система комментариев не настроена",
-	[Key.commentChatOnline]: "в сети",
 	[Key.commentChatToday]: "Сегодня",
 	[Key.commentChatPlaceholder]: "Сообщение",
 	[Key.commentChatSend]: "Отправить",
@@ -448,8 +447,9 @@ export const ru: Translation = {
 	[Key.effectsSettings]: "Эффекты",
 	[Key.overlaySettings]: "Настройки прозрачности",
 	[Key.overlayOpacity]: "Прозрачность обоев",
-	[Key.overlayBlur]: "Размытие фона",
+	[Key.overlayTransparency]: "Прозрачность фона",
 	[Key.overlayCardOpacity]: "Прозрачность карточек",
+	[Key.overlayPanelTransparency]: "Прозрачность попапа",
 
 	// Вкладки панели настроек
 	[Key.settingsTabAppearance]: "Оформление",

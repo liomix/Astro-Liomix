@@ -101,7 +101,6 @@ export const en: Translation = {
 	[Key.commentSection]: "Comments",
 	[Key.commentSubtitle]: "Share your thoughts and discuss with everyone",
 	[Key.commentNotConfigured]: "Comment system not configured",
-	[Key.commentChatOnline]: "online",
 	[Key.commentChatToday]: "Today",
 	[Key.commentChatPlaceholder]: "Message",
 	[Key.commentChatSend]: "Send",
@@ -447,8 +446,9 @@ export const en: Translation = {
 	[Key.effectsSettings]: "Effects",
 	[Key.overlaySettings]: "Transparency Settings",
 	[Key.overlayOpacity]: "Wallpaper Opacity",
-	[Key.overlayBlur]: "Background Blur",
+	[Key.overlayTransparency]: "Background Opacity",
 	[Key.overlayCardOpacity]: "Card Opacity",
+	[Key.overlayPanelTransparency]: "Popup opacity",
 
 	// Settings Panel Tabs
 	[Key.settingsTabAppearance]: "Appearance",

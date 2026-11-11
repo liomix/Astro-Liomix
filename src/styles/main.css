@@ -625,6 +625,34 @@ html {
   @apply text-sm text-(--text-secondary) text-center mb-2;
 }
 
+/* 「弹窗透明度」：浮动面板与 dialog 弹窗（设置面板 / 搜索 / 翻译 / 公告 / 动态侧栏 / 打赏）
+   统一走 --panel-bg-transparent（内部 fallback 是卡片透明度）。只在透明壁纸模式下生效，
+   其余模式保持卡片实色；.book-pop 自带封面蒙版配色，不参与。
+   #display-setting 本就带 .float-panel，这里显式列出以免以后换类名时设置面板掉队 */
+body.wallpaper-transparent
+  :is(.float-panel, #display-setting, .sidebar-pop, .sponsor-pop) {
+  background-color: var(--panel-bg-transparent) !important;
+}
+
+/* 浮动面板的毛玻璃强度跟着「弹窗透明度」一起收放：navbar.css 给 .float-panel 固定加了
+   blur + saturate，若不跟随，滑块拉到 100% 也只是变透明、面板本身仍是一层奶白磨砂，
+   看起来像没生效。--panel-blur-factor 由 JS 写入（1 - 透明度），100% 透明 = 0 模糊。
+   导航下拉 .dropdown-content 不在此列，保持原有玻璃强度；
+   html:not(.is-theme-transitioning) 这条是为了不压过主题切换期间
+   「backdrop-filter: none」的性能保护（见文件上方）。 */
+html:not(.is-theme-transitioning)
+  body.wallpaper-transparent
+  :is(.float-panel, #display-setting) {
+  -webkit-backdrop-filter: blur(
+      calc(var(--navbar-panel-blur, 20px) * var(--panel-blur-factor, 1))
+    )
+    saturate(calc(1 + 0.5 * var(--panel-blur-factor, 1))) !important;
+  backdrop-filter: blur(
+      calc(var(--navbar-panel-blur, 20px) * var(--panel-blur-factor, 1))
+    )
+    saturate(calc(1 + 0.5 * var(--panel-blur-factor, 1))) !important;
+}
+
 /* 弹窗类容器（原生 dialog / 浮动面板 / 搜索弹窗 / 海报弹窗）一律隐藏滚动条 UI，保留滚动能力 */
 dialog,
 dialog *,

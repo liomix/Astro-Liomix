@@ -101,7 +101,6 @@ export const ja: Translation = {
 	[Key.commentSection]: "コメント欄",
 	[Key.commentSubtitle]: "あなたの考えを共有し、みんなと議論しましょう",
 	[Key.commentNotConfigured]: "コメントシステムが設定されていません",
-	[Key.commentChatOnline]: "オンライン",
 	[Key.commentChatToday]: "今日",
 	[Key.commentChatPlaceholder]: "メッセージ",
 	[Key.commentChatSend]: "送信",
@@ -444,8 +443,9 @@ export const ja: Translation = {
 	[Key.effectsSettings]: "エフェクト",
 	[Key.overlaySettings]: "透明設定",
 	[Key.overlayOpacity]: "壁紙の透明度",
-	[Key.overlayBlur]: "背景ぼかし",
+	[Key.overlayTransparency]: "背景の透明度",
 	[Key.overlayCardOpacity]: "カード透明度",
+	[Key.overlayPanelTransparency]: "ポップアップの透明度",
 
 	// 設定パネルタブ
 	[Key.settingsTabAppearance]: "外観",

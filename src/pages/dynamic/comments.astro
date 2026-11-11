@@ -30,5 +30,12 @@ const commentPath = Astro.url.searchParams.get("path") || "/dynamic/";
 		}
 		document.documentElement.classList.toggle("dark", Boolean(event.data.dark));
 		document.documentElement.dataset.theme = event.data.dark ? "dark" : "light";
+		// 主题色相也跟着换：iframe 是独立文档，父窗口改 --hue 不会自动传进来
+		if (event.data.hue) {
+			document.documentElement.style.setProperty(
+				"--hue",
+				String(event.data.hue),
+			);
+		}
 	});
 </script>

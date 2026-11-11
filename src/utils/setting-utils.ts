@@ -650,7 +650,7 @@ export function setWallpaperMode(mode: WALLPAPER_MODE): void {
 }
 
 export function initWallpaperMode(): void {
-	// 初始化透明模式参数（透明度/模糊度/卡片透明度）
+	// 初始化透明模式参数（透明度 / 背景透明度 / 卡片透明度 / 弹窗透明度）
 	applyStoredOverlaySettingsToDocument();
 	const storedMode = getStoredWallpaperMode();
 	applyWallpaperModeToDocument(storedMode, false);
@@ -682,16 +682,43 @@ function clampNumber(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
 }
 
+/** 背景透明度的模糊上限：透明度 0%（完全遮住）对应 20px 模糊 */
+const OVERLAY_MAX_BLUR = 20;
+
+/** 背景透明度（0-1）→ CSS blur 像素：100% 透明 = 0px（清晰），0% = 20px（最模糊） */
+export function overlayTransparencyToBlur(transparency: number): number {
+	return (1 - clampNumber(transparency, 0, 1)) * OVERLAY_MAX_BLUR;
+}
+
 export function getDefaultOverlayOpacity(): number {
 	return backgroundWallpaper.overlay?.opacity ?? 0.8;
 }
 
-export function getDefaultOverlayBlur(): number {
-	return backgroundWallpaper.overlay?.blur ?? 0;
+export function getDefaultOverlayTransparency(): number {
+	return clampNumber(
+		backgroundWallpaper.overlay?.transparency ?? 0.5,
+		0,
+		1,
+	);
 }
 
 export function getDefaultOverlayCardOpacity(): number {
 	return backgroundWallpaper.overlay?.cardOpacity ?? 0.6;
+}
+
+/** 弹窗（浮动面板）透明度：1 = 完全透明，0 = 完全不透明。
+ *  配置里的旧字段 panelOpacity 存的是 alpha（不透明度），换算成 1 - alpha 以保持原有观感 */
+export function getDefaultOverlayPanelTransparency(): number {
+	const legacyOpacity = backgroundWallpaper.overlay?.panelOpacity;
+	if (typeof legacyOpacity === "number") {
+		return clampNumber(1 - legacyOpacity, 0, 1);
+	}
+	return clampNumber(
+		backgroundWallpaper.overlay?.panelTransparency ??
+			(1 - getDefaultOverlayCardOpacity()),
+		0,
+		1,
+	);
 }
 
 export function getStoredOverlayOpacity(): number {
@@ -712,22 +739,29 @@ export function getStoredOverlayOpacity(): number {
 	return clampNumber(parsed, 0, 1);
 }
 
-export function getStoredOverlayBlur(): number {
+export function getStoredOverlayTransparency(): number {
 	if (
 		typeof localStorage === "undefined" ||
 		typeof localStorage.getItem !== "function"
 	) {
-		return getDefaultOverlayBlur();
+		return getDefaultOverlayTransparency();
 	}
-	const stored = localStorage.getItem("overlayBlur");
-	if (stored === null) {
-		return getDefaultOverlayBlur();
+	const stored = localStorage.getItem("overlayTransparency");
+	if (stored !== null) {
+		const parsed = Number.parseFloat(stored);
+		if (!Number.isNaN(parsed)) {
+			return clampNumber(parsed, 0, 1);
+		}
 	}
-	const parsed = Number.parseFloat(stored);
-	if (Number.isNaN(parsed)) {
-		return getDefaultOverlayBlur();
+	// 旧版本存的是模糊像素（overlayBlur），换算成透明度，避免用户此前的设置丢失
+	const legacyBlur = localStorage.getItem("overlayBlur");
+	if (legacyBlur !== null) {
+		const parsed = Number.parseFloat(legacyBlur);
+		if (!Number.isNaN(parsed)) {
+			return clampNumber(1 - parsed / OVERLAY_MAX_BLUR, 0, 1);
+		}
 	}
-	return clampNumber(parsed, 0, 20);
+	return getDefaultOverlayTransparency();
 }
 
 export function getStoredOverlayCardOpacity(): number {
@@ -748,6 +782,31 @@ export function getStoredOverlayCardOpacity(): number {
 	return clampNumber(parsed, 0, 1);
 }
 
+export function getStoredOverlayPanelTransparency(): number {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.getItem !== "function"
+	) {
+		return getDefaultOverlayPanelTransparency();
+	}
+	const stored = localStorage.getItem("overlayPanelTransparency");
+	if (stored !== null) {
+		const parsed = Number.parseFloat(stored);
+		if (!Number.isNaN(parsed)) {
+			return clampNumber(parsed, 0, 1);
+		}
+	}
+	// 旧版本存的是不透明度（overlayPanelOpacity），换算成透明度，避免用户此前的设置丢失
+	const legacyOpacity = localStorage.getItem("overlayPanelOpacity");
+	if (legacyOpacity !== null) {
+		const parsed = Number.parseFloat(legacyOpacity);
+		if (!Number.isNaN(parsed)) {
+			return clampNumber(1 - parsed, 0, 1);
+		}
+	}
+	return getDefaultOverlayPanelTransparency();
+}
+
 export function applyOverlayOpacityToDocument(opacity: number): void {
 	if (typeof document === "undefined") {
 		return;
@@ -762,14 +821,17 @@ export function applyOverlayOpacityToDocument(opacity: number): void {
 	}
 }
 
-export function applyOverlayBlurToDocument(blur: number): void {
+export function applyOverlayTransparencyToDocument(transparency: number): void {
 	if (typeof document === "undefined") {
 		return;
 	}
-	const safeBlur = clampNumber(blur, 0, 20);
+	const safeTransparency = clampNumber(transparency, 0, 1);
 	const wallpaperWrapper = document.getElementById("wallpaper-wrapper");
 	if (wallpaperWrapper) {
-		wallpaperWrapper.style.setProperty("--overlay-blur", `${safeBlur}px`);
+		wallpaperWrapper.style.setProperty(
+			"--overlay-blur",
+			`${overlayTransparencyToBlur(safeTransparency)}px`,
+		);
 	}
 }
 
@@ -784,6 +846,27 @@ export function applyOverlayCardOpacityToDocument(cardOpacity: number): void {
 	);
 }
 
+export function applyOverlayPanelTransparencyToDocument(
+	transparency: number,
+): void {
+	if (typeof document === "undefined") {
+		return;
+	}
+	const safeTransparency = clampNumber(transparency, 0, 1);
+	// CSS 侧的 --panel-transparent-opacity 仍然是不透明度（alpha），这里做一次换算：
+	// 透明度 100% → alpha 0（全透），0% → alpha 1（全实）
+	document.documentElement.style.setProperty(
+		"--panel-transparent-opacity",
+		String(1 - safeTransparency),
+	);
+	// 毛玻璃强度同步跟随：100% 透明时把 backdrop blur 收到 0，否则弹窗始终是一层
+	// 奶白磨砂，滑块看起来像没生效（背景色变了但观感几乎不变）
+	document.documentElement.style.setProperty(
+		"--panel-blur-factor",
+		String(1 - safeTransparency),
+	);
+}
+
 export function setOverlayOpacity(opacity: number): void {
 	const safeOpacity = clampNumber(opacity, 0, 1);
 	if (
@@ -795,15 +878,15 @@ export function setOverlayOpacity(opacity: number): void {
 	applyOverlayOpacityToDocument(safeOpacity);
 }
 
-export function setOverlayBlur(blur: number): void {
-	const safeBlur = clampNumber(blur, 0, 20);
+export function setOverlayTransparency(transparency: number): void {
+	const safeTransparency = clampNumber(transparency, 0, 1);
 	if (
 		typeof localStorage !== "undefined" &&
 		typeof localStorage.setItem === "function"
 	) {
-		localStorage.setItem("overlayBlur", String(safeBlur));
+		localStorage.setItem("overlayTransparency", String(safeTransparency));
 	}
-	applyOverlayBlurToDocument(safeBlur);
+	applyOverlayTransparencyToDocument(safeTransparency);
 }
 
 export function setOverlayCardOpacity(cardOpacity: number): void {
@@ -817,10 +900,25 @@ export function setOverlayCardOpacity(cardOpacity: number): void {
 	applyOverlayCardOpacityToDocument(safeCardOpacity);
 }
 
+export function setOverlayPanelTransparency(transparency: number): void {
+	const safeTransparency = clampNumber(transparency, 0, 1);
+	if (
+		typeof localStorage !== "undefined" &&
+		typeof localStorage.setItem === "function"
+	) {
+		localStorage.setItem(
+			"overlayPanelTransparency",
+			String(safeTransparency),
+		);
+	}
+	applyOverlayPanelTransparencyToDocument(safeTransparency);
+}
+
 export function applyStoredOverlaySettingsToDocument(): void {
 	applyOverlayOpacityToDocument(getStoredOverlayOpacity());
-	applyOverlayBlurToDocument(getStoredOverlayBlur());
+	applyOverlayTransparencyToDocument(getStoredOverlayTransparency());
 	applyOverlayCardOpacityToDocument(getStoredOverlayCardOpacity());
+	applyOverlayPanelTransparencyToDocument(getStoredOverlayPanelTransparency());
 }
 
 // Waves animation functions

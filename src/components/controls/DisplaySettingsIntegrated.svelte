@@ -20,9 +20,10 @@ import {
 	getDefaultFullscreenLayout,
 	getDefaultGradientEnabled,
 	getDefaultHue,
-	getDefaultOverlayBlur,
 	getDefaultOverlayCardOpacity,
 	getDefaultOverlayOpacity,
+	getDefaultOverlayPanelTransparency,
+	getDefaultOverlayTransparency,
 	getDefaultSakuraEnabled,
 	getDefaultTheme,
 	getDefaultWavesEnabled,
@@ -33,9 +34,10 @@ import {
 	getStoredCardFollowThemeEnabled,
 	getStoredFullscreenLayout,
 	getStoredGradientEnabled,
-	getStoredOverlayBlur,
 	getStoredOverlayCardOpacity,
 	getStoredOverlayOpacity,
+	getStoredOverlayPanelTransparency,
+	getStoredOverlayTransparency,
 	getStoredSakuraEnabled,
 	getStoredTheme,
 	getStoredWallpaperMode,
@@ -48,9 +50,10 @@ import {
 	setFullscreenLayout,
 	setGradientEnabled,
 	setHue,
-	setOverlayBlur,
 	setOverlayCardOpacity,
 	setOverlayOpacity,
+	setOverlayPanelTransparency,
+	setOverlayTransparency,
 	setSakuraEnabled,
 	setTheme,
 	setThemeSchedule,
@@ -72,7 +75,7 @@ import type {
 } from "@/types/config";
 
 type OverlaySliderItem = {
-	key: "opacity" | "blur" | "cardOpacity";
+	key: "opacity" | "transparency" | "cardOpacity" | "panelTransparency";
 	enabled: boolean;
 	label: string;
 	displayValue: string;
@@ -121,10 +124,13 @@ let sakuraEnabled = $state(true);
 const defaultSakuraEnabled = getDefaultSakuraEnabled();
 let overlayOpacity = $state(getDefaultOverlayOpacity());
 const defaultOverlayOpacity = getDefaultOverlayOpacity();
-let overlayBlur = $state(getDefaultOverlayBlur());
-const defaultOverlayBlur = getDefaultOverlayBlur();
+let overlayTransparency = $state(getDefaultOverlayTransparency());
+const defaultOverlayTransparency = getDefaultOverlayTransparency();
 let overlayCardOpacity = $state(getDefaultOverlayCardOpacity());
 const defaultOverlayCardOpacity = getDefaultOverlayCardOpacity();
+// 弹窗（浮动面板）背景透明度
+let overlayPanelTransparency = $state(getDefaultOverlayPanelTransparency());
+const defaultOverlayPanelTransparency = getDefaultOverlayPanelTransparency();
 let cardBorderEnabled = $state(false);
 const defaultCardBorderEnabled = getDefaultCardBorderEnabled();
 let cardFollowThemeEnabled = $state(false);
@@ -174,19 +180,30 @@ const isOverlayOpacitySwitchable =
 	typeof overlaySwitchableConfig === "boolean"
 		? overlaySwitchableConfig
 		: (overlaySwitchableConfig.opacity ?? false);
-const isOverlayBlurSwitchable =
+const isOverlayTransparencySwitchable =
 	typeof overlaySwitchableConfig === "boolean"
 		? overlaySwitchableConfig
-		: (overlaySwitchableConfig.blur ?? false);
+		: (overlaySwitchableConfig.transparency ??
+			// 兼容旧配置里的 blur 字段（同一个开关，改了名）
+			overlaySwitchableConfig.blur ??
+			false);
 const isOverlayCardOpacitySwitchable =
 	typeof overlaySwitchableConfig === "boolean"
 		? overlaySwitchableConfig
 		: (overlaySwitchableConfig.cardOpacity ?? false);
+const isOverlayPanelTransparencySwitchable =
+	typeof overlaySwitchableConfig === "boolean"
+		? overlaySwitchableConfig
+		: (overlaySwitchableConfig.panelTransparency ??
+			// 兼容旧配置里的 panelOpacity 字段（同一个开关，改了名）
+			overlaySwitchableConfig.panelOpacity ??
+			false);
 const hasOverlaySettings =
 	isOverlaySettingsSwitchable &&
 	(isOverlayOpacitySwitchable ||
-		isOverlayBlurSwitchable ||
-		isOverlayCardOpacitySwitchable);
+		isOverlayTransparencySwitchable ||
+		isOverlayCardOpacitySwitchable ||
+		isOverlayPanelTransparencySwitchable);
 // 全屏壁纸模式的模糊渐变是否启用（按当前设备读取 fullscreen.blurRamp 配置，未配置默认开启）
 const isFullscreenBlurRampEnabled = $derived.by(() => {
 	const enable = backgroundWallpaper.fullscreen?.blurRamp?.enable;
@@ -196,9 +213,14 @@ const isFullscreenBlurRampEnabled = $derived.by(() => {
 });
 let overlaySettingsIsDefault = $derived(
 	(!isOverlayOpacitySwitchable || overlayOpacity === defaultOverlayOpacity) &&
-		(!isOverlayBlurSwitchable || overlayBlur === defaultOverlayBlur) &&
+		(!isOverlayTransparencySwitchable ||
+			Math.round(overlayTransparency * 100) ===
+				Math.round(defaultOverlayTransparency * 100)) &&
 		(!isOverlayCardOpacitySwitchable ||
-			overlayCardOpacity === defaultOverlayCardOpacity),
+			overlayCardOpacity === defaultOverlayCardOpacity) &&
+		(!isOverlayPanelTransparencySwitchable ||
+			Math.round(overlayPanelTransparency * 100) ===
+				Math.round(defaultOverlayPanelTransparency * 100)),
 );
 // 横幅设置是否全部为默认值（用于控制恢复默认按钮的显隐）
 let bannerSettingsIsDefault = $derived(
@@ -274,9 +296,88 @@ const hasAnyContent = $derived(
 		isSakuraSwitchable,
 );
 
+let overlaySliderItems = $derived<OverlaySliderItem[]>([
+	{
+		key: "opacity",
+		// 全屏壁纸模式不需要背景透明度，隐藏该滑块（仍显示模糊与卡片透明度）
+		enabled:
+			isOverlayOpacitySwitchable && wallpaperMode !== WALLPAPER_FULLSCREEN,
+		label: i18n(I18nKey.overlayOpacity),
+		displayValue: `${Math.round(overlayOpacity * 100)}%`,
+		ariaLabel: i18n(I18nKey.overlayOpacity),
+		min: 20,
+		max: 100,
+		step: 1,
+		value: Math.round(overlayOpacity * 100),
+		onValueChange: (value) => {
+			overlayOpacity = value / 100;
+		},
+	},
+	{
+		key: "transparency",
+		// 背景透明度：100% = 壁纸完全透出来（0px 模糊），0% = 最大模糊 20px，
+		// 写入文档时由 overlayTransparencyToBlur() 换算成 --overlay-blur
+		enabled:
+			isOverlayTransparencySwitchable &&
+			!(wallpaperMode === WALLPAPER_FULLSCREEN && !isFullscreenBlurRampEnabled),
+		label: i18n(I18nKey.overlayTransparency),
+		displayValue: `${Math.round(overlayTransparency * 100)}%`,
+		ariaLabel: i18n(I18nKey.overlayTransparency),
+		min: 0,
+		max: 100,
+		step: 1,
+		value: Math.round(overlayTransparency * 100),
+		onValueChange: (value) => {
+			overlayTransparency = value / 100;
+		},
+	},
+	{
+		key: "cardOpacity",
+		enabled: isOverlayCardOpacitySwitchable,
+		label: i18n(I18nKey.overlayCardOpacity),
+		displayValue: `${Math.round(overlayCardOpacity * 100)}%`,
+		ariaLabel: i18n(I18nKey.overlayCardOpacity),
+		min: 20,
+		max: 100,
+		step: 1,
+		value: Math.round(overlayCardOpacity * 100),
+		onValueChange: (value) => {
+			overlayCardOpacity = value / 100;
+		},
+	},
+	{
+		key: "panelTransparency",
+		enabled: isOverlayPanelTransparencySwitchable,
+		label: i18n(I18nKey.overlayPanelTransparency),
+		displayValue: `${Math.round(overlayPanelTransparency * 100)}%`,
+		ariaLabel: i18n(I18nKey.overlayPanelTransparency),
+		min: 0,
+		max: 100,
+		step: 1,
+		value: Math.round(overlayPanelTransparency * 100),
+		onValueChange: (value) => {
+			overlayPanelTransparency = value / 100;
+		},
+	},
+]);
+// 当前模式下是否有任何 overlay 滑块实际可见（模糊滑块可能因关闭模糊渐变而隐藏）
+let hasVisibleOverlaySlider = $derived(
+	overlaySliderItems.some((item) => item.enabled),
+);
+
+// 透明设置挂在外观 Tab 的主题色相下面，是否出现仍由壁纸模式决定：
+// overlay 模式、或全屏壁纸的 hero 布局才用得到覆盖层与卡片透明度
+const showOverlaySettings = $derived(
+	(wallpaperMode === WALLPAPER_OVERLAY ||
+		(wallpaperMode === WALLPAPER_FULLSCREEN && fullscreenLayout === "hero")) &&
+		hasOverlaySettings &&
+		hasVisibleOverlaySlider,
+);
+
 // --- Tab visibility ---
 const hasAppearanceTab = $derived(
 	showThemeColor ||
+		showOverlaySettings ||
 		allowLayoutSwitch ||
 		isCardBorderSwitchable ||
 		isCardFollowThemeSwitchable,
@@ -284,9 +385,6 @@ const hasAppearanceTab = $derived(
 const hasWallpaperTab = $derived(
 	isWallpaperSwitchable ||
 		isFullscreenLayoutSwitchable ||
-		((wallpaperMode === WALLPAPER_OVERLAY ||
-			wallpaperMode === WALLPAPER_FULLSCREEN) &&
-			hasOverlaySettings) ||
 		((wallpaperMode === WALLPAPER_BANNER ||
 			wallpaperMode === WALLPAPER_FULLSCREEN) &&
 			hasBannerSettings),
@@ -327,71 +425,6 @@ $effect(() => {
 		activeTab = visibleTabs[0].key;
 	}
 });
-
-// Auto-switch to wallpaper tab when entering overlay/fullscreen mode
-$effect(() => {
-	if (
-		(wallpaperMode === WALLPAPER_OVERLAY ||
-			wallpaperMode === WALLPAPER_FULLSCREEN) &&
-		hasOverlaySettings
-	) {
-		activeTab = "wallpaper";
-	}
-});
-
-let overlaySliderItems = $derived<OverlaySliderItem[]>([
-	{
-		key: "opacity",
-		// 全屏壁纸模式不需要背景透明度，隐藏该滑块（仍显示模糊与卡片透明度）
-		enabled:
-			isOverlayOpacitySwitchable && wallpaperMode !== WALLPAPER_FULLSCREEN,
-		label: i18n(I18nKey.overlayOpacity),
-		displayValue: `${Math.round(overlayOpacity * 100)}%`,
-		ariaLabel: i18n(I18nKey.overlayOpacity),
-		min: 20,
-		max: 100,
-		step: 1,
-		value: Math.round(overlayOpacity * 100),
-		onValueChange: (value) => {
-			overlayOpacity = value / 100;
-		},
-	},
-	{
-		key: "blur",
-		// 全屏壁纸模式关闭模糊渐变时隐藏模糊滑块（overlay 模式不受影响）
-		enabled:
-			isOverlayBlurSwitchable &&
-			!(wallpaperMode === WALLPAPER_FULLSCREEN && !isFullscreenBlurRampEnabled),
-		label: i18n(I18nKey.overlayBlur),
-		displayValue: `${overlayBlur.toFixed(1)}px`,
-		ariaLabel: i18n(I18nKey.overlayBlur),
-		min: 0,
-		max: 20,
-		step: 0.5,
-		value: overlayBlur,
-		onValueChange: (value) => {
-			overlayBlur = value;
-		},
-	},
-	{
-		key: "cardOpacity",
-		enabled: isOverlayCardOpacitySwitchable,
-		label: i18n(I18nKey.overlayCardOpacity),
-		displayValue: `${Math.round(overlayCardOpacity * 100)}%`,
-		ariaLabel: i18n(I18nKey.overlayCardOpacity),
-		min: 20,
-		max: 100,
-		step: 1,
-		value: Math.round(overlayCardOpacity * 100),
-		onValueChange: (value) => {
-			overlayCardOpacity = value / 100;
-		},
-	},
-]);
-// 当前模式下是否有任何 overlay 滑块实际可见（模糊滑块可能因关闭模糊渐变而隐藏）
-let hasVisibleOverlaySlider = $derived(
-	overlaySliderItems.some((item) => item.enabled),
-);
 
 function resetHue() {
 	hue = getDefaultHue();
@@ -465,9 +498,13 @@ function resetOverlaySettings() {
 		overlayOpacity = defaultOverlayOpacity;
 		setOverlayOpacity(defaultOverlayOpacity);
 	}
-	if (isOverlayBlurSwitchable && overlayBlur !== defaultOverlayBlur) {
-		overlayBlur = defaultOverlayBlur;
-		setOverlayBlur(defaultOverlayBlur);
+	if (
+		isOverlayTransparencySwitchable &&
+		Math.round(overlayTransparency * 100) !==
+			Math.round(defaultOverlayTransparency * 100)
+	) {
+		overlayTransparency = defaultOverlayTransparency;
+		setOverlayTransparency(defaultOverlayTransparency);
 	}
 	if (
 		isOverlayCardOpacitySwitchable &&
@@ -475,6 +512,14 @@ function resetOverlaySettings() {
 	) {
 		overlayCardOpacity = defaultOverlayCardOpacity;
 		setOverlayCardOpacity(defaultOverlayCardOpacity);
+	}
+	if (
+		isOverlayPanelTransparencySwitchable &&
+		Math.round(overlayPanelTransparency * 100) !==
+			Math.round(defaultOverlayPanelTransparency * 100)
+	) {
+		overlayPanelTransparency = defaultOverlayPanelTransparency;
+		setOverlayPanelTransparency(defaultOverlayPanelTransparency);
 	}
 
 	requestAnimationFrame(refreshAllRangeProgress);
@@ -635,8 +680,9 @@ onMount(() => {
 
 	// 从localStorage读取全屏透明设置状态
 	overlayOpacity = getStoredOverlayOpacity();
-	overlayBlur = getStoredOverlayBlur();
+	overlayTransparency = getStoredOverlayTransparency();
 	overlayCardOpacity = getStoredOverlayCardOpacity();
+	overlayPanelTransparency = getStoredOverlayPanelTransparency();
 
 	// 读取当前日夜模式与定时时间段
 	themeMode = getStoredTheme();
@@ -734,19 +780,25 @@ $effect(() => {
 		if (isOverlayOpacitySwitchable) {
 			setOverlayOpacity(overlayOpacity);
 		}
-		if (isOverlayBlurSwitchable) {
-			setOverlayBlur(overlayBlur);
+		if (isOverlayTransparencySwitchable) {
+			setOverlayTransparency(overlayTransparency);
 		}
 		if (isOverlayCardOpacitySwitchable) {
 			setOverlayCardOpacity(overlayCardOpacity);
+		}
+		if (isOverlayPanelTransparencySwitchable) {
+			setOverlayPanelTransparency(overlayPanelTransparency);
 		}
 	} else if (wallpaperMode === WALLPAPER_FULLSCREEN) {
-		// 全屏壁纸不透明，只应用模糊与卡片透明度
-		if (isOverlayBlurSwitchable) {
-			setOverlayBlur(overlayBlur);
+		// 全屏壁纸不透明，只应用模糊与卡片 / 弹窗透明度
+		if (isOverlayTransparencySwitchable) {
+			setOverlayTransparency(overlayTransparency);
 		}
 		if (isOverlayCardOpacitySwitchable) {
 			setOverlayCardOpacity(overlayCardOpacity);
+		}
+		if (isOverlayPanelTransparencySwitchable) {
+			setOverlayPanelTransparency(overlayPanelTransparency);
 		}
 	}
 });
@@ -844,6 +896,45 @@ onMount(() => {
 			<div class="hue-slider-shell w-full h-6 px-1 bg-[oklch(0.80_0.10_0)] dark:bg-[oklch(0.70_0.10_0)] rounded-md select-none">
 				<input aria-label={i18n(I18nKey.themeColor)} type="range" min="0" max="360" bind:value={hue}
 					   class="slider" id="colorSlider" step="5" style="width: 100%">
+			</div>
+		</div>
+		{/if}
+
+		<!-- Overlay Settings Section（透明设置）：跟在主题色相下面，
+		     都是调「观感」的东西，放一起顺手；是否出现仍由壁纸模式决定 -->
+		{#if showOverlaySettings}
+		<div class="">
+			<div class="section-title">
+				{i18n(I18nKey.overlaySettings)}
+				<button aria-label="Reset to Default" class="btn-regular rounded-md active:scale-90"
+						class:opacity-0={overlaySettingsIsDefault} class:pointer-events-none={overlaySettingsIsDefault}
+						disabled={overlaySettingsIsDefault} aria-hidden={overlaySettingsIsDefault ? "true" : undefined} onclick={resetOverlaySettings}>
+					<div class="text-(--btn-content)">
+						<Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.75rem]"></Icon>
+					</div>
+				</button>
+			</div>
+			<div class="space-y-2">
+				{#each overlaySliderItems as item (item.key)}
+					{#if item.enabled}
+						<div class="rounded-md bg-(--btn-regular-bg) p-2">
+							<div class="flex items-center justify-between mb-1">
+								<span class="text-xs font-medium text-(--btn-content) opacity-80">{item.label}</span>
+								<span class="text-xs text-(--btn-content)">{item.displayValue}</span>
+							</div>
+							<input
+								aria-label={item.ariaLabel}
+								type="range"
+								min={item.min}
+								max={item.max}
+								step={item.step}
+								value={item.value}
+								oninput={(e) => item.onValueChange(Number((e.currentTarget as HTMLInputElement).value))}
+								class="slider w-full overlay-slider"
+							/>
+						</div>
+					{/if}
+				{/each}
 			</div>
 		</div>
 		{/if}
@@ -1035,44 +1126,6 @@ onMount(() => {
 					<Icon icon="material-symbols:desktop-landscape-outline-rounded" class="text-[1.25rem] shrink-0"></Icon>
 					<span class="text-xs font-medium">{i18n(I18nKey.fullscreenHeroLayout)}</span>
 				</button>
-			</div>
-		</div>
-		{/if}
-
-		<!-- Overlay Settings Section（全屏壁纸模式也复用 overlay 的透明/模糊/卡片透明度设置） -->
-		{#if (wallpaperMode === WALLPAPER_OVERLAY || (wallpaperMode === WALLPAPER_FULLSCREEN && fullscreenLayout === "hero")) && hasOverlaySettings && hasVisibleOverlaySlider}
-		<div class="">
-			<div class="section-title">
-				{i18n(I18nKey.overlaySettings)}
-				<button aria-label="Reset to Default" class="btn-regular rounded-md active:scale-90"
-						class:opacity-0={overlaySettingsIsDefault} class:pointer-events-none={overlaySettingsIsDefault}
-						disabled={overlaySettingsIsDefault} aria-hidden={overlaySettingsIsDefault ? "true" : undefined} onclick={resetOverlaySettings}>
-					<div class="text-(--btn-content)">
-						<Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.75rem]"></Icon>
-					</div>
-				</button>
-			</div>
-			<div class="space-y-2">
-				{#each overlaySliderItems as item (item.key)}
-					{#if item.enabled}
-						<div class="rounded-md bg-(--btn-regular-bg) p-2">
-							<div class="flex items-center justify-between mb-1">
-								<span class="text-xs font-medium text-(--btn-content) opacity-80">{item.label}</span>
-								<span class="text-xs text-(--btn-content)">{item.displayValue}</span>
-							</div>
-							<input
-								aria-label={item.ariaLabel}
-								type="range"
-								min={item.min}
-								max={item.max}
-								step={item.step}
-								value={item.value}
-								oninput={(e) => item.onValueChange(Number((e.currentTarget as HTMLInputElement).value))}
-								class="slider w-full overlay-slider"
-							/>
-						</div>
-					{/if}
-				{/each}
 			</div>
 		</div>
 		{/if}
