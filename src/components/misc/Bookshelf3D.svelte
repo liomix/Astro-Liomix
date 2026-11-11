@@ -40,8 +40,6 @@ interface Props {
 	readingLabel: string;
 	readLabel: string;
 	finishedLabel: string;
-	prevLabel: string;
-	nextLabel: string;
 	openLabel: string;
 	emptyLabel: string;
 }
@@ -51,13 +49,11 @@ let {
 	readingLabel,
 	readLabel,
 	finishedLabel,
-	prevLabel,
-	nextLabel,
 	openLabel,
 	emptyLabel,
 }: Props = $props();
 
-// 书脊 / 焦点栏上的状态文案
+// 书脊 / 封面上的状态文案
 function statusLabel(status: ShelfBook["status"]): string {
 	if (status === "finished") return finishedLabel;
 	if (status === "read") return readLabel;
@@ -244,13 +240,6 @@ const slots = $derived.by<Slot[]>(() => {
 	}
 	return out;
 });
-
-const active = $derived(
-	books.length === 0 ? null : books[mod(Math.round(logical), books.length)],
-);
-const activeNumber = $derived(
-	books.length === 0 ? 0 : mod(Math.round(logical), books.length) + 1,
-);
 
 function animateTo(next: number) {
 	if (!Number.isFinite(next)) return;
@@ -489,47 +478,6 @@ onMount(() => {
 					</span>
 				</a>
 			{/each}
-		</div>
-
-		<div class="books-shelf-meta">
-			<div class="shelf-meta-text">
-				<a
-					class="shelf-meta-title"
-					href={active?.link ?? "#"}
-					target="_blank"
-					rel="noopener noreferrer"
-				>
-					{active?.title ?? ""}
-				</a>
-				<span class="shelf-meta-sub">
-					{active?.author ?? ""}
-					<i>·</i>
-					{active ? statusLabel(active.status) : ""}
-				</span>
-			</div>
-			<div class="shelf-pager">
-				<button
-					type="button"
-					class="shelf-pager-btn"
-					aria-label={prevLabel}
-					onclick={() => step(-1)}
-				>
-					<Icon icon="material-symbols:chevron-left-rounded" />
-				</button>
-				<span class="shelf-pager-count">
-					{String(activeNumber).padStart(2, "0")}
-					<i>/</i>
-					{String(books.length).padStart(2, "0")}
-				</span>
-				<button
-					type="button"
-					class="shelf-pager-btn"
-					aria-label={nextLabel}
-					onclick={() => step(1)}
-				>
-					<Icon icon="material-symbols:chevron-right-rounded" />
-				</button>
-			</div>
 		</div>
 
 		<BookPop book={popBook} onClose={() => (popBook = null)} />

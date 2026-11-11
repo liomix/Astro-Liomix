@@ -243,3 +243,16 @@ export function formatDateTimeToYYYYMMDDHHmm(dateInput: Date | string): string {
 
 	return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
 }
+
+/**
+ * 秒 → 紧凑时长文案，超过 1 小时自动进位。
+ * 例：0 → "0m"、540 → "9m"、3600 → "1h"、12720 → "3h 32m"
+ */
+export function formatDuration(seconds: number): string {
+	if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
+	const totalMinutes = Math.max(1, Math.round(seconds / 60));
+	const hours = Math.floor(totalMinutes / 60);
+	const minutes = totalMinutes % 60;
+	if (hours <= 0) return `${minutes}m`;
+	return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}

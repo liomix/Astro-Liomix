@@ -69,6 +69,15 @@ export interface WereadData {
 	books: WereadBook[];
 	// 阅读统计，接口失败时为 null
 	stats: WereadStats | null;
+	// 阅读热力图数据，接口失败或关闭时 null
+	calendar: WereadCalendar | null;
+}
+
+export interface WereadCalendar {
+	// 有阅读记录的年份，倒序（最新在前）
+	years: number[];
+	// "YYYY-MM-DD" → 当天阅读秒数，只保留有记录的天
+	days: Record<string, number>;
 }
 
 // 网关返回体里只关心这部分，其余字段忽略
@@ -107,6 +116,15 @@ interface BookInfoResponse {
 	intro?: string;
 	newRating?: number;
 	newRatingCount?: number;
+}
+
+// 年度统计：dailyReadTimes 是「某天 00:00（北京时间）→ 当天阅读秒数」
+interface AnnualResponse {
+	dailyReadTimes?: Record<string, number>;
+	readDays?: number;
+	totalReadTime?: number;
+	errcode?: number;
+	errmsg?: string;
 }
 
 // 章节目录：没有「全书字数」字段，只能把每章的 wordCount 累加
@@ -277,14 +295,66 @@ async function attachBookMeta(
 	);
 }
 
+// 微信读书按北京时间切天：把时间戳整体挪 8 小时再取 UTC 日期，就是当天的日期键
+const CALENDAR_TZ = 8 * 3600;
+
+function toDateKey(unixSeconds: number): string {
+	return new Date((unixSeconds + CALENDAR_TZ) * 1000).toISOString().slice(0, 10);
+}
+
 /**
- * 拉取书架 + 阅读统计。三个请求并行，任一失败不影响其它部分。
+ * 阅读热力图数据：按年取 dailyReadTimes，合并成 "YYYY-MM-DD" → 秒数。
+ * 年度接口用 baseTime 定位年份，边界几天会跨年，按年份前缀过滤掉。
+ */
+async function fetchCalendar(
+	config: WereadConfig,
+): Promise<WereadCalendar | null> {
+	const span = Math.max(1, Math.min(10, config.heatmapYears ?? 3));
+	const nowYear = Number(
+		toDateKey(Math.floor(Date.now() / 1000)).slice(0, 4),
+	);
+	const years = Array.from({ length: span }, (_, i) => nowYear - i);
+
+	const responses = await Promise.all(
+		years.map((year) =>
+			callGateway<AnnualResponse>("/readdata/detail", config, {
+				mode: "annually",
+				baseTime: Math.floor(Date.UTC(year, 0, 1) / 1000) + CALENDAR_TZ,
+			}),
+		),
+	);
+
+	const days: Record<string, number> = {};
+	const filled: number[] = [];
+
+	responses.forEach((res, index) => {
+		const daily = res?.dailyReadTimes;
+		if (!daily) return;
+		const year = years[index];
+		const prefix = String(year);
+		let hasData = false;
+		for (const [stamp, seconds] of Object.entries(daily)) {
+			if (!seconds || seconds <= 0) continue;
+			const key = toDateKey(Number(stamp));
+			if (!key.startsWith(prefix)) continue;
+			days[key] = seconds;
+			hasData = true;
+		}
+		if (hasData) filled.push(year);
+	});
+
+	if (filled.length === 0) return null;
+	return { years: filled, days };
+}
+
+/**
+ * 拉取书架 + 阅读统计 + 热力图数据。请求并行，任一失败不影响其它部分。
  * 书架只同步微信读书书架上的书，不从阅读记录 / 笔记里反推。
  */
 export async function fetchWereadData(
 	config: WereadConfig,
 ): Promise<WereadData> {
-	const [shelf, monthly, overall] = await Promise.all([
+	const [shelf, monthly, overall, calendar] = await Promise.all([
 		callGateway<ShelfResponse>("/shelf/sync", config),
 		callGateway<ReadDataResponse>("/readdata/detail", config, {
 			mode: "monthly",
@@ -292,6 +362,7 @@ export async function fetchWereadData(
 		callGateway<ReadDataResponse>("/readdata/detail", config, {
 			mode: "overall",
 		}),
+		config.showHeatmap === false ? null : fetchCalendar(config),
 	]);
 
 	const books = normalizeBooks(shelf);
@@ -327,7 +398,7 @@ export async function fetchWereadData(
 		};
 	}
 
-	return { ok: shelf !== null, books, stats };
+	return { ok: shelf !== null, books, stats, calendar };
 }
 
 // 秒 → 小时（保留一位小数，超过 100 小时取整）

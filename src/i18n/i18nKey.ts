@@ -31,7 +31,6 @@ enum I18nKey {
 
 	// 图书（微信读书）
 	books = "books",
-	booksSubtitle = "booksSubtitle",
 	booksDescription = "booksDescription",
 	booksShelf = "booksShelf",
 	booksEmpty = "booksEmpty",
@@ -39,20 +38,19 @@ enum I18nKey {
 	booksAllTime = "booksAllTime",
 	booksDailyAverage = "booksDailyAverage",
 	booksFinished = "booksFinished",
-	booksNotes = "booksNotes",
-	booksDays = "booksDays",
 	booksReading = "booksReading",
 	booksReadCount = "booksReadCount",
-	booksDataSource = "booksDataSource",
-	booksLastUpdated = "booksLastUpdated",
 	booksWordCount = "booksWordCount",
 	booksScore = "booksScore",
 	booksWordsLabel = "booksWordsLabel",
 	booksScoreLabel = "booksScoreLabel",
 	booksRatingCount = "booksRatingCount",
-	booksPrev = "booksPrev",
-	booksNext = "booksNext",
 	booksOpen = "booksOpen",
+	booksHeatmap = "booksHeatmap",
+	booksHeatmapLess = "booksHeatmapLess",
+	booksHeatmapMore = "booksHeatmapMore",
+	booksHeatmapSummary = "booksHeatmapSummary",
+	booksHeatmapEmpty = "booksHeatmapEmpty",
 
 	// 动态
 	dynamic = "dynamic",
