@@ -155,20 +155,10 @@ function onClick(event: MouseEvent): void {
 }
 
 /** 注册一次即可，在动态页与侧栏弹窗里都可调用 */
-export function registerDynamicActions(
-	options: {
-		commentCloseLabel?: string;
-		commentName?: string;
-		commentAvatarUrl?: string;
-	} = {},
-): void {
-	// 抽屉的关闭文案、聊天对象名字与头像由页面侧传入，
-	// 先写进去再判断是否已绑定（同一页面换文章时也要刷新）
-	bindCommentDrawer({
-		closeLabel: options.commentCloseLabel,
-		name: options.commentName,
-		avatarUrl: options.commentAvatarUrl,
-	});
+export function registerDynamicActions(): void {
+	// 抽屉外壳只认几何与开合，顶栏内容（昵称 / 头像 / 关闭文案）都由评论页自己渲染，
+	// 所以这里不需要再传任何站点信息
+	bindCommentDrawer();
 
 	if (registered) return;
 	registered = true;

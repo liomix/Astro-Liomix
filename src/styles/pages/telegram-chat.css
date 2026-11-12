@@ -61,9 +61,11 @@ body:has(.page-comment-embed) {
 }
 
 .tg-chat {
+	position: relative;
 	display: flex;
 	height: 100%;
 	flex-direction: column;
+	overflow: hidden;
 	background: var(--tg-chat-bg);
 	color: var(--tg-text);
 	font-family:
@@ -73,9 +75,197 @@ body:has(.page-comment-embed) {
 	line-height: 1.45;
 }
 
+/* ---------------- 壁纸 ---------------- */
+
+/* 铺满聊天区的最底层，canvas 由 comment-wallpaper.ts 塞进来。
+   顶栏与输入栏的 backdrop-filter 采样的就是它 —— 全在同一个文档里，天然成立，
+   不需要任何跨 iframe 的透明技巧。
+   底色兜两件事：生长动画第 0 帧是空的；素材加载失败时也不至于露出页面白底 */
+.tg-wallpaper {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+	background-color: #fff;
+	/* 动画就绪前不淡入：那几百毫秒里露出的是上面这层底色，而不是一块空 canvas */
+	opacity: 0;
+	transition: opacity 400ms ease;
+}
+
+.tg-wallpaper[data-ready="true"] {
+	opacity: 1;
+}
+
+.tg-wallpaper canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	transform-origin: 50% 50%;
+}
+
+/* 素材的「涂鸦生长」只播一遍（首帧空、末帧满，循环会回绕成每秒闪一次空白）。
+   播完停在末帧后，用一层极缓的缩放 + 位移维持「活着」的感觉：26 秒一个来回，
+   幅度压在 6% 内，有呼吸感又不会让人盯着看 */
+.tg-wallpaper[data-bloom="done"] canvas {
+	animation: tg-wallpaper-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes tg-wallpaper-drift {
+	from {
+		transform: scale(1) translate3d(0, 0, 0);
+	}
+
+	to {
+		transform: scale(1.06) translate3d(-1.2%, -0.8%, 0);
+	}
+}
+
+/* 夜间：不叠黑纱、也不给 canvas 挂 filter。
+   压暗要压的是「明度」而不是「往画面上盖东西」—— 盖一层半透明黑会把色相一起洗掉，
+   看起来是一块脏灰；挂 filter 又会让 canvas 整块变成不透明层。
+   照 Telegram Web K 处理深色壁纸的路子：深色底 + 只降 canvas 的不透明度。
+   - 底色取自 --tg-chat-bg，和聊天页底色同色，接缝处不会露边；
+   - canvas 压到 0.5，涂鸦的粉紫还在，只是整体沉下去，深色气泡不至于发灰；
+   - 底色同时兜住生长动画的空首帧：加载期间露出的是深夜蓝，不是浅色底 */
+html.dark .tg-wallpaper {
+	background-color: var(--tg-chat-bg);
+}
+
+html.dark .tg-wallpaper canvas {
+	opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-wallpaper {
+		transition: none;
+	}
+
+	.tg-wallpaper canvas {
+		animation: none;
+	}
+}
+
+/* ---------------- 顶栏 ---------------- */
+
+/* 头像 + 昵称 / 联系方式 + 关闭。底色半透明 + backdrop-filter，糊的就是下面那层壁纸 ——
+   这就是「顶栏用壁纸的高斯模糊」。z-index 2 压在壁纸（0）与消息区（1）之上 */
+.tg-head {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.45rem 0.45rem 0.45rem 0.6rem;
+	border-bottom: 1px solid var(--tg-divider);
+	background: color-mix(in srgb, var(--tg-panel) 55%, transparent);
+	-webkit-backdrop-filter: blur(18px) saturate(1.6);
+	backdrop-filter: blur(18px) saturate(1.6);
+}
+
+/* 没有头像图时的首字母彩圆，和消息里对方头像同一套画法 */
+.tg-head-avatar {
+	display: inline-flex;
+	width: 2.1rem;
+	height: 2.1rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 9999px;
+	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	color: #fff;
+	font-size: 0.88rem;
+	font-weight: 600;
+	line-height: 1;
+	user-select: none;
+}
+
+/* 有真实头像图时去掉渐变色，图片铺满整圆 */
+.tg-head-avatar.has-image {
+	background: none;
+}
+
+.tg-head-avatar img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.tg-head-text {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.08rem;
+}
+
+.tg-head-title {
+	overflow: hidden;
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 昵称下面那行联系方式：抽屉窄的时候省略号截断 */
+.tg-head-sub {
+	overflow: hidden;
+	color: var(--tg-meta);
+	font-size: 0.7rem;
+	line-height: 1.15;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 关闭按钮常驻 DOM，只在装在评论抽屉里时显示（html[data-embedded] 由 CommentLayout
+   在首屏绘制前按地址栏的 embed 参数打上）。默认 display:none 而不是 hidden 属性：
+   .tg-head-close 自己声明了 display，作者样式会盖掉 UA 的 [hidden] */
+.tg-head-close {
+	display: none;
+	width: 1.9rem;
+	height: 1.9rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+html[data-embedded] .tg-head-close {
+	display: inline-flex;
+}
+
+.tg-head-close svg {
+	width: 1.05rem;
+	height: 1.05rem;
+}
+
+.tg-head-close:hover {
+	background: color-mix(in srgb, var(--tg-accent) 12%, transparent);
+	color: var(--tg-accent);
+}
+
+.tg-head-close:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
 /* ---------------- 消息区 ---------------- */
 
 .tg-scroll {
+	position: relative;
+	z-index: 1;
 	display: flex;
 	flex: 1;
 	min-height: 0;
@@ -503,19 +693,25 @@ body:has(.page-comment-embed) {
 
 /* ---------------- 输入栏 ---------------- */
 
-/* 表情面板挂在这一层上，面板往上弹（bottom:100%），不影响消息区高度 */
+/* 表情面板挂在这一层上，面板往上弹（bottom:100%），不影响消息区高度。
+   z-index 2 与顶栏同级：两者都压在壁纸之上，接缝处不会漏出未模糊的底 */
 .tg-bottom {
 	position: relative;
+	z-index: 2;
 	flex: none;
 }
 
+/* 输入栏和顶栏用同一套毛玻璃，糊的都是下面那层壁纸。
+   这里不能再用不透明的 --tg-panel，否则壁纸会在这一条上被硬切掉 */
 .tg-composer {
 	display: flex;
 	align-items: flex-end;
 	gap: 0.2rem;
 	padding: 0.45rem 0.5rem;
 	border-top: 1px solid var(--tg-divider);
-	background: var(--tg-panel);
+	background: color-mix(in srgb, var(--tg-panel) 55%, transparent);
+	-webkit-backdrop-filter: blur(22px) saturate(1.6);
+	backdrop-filter: blur(22px) saturate(1.6);
 }
 
 /* 左侧回形针（发送图片），Telegram 里这个图标是主题蓝 */

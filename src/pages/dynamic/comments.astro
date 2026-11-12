@@ -1,22 +1,53 @@
 ---
+/**
+ * 评论抽屉的内容页（也支持直接访问）
+ * ---------------------------------------------------------------------------
+ * 页面里自带全部东西：壁纸、顶栏、消息区、输入栏 —— 全在同一个 document 里。
+ * 这是「顶栏和底栏用壁纸的高斯模糊」能成立的前提：backdrop-filter 只采样同一个
+ * document 里画在它下面的东西，跨 iframe 是采不到的。父窗口那层抽屉因此只剩外壳。
+ */
 import TelegramChat from "@/components/pages/dynamic/TelegramChat.astro";
-import { dynamicConfig, siteConfig } from "@/config";
+import { dynamicConfig, profileConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import CommentLayout from "@/layouts/CommentLayout.astro";
 import "@/styles/pages/dynamic-comments.css";
 import "@/styles/pages/telegram-chat.css";
+import { resolveRawAvatarUrl } from "@/utils/avatar-utils";
 
 if (!siteConfig.pages.dynamic || dynamicConfig.showComment === false) {
 	return Astro.redirect("/404/");
 }
 
-// 抽屉用 ?path= 传入当前动态的评论地址；现在消息是内置示例，
-// 这个值只挂到 root 的 data 属性上，等接了真实数据源再按它拉取
-const commentPath = Astro.url.searchParams.get("path") || "/dynamic/";
+// 评论地址（?path=）这里故意不读：消息目前是内置示例，这个值只挂到 root 的
+// data 属性上，等接了真实数据源再用。这一页是预渲染的静态路由，构建期拿不到
+// 查询参数，真正的值由 TelegramChat 的脚本从地址栏补写
+
+// 顶栏头像：视频头像塞不进 <img>，优先取它的封面帧；静态头像直接用它自己。
+// 都拿不到就留空，组件退回首字母彩圆（Telegram 无头像账号的画法）
+const avatarIsStillImage = /\.(?:png|jpe?g|webp|avif|gif|svg)$/i.test(
+	profileConfig.avatar || "",
+);
+const stillAvatar =
+	profileConfig.avatarPoster ||
+	(avatarIsStillImage ? profileConfig.avatar : "");
+const avatarUrl = resolveRawAvatarUrl(stillAvatar || "");
+
+// 顶栏那行联系方式直接取「Email」那条社交链接，不另立一份配置
+const contact = (
+	profileConfig.links.find((link) => link.name.toLowerCase() === "email")
+		?.url || ""
+).replace(/^mailto:/, "");
 ---
 
 <CommentLayout title={dynamicConfig.title || "Comments"}>
 	<main class="page-comment-embed">
-		<TelegramChat path={commentPath} />
+		<TelegramChat
+			name={profileConfig.name}
+			avatar={avatarUrl}
+			contact={contact}
+			closeLabel={i18n(I18nKey.tabClose)}
+		/>
 	</main>
 </CommentLayout>
 

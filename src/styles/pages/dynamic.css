@@ -678,7 +678,11 @@ dynamic-feed {
    （--comment-drawer-width / --comment-drawer-top），底部到视口边。
    右栏不显示时（<768px / 本站关侧栏）走下面的兜底。
    z-index 1200：评论态下压住一切常驻浮层 —— 右下角浮动按钮组（1000）、浮动目录（1001）、
-   设置面板（1100）；只有移动标签右键菜单（1300）和页面过渡遮罩（9999）在它之上 */
+   设置面板（1100）；只有移动标签右键菜单（1300）和页面过渡遮罩（9999）在它之上
+
+   这里只是外壳：圆角、边框、阴影、滑入滑出。里面的壁纸 / 顶栏 / 消息区 / 输入栏
+   全在 iframe 自己的文档里（见 telegram-chat.css）—— 顶栏与输入栏要对壁纸做高斯模糊，
+   而 backdrop-filter 只能采样同一个 document，壁纸没法由这一侧代画 */
 .comment-drawer {
 	position: fixed;
 	top: var(--comment-drawer-top, 5.5rem);
@@ -712,109 +716,7 @@ dynamic-feed {
 		visibility 0s;
 }
 
-/* 抽屉顶栏：Telegram 聊天页的标题栏（头像 + 名称 + 联系方式 + 关闭） */
-.comment-drawer-head {
-	display: flex;
-	flex: none;
-	align-items: center;
-	gap: 0.55rem;
-	padding: 0.45rem 0.45rem 0.45rem 0.6rem;
-	border-bottom: 1px solid var(--line-divider);
-	background: var(--card-bg);
-}
-
-/* Telegram 没有头像时用的“首字母彩色圆” */
-.comment-drawer-avatar {
-	display: inline-flex;
-	width: 2.1rem;
-	height: 2.1rem;
-	flex: none;
-	align-items: center;
-	justify-content: center;
-	overflow: hidden;
-	border-radius: 9999px;
-	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
-	color: #fff;
-	font-size: 0.88rem;
-	font-weight: 600;
-	line-height: 1;
-	user-select: none;
-}
-
-/* 有真实头像图时去掉渐变色，图片铺满整圆 */
-.comment-drawer-avatar.has-image {
-	background: none;
-}
-
-.comment-drawer-avatar img {
-	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.comment-drawer-heading {
-	display: flex;
-	flex: 1;
-	min-width: 0;
-	flex-direction: column;
-	gap: 0.08rem;
-}
-
-.comment-drawer-title {
-	overflow: hidden;
-	color: var(--deep-text);
-	font-weight: 600;
-	font-size: 0.9rem;
-	line-height: 1.2;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-/* 头像下方那行联系方式（邮箱）：跟着站点主题色走，抽屉窄的时候省略号截断 */
-.comment-drawer-status {
-	overflow: hidden;
-	color: var(--btn-content);
-	font-size: 0.7rem;
-	line-height: 1.15;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.comment-drawer-close {
-	display: inline-flex;
-	flex: none;
-	width: 1.9rem;
-	height: 1.9rem;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-	border: 0;
-	border-radius: 9999px;
-	background: transparent;
-	color: var(--content-meta);
-	cursor: pointer;
-	transition:
-		background-color 0.16s ease,
-		color 0.16s ease;
-}
-
-.comment-drawer-close svg {
-	width: 1.05rem;
-	height: 1.05rem;
-}
-
-.comment-drawer-close:hover {
-	background: var(--btn-regular-bg);
-	color: var(--primary);
-}
-
-.comment-drawer-close:focus-visible {
-	outline: 2px solid var(--primary);
-	outline-offset: 1px;
-}
-
-/* iframe 撑满抽屉，评论内容在自己内部滚动 */
+/* iframe 撑满抽屉，聊天界面的头/身/尾都在它内部，滚动也由它自己处理 */
 .comment-drawer-body {
 	flex: 1;
 	min-height: 0;
@@ -827,6 +729,13 @@ dynamic-feed {
 	height: 100%;
 	border: 0;
 	background: transparent;
+}
+
+/* 焦点是脚本主动交给 iframe 的（关闭按钮在 iframe 里），
+   别让那一圈默认描边糊在抽屉边缘上 */
+.comment-drawer-frame:focus,
+.comment-drawer-frame:focus-visible {
+	outline: none;
 }
 
 /* 本站没接评论服务时的兜底提示 */

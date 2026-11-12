@@ -9,6 +9,9 @@
  *
  * 深浅色优先读父窗口的 <html class="dark">（同源可访问），这样首次渲染就不会
  * 出现「父页面深色、抽屉里先闪一下白色」；独立访问时回退到 localStorage。
+ *
+ * 注意这里**不做任何「让页面透明、把背景让给父窗口」的处理**：壁纸和顶栏、消息区、
+ * 输入栏同在正文档里，页面自己就是完整的一层。父窗口只需要把 iframe 摆对位置。
  */
 import "@/styles/main.css";
 import "@/styles/variables.styl";
@@ -32,6 +35,20 @@ const defaultHue = siteConfig.themeColor.hue;
 		<title>{title}</title>
 		<script is:inline>
 			(function () {
+				// 「装在评论抽屉里」这件事只能在这里判断：这一页是预渲染的静态路由，
+				// 查询参数到不了服务端（Astro.url.search 在构建产物里是空的），
+				// 所以由浏览器按真实地址打标记，且在首屏绘制前完成 —— 关闭按钮不会闪。
+				// 标记本身只决定那颗按钮显不显示（见 telegram-chat.css 的 .tg-head-close）
+				var embedded = false;
+				try {
+					embedded = new URLSearchParams(location.search).has("embed");
+				} catch {
+					embedded = false;
+				}
+				if (embedded) {
+					document.documentElement.dataset.embedded = "true";
+				}
+
 				var dark = null;
 				try {
 					if (window.parent && window.parent !== window) {

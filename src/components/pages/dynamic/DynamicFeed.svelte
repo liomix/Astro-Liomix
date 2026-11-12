@@ -40,12 +40,6 @@ interface Props {
 	noResultsText: string;
 	loadingText: string;
 	allYearsText: string;
-	/** 评论抽屉关闭按钮的无障碍文案（按站点语言由 Astro 传入） */
-	commentCloseLabel: string;
-	/** 聊天顶栏标题（站点昵称），相当于 Telegram 里的聊天对象名字 */
-	commentName: string;
-	/** 聊天顶栏头像图（视频头像取封面帧），空则回退首字母彩圆 */
-	commentAvatarUrl: string;
 	/** 抽屉没有内容时的提示 */
 	commentEmptyText: string;
 	memos?: MemosConfig;
@@ -59,9 +53,6 @@ const {
 	noResultsText,
 	loadingText,
 	allYearsText,
-	commentCloseLabel,
-	commentName,
-	commentAvatarUrl,
 	commentEmptyText,
 	memos,
 }: Props = $props();
@@ -210,9 +201,11 @@ function createItem(entry: DynamicData) {
 	}
 
 	// 评论地址挂到条目上：底部评论按钮点开的是右侧抽屉，抽屉按这个地址装 iframe
-	// （iframe 里是 Telegram 风格的聊天界面，消息目前为内置示例）
+	// （iframe 里是 Telegram 风格的聊天界面，消息目前为内置示例）。
+	// embed=1 告诉评论页「你在抽屉里」：据此渲染那颗关闭按钮，仅此而已 ——
+	// 壁纸与顶底栏毛玻璃都在评论页自己的文档里，不依赖父窗口
 	if (showComments) {
-		root.dataset.commentSrc = `/dynamic/comments/?path=${encodeURIComponent(
+		root.dataset.commentSrc = `/dynamic/comments/?embed=1&path=${encodeURIComponent(
 			`/dynamic/${entry.id}/`,
 		)}`;
 	}
@@ -255,11 +248,7 @@ $effect(() => {
 
 onMount(() => {
 	registerDynamicGallery();
-	registerDynamicActions({
-		commentCloseLabel,
-		commentName,
-		commentAvatarUrl,
-	});
+	registerDynamicActions();
 	const page = list.closest(".page-shell");
 	template =
 		page?.querySelector<HTMLTemplateElement>("[data-dynamic-item-template]") ??

@@ -6,6 +6,14 @@
  * `/dynamic/comments/` 这个独立页面，用 iframe 装 —— 评论服务（waline /
  * twikoo / giscus…）自成一套 DOM 与样式，塞进主文档会互相污染。
  *
+ * 这里**只管外壳**：位置、尺寸、滑入滑出、焦点、开合时机。
+ * 抽屉里的内容（壁纸、顶栏、消息区、输入栏）全在 iframe 自己的文档里。这是刻意的：
+ * 顶栏与输入栏要「壁纸的高斯模糊」，而 backdrop-filter 只能采样**同一个 document**
+ * 里画在它下面的东西 —— 壁纸必须在内容那一侧画，父窗口替不了。反过来说，父窗口也
+ * 不用再指望 iframe 透明（那本来就不是标准能力），它只要把 iframe 摆对位置。
+ *
+ * 收起权留在这一侧：iframe 里的关闭按钮和 Esc 只是 postMessage 一条消息过来。
+ *
  * 为什么由 JS 创建、挂到 <body> 上：
  *   1. 动态页条目是 SSR 静态 HTML + 模板克隆，每条渲染一个抽屉＝几十个隐藏
  *      iframe，只有点开的那条才需要；
@@ -13,24 +21,14 @@
  *      相对祖先定位而不是视口，挂 body 才稳。
  */
 
-const BOUND_KEY = "__fireflyCommentDrawerBound";
+import { CHAT_WALLPAPER_SRC } from "@/components/pages/dynamic/comment-wallpaper";
 
-/** 关闭按钮的无障碍文案，由 Astro 侧按站点语言传入（客户端不引 i18n 语言包） */
-let closeLabel = "Close";
-/**
- * 顶栏头像下方那行联系方式。
- * Telegram 在这个位置显示「online」，本站放站长邮箱 —— 固定值、和界面语言无关，
- * 所以不进 i18n；要换地址改这一行即可。
- */
-const CHAT_HANDLE = "liomix2077@qq.com";
-/** 聊天对象的名字（顶栏标题），默认取触发按钮的 aria-label */
-let chatName = "";
-/** 聊天对象的头像图，空则退回首字母彩圆 */
-let avatarUrl = "";
+const BOUND_KEY = "__fireflyCommentDrawerBound";
 
 let activeTrigger: HTMLElement | null = null;
 let frame: HTMLIFrameElement | null = null;
 let themeObserver: MutationObserver | null = null;
+let prefetched = false;
 
 function getDrawer(): HTMLElement | null {
 	return document.querySelector<HTMLElement>("[data-comment-drawer]");
@@ -104,33 +102,6 @@ function fitGeometry(drawer: HTMLElement): void {
 	drawer.style.setProperty("--comment-drawer-top", `${top}px`);
 }
 
-/**
- * 顶栏头像：有站点头像图就用图（视频头像取封面帧），
- * 没有就退回首字母彩圆 —— 这正是 Telegram 无头像账号的画法
- */
-function syncAvatar(drawer: HTMLElement, name: string): void {
-	const avatar = drawer.querySelector<HTMLElement>(
-		"[data-comment-drawer-avatar]",
-	);
-	if (!avatar) return;
-
-	if (avatarUrl) {
-		if (avatar.dataset.avatarSrc === avatarUrl) return;
-		avatar.dataset.avatarSrc = avatarUrl;
-		avatar.classList.add("has-image");
-		const image = document.createElement("img");
-		image.src = avatarUrl;
-		image.alt = "";
-		image.decoding = "async";
-		avatar.replaceChildren(image);
-		return;
-	}
-
-	delete avatar.dataset.avatarSrc;
-	avatar.classList.remove("has-image");
-	avatar.textContent = (name.trim().slice(0, 1) || "?").toUpperCase();
-}
-
 function createDrawer(): HTMLElement {
 	const drawer = document.createElement("aside");
 	drawer.className = "comment-drawer";
@@ -140,31 +111,8 @@ function createDrawer(): HTMLElement {
 	drawer.setAttribute("aria-modal", "false");
 	drawer.setAttribute("aria-hidden", "true");
 	drawer.setAttribute("inert", "");
-	drawer.innerHTML = `
-		<header class="comment-drawer-head">
-			<span class="comment-drawer-avatar" data-comment-drawer-avatar aria-hidden="true"></span>
-			<span class="comment-drawer-heading">
-				<span class="comment-drawer-title" data-comment-drawer-title></span>
-				<span class="comment-drawer-status" data-comment-drawer-status></span>
-			</span>
-			<button type="button" class="comment-drawer-close" data-comment-drawer-close>
-				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-					<path d="M6 6 18 18M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-				</svg>
-			</button>
-		</header>
-		<div class="comment-drawer-body" data-comment-drawer-body></div>
-	`;
-
-	const close = drawer.querySelector<HTMLButtonElement>(
-		"[data-comment-drawer-close]",
-	);
-	close?.setAttribute("aria-label", closeLabel);
-	close?.addEventListener("click", () => closeCommentDrawer());
-	const status = drawer.querySelector<HTMLElement>(
-		"[data-comment-drawer-status]",
-	);
-	if (status) status.textContent = CHAT_HANDLE;
+	// 里面只有 iframe：外壳不承担任何内容，装饰与圆角全在 CSS 里
+	drawer.innerHTML = `<div class="comment-drawer-body" data-comment-drawer-body></div>`;
 
 	document.body.append(drawer);
 	return drawer;
@@ -207,13 +155,6 @@ export function openCommentDrawer(
 
 	const label = trigger.getAttribute("aria-label") || "";
 	if (label) drawer.setAttribute("aria-label", label);
-	// 顶栏标题优先用站点昵称（相当于聊天对象的名字），没传才退回按钮文案
-	const title = chatName || label;
-	const titleEl = drawer.querySelector<HTMLElement>(
-		"[data-comment-drawer-title]",
-	);
-	if (titleEl && title) titleEl.textContent = title;
-	syncAvatar(drawer, title);
 
 	fitGeometry(drawer);
 	const wasOpen = drawer.dataset.open === "true";
@@ -225,24 +166,23 @@ export function openCommentDrawer(
 
 	drawer.removeAttribute("inert");
 	drawer.setAttribute("aria-hidden", "false");
-	// 从收起变展开时把焦点交给关闭按钮：visibility:hidden 的元素聚不了焦，
-	// 所以必须等 data-open 生效之后；在两条动态之间切换则不抢焦点，避免打断阅读
-	const focusClose = () => {
+	// 关闭按钮在 iframe 里，父窗口这边能给的就是 iframe 本身：焦点落在文档边界上，
+	// Tab 自然进到聊天界面，又不会像聚焦输入框那样弹起移动端键盘。
+	// 从收起变展开时才抢焦点；在两条动态之间切换不抢，避免打断阅读
+	const focusInside = () => {
 		if (wasOpen) return;
-		drawer
-			.querySelector<HTMLElement>("[data-comment-drawer-close]")
-			?.focus({ preventScroll: true });
+		frame?.focus({ preventScroll: true });
 	};
 	if (existing) {
 		drawer.dataset.open = "true";
-		focusClose();
+		focusInside();
 		return;
 	}
 	// 刚插进 DOM 的元素与 data-open 同帧写入不会触发过渡，推到下一帧
 	requestAnimationFrame(() => {
 		if (activeTrigger !== trigger) return;
 		drawer.dataset.open = "true";
-		focusClose();
+		focusInside();
 	});
 }
 
@@ -272,6 +212,13 @@ function onOutsideClick(event: MouseEvent): void {
 	closeCommentDrawer(false);
 }
 
+/** iframe 里的「关闭」按钮 / Esc 走这里 */
+function onFrameMessage(event: MessageEvent): void {
+	if (event.origin !== window.location.origin) return;
+	if (event.data?.type !== "dynamic-comment-close") return;
+	closeCommentDrawer();
+}
+
 function onKeydown(event: KeyboardEvent): void {
 	if (event.key !== "Escape") return;
 	const drawer = getDrawer();
@@ -285,21 +232,30 @@ function onResize(): void {
 	if (drawer && drawer.dataset.open === "true") fitGeometry(drawer);
 }
 
-export function bindCommentDrawer(
-	options: {
-		closeLabel?: string;
-		name?: string;
-		avatarUrl?: string;
-	} = {},
-): void {
-	if (typeof window === "undefined") return;
-	if (options.closeLabel) closeLabel = options.closeLabel;
-	if (options.name) chatName = options.name;
-	if (options.avatarUrl) avatarUrl = options.avatarUrl;
+/**
+ * 悬浮 / 聚焦到评论按钮时先发一条 prefetch 提示：2.2MB 的壁纸 JSON 别等
+ * 打开抽屉才开始下。只发一次，重复调用无副作用。
+ */
+function prefetchWallpaper(): void {
+	if (prefetched) return;
+	prefetched = true;
+	const link = document.createElement("link");
+	link.rel = "prefetch";
+	link.as = "fetch";
+	link.href = CHAT_WALLPAPER_SRC;
+	document.head.append(link);
+}
 
-	// 抽屉已经建好（同一页里换了一篇文章）时，把顶栏标题 / 头像刷新一遍
-	const drawer = getDrawer();
-	if (drawer) syncAvatar(drawer, chatName);
+function onIntent(event: Event): void {
+	const target = event.target as Element | null;
+	if (!target?.closest("[data-dynamic-comment]")) return;
+	prefetchWallpaper();
+	document.removeEventListener("pointerover", onIntent);
+	document.removeEventListener("focusin", onIntent);
+}
+
+export function bindCommentDrawer(): void {
+	if (typeof window === "undefined") return;
 
 	const scope = window as unknown as Record<string, boolean | undefined>;
 	if (scope[BOUND_KEY]) return;
@@ -308,7 +264,10 @@ export function bindCommentDrawer(
 	observeTheme();
 	document.addEventListener("click", onOutsideClick);
 	document.addEventListener("keydown", onKeydown);
+	document.addEventListener("pointerover", onIntent, { passive: true });
+	document.addEventListener("focusin", onIntent);
 	window.addEventListener("resize", onResize, { passive: true });
+	window.addEventListener("message", onFrameMessage);
 	// 切页时抽屉 DOM 会被 Swup 换掉，顺手把状态清干净
 	document.addEventListener("swup:visit:start", () =>
 		closeCommentDrawer(false),

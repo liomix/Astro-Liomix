@@ -2,13 +2,12 @@
 import { Icon } from "astro-icon/components";
 import DynamicFeed from "@/components/pages/dynamic/DynamicFeed.svelte";
 import DynamicItemTemplate from "@/components/pages/dynamic/DynamicItemTemplate.astro";
-import { dynamicConfig, profileConfig, siteConfig } from "@/config";
+import { dynamicConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/dynamic.css";
-import { resolveRawAvatarUrl } from "@/utils/avatar-utils";
 import { url } from "@/utils/url-utils";
 
 if (!siteConfig.pages.dynamic) {
@@ -26,16 +25,6 @@ const dataUrl = dynamicConfig.apiUrl?.startsWith("http")
 	? dynamicConfig.apiUrl
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
 const memos = dynamicConfig.memos;
-
-// 评论抽屉顶栏的头像：视频头像不能塞进 <img>，优先取它的封面帧；
-// 静态头像直接用它自己。都拿不到就留空，客户端退回「首字母彩圆」
-const avatarIsStillImage = /\.(?:png|jpe?g|webp|avif|gif|svg)$/i.test(
-	profileConfig.avatar || "",
-);
-const stillAvatar =
-	profileConfig.avatarPoster ||
-	(avatarIsStillImage ? profileConfig.avatar : "");
-const chatAvatarUrl = resolveRawAvatarUrl(stillAvatar || "");
 ---
 
 <MainGridLayout title={title} description={description}>
@@ -87,9 +76,6 @@ const chatAvatarUrl = resolveRawAvatarUrl(stillAvatar || "");
 				source={dataUrl}
 				{itemsPerPage}
 				showComments={showComments}
-				commentCloseLabel={i18n(I18nKey.tabClose)}
-				commentName={profileConfig.name}
-				commentAvatarUrl={chatAvatarUrl}
 				commentEmptyText={i18n(I18nKey.commentNotConfigured)}
 				emptyText={i18n(I18nKey.dynamicEmpty)}
 				noResultsText={i18n(I18nKey.dynamicNoResults)}

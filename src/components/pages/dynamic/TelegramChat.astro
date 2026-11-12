@@ -28,9 +28,26 @@ import { i18n } from "@/i18n/translation";
 interface Props {
 	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
 	path?: string;
+	/** 顶栏标题：站点昵称，相当于 Telegram 里的聊天对象名字 */
+	name?: string;
+	/** 顶栏头像（视频头像取封面帧后的地址），空则退回首字母彩圆 */
+	avatar?: string;
+	/** 顶栏头像下的那行联系方式（邮箱），空则不占行 */
+	contact?: string;
+	/** 关闭按钮的无障碍文案 */
+	closeLabel?: string;
 }
 
-const { path = "/dynamic/" } = Astro.props;
+const {
+	path = "/dynamic/",
+	name = "",
+	avatar = "",
+	contact = "",
+	closeLabel = "Close",
+} = Astro.props;
+
+/** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致 */
+const initial = (name.trim().slice(0, 1) || "?").toUpperCase();
 
 interface ChatMessage {
 	/** in = 对方（来访者）/ out = 自己 */
@@ -201,6 +218,42 @@ const emojiCategories: EmojiCategory[] = [
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}
 >
+	{/* 壁纸画在聊天页自己身上：顶栏、消息区、输入栏同处一个文档，
+	    顶栏与输入栏的 backdrop-filter 直接采样它 —— 不需要任何跨文档技巧 */}
+	<div class="tg-wallpaper" data-tg-wallpaper aria-hidden="true"></div>
+
+	<header class="tg-head">
+		<span class:list={["tg-head-avatar", avatar && "has-image"]} aria-hidden="true">
+			{avatar ? <img src={avatar} alt="" decoding="async" /> : initial}
+		</span>
+		<span class="tg-head-text">
+			<span class="tg-head-title">{name}</span>
+			{contact && <span class="tg-head-sub">{contact}</span>}
+		</span>
+		{
+			/* 关闭按钮常驻 DOM，只在「装在抽屉里」时显示：
+			   这一页是预渲染的静态路由，查询参数到不了服务端，
+			   显隐由 CommentLayout 在首屏前打的 html[data-embedded] 标记决定 */
+			<button
+				type="button"
+				class="tg-head-close"
+				data-tg-close
+				title={closeLabel}
+				aria-label={closeLabel}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+					<path
+						d="M6 6 18 18M18 6 6 18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</button>
+		}
+	</header>
+
 	<div class="tg-scroll" data-tg-scroll>
 		<div class="tg-day"><span>{i18n(I18nKey.commentChatToday)}</span></div>
 
@@ -369,6 +422,7 @@ const emojiCategories: EmojiCategory[] = [
 </template>
 
 <script>
+	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
 	import { Marked } from "marked";
 
 	const pad = (value: number) => String(value).padStart(2, "0");
@@ -639,6 +693,13 @@ const emojiCategories: EmojiCategory[] = [
 		const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
 		if (!chat) return;
 
+		// 壁纸垫在最底层：顶栏与输入栏的毛玻璃都从它上面采样
+		mountChatWallpaper(chat);
+
+		// 这一页是预渲染的静态路由，构建期拿不到 ?path=，只能在这里按地址栏补一次
+		const pathParam = new URLSearchParams(window.location.search).get("path");
+		if (pathParam) chat.dataset.tgPath = pathParam;
+
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
 		const input = chat.querySelector<HTMLTextAreaElement>("[data-tg-input]");
@@ -796,8 +857,14 @@ const emojiCategories: EmojiCategory[] = [
 			closeEmoji();
 		});
 
+		// Esc：面板开着就先收面板，已经收起了就把「关抽屉」交给父窗口
 		document.addEventListener("keydown", (event) => {
-			if (event.key === "Escape") closeEmoji();
+			if (event.key !== "Escape") return;
+			if (emojiPanel && !emojiPanel.hidden) {
+				closeEmoji();
+				return;
+			}
+			requestClose();
 		});
 
 		// ---------------- 发送图片 ----------------
@@ -864,6 +931,25 @@ const emojiCategories: EmojiCategory[] = [
 			input.focus({ preventScroll: true });
 		});
 	}
+
+	/* ---------------- 与评论抽屉（父窗口）的桥 ---------------- */
+
+	/**
+	 * 抽屉的收起只能由父窗口做（几何、焦点、触发按钮都在那边），
+	 * 这里只把「想关」传出去。独立访问这个页面时没有父窗口，什么也不做。
+	 */
+	function requestClose(): void {
+		if (window.parent === window) return;
+		window.parent.postMessage(
+			{ type: "dynamic-comment-close" },
+			window.location.origin,
+		);
+	}
+
+	// 关闭按钮只在抽屉里渲染（embedded），独立访问时这个查询是空的
+	document
+		.querySelector<HTMLElement>("[data-tg-close]")
+		?.addEventListener("click", requestClose);
 
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", init, { once: true });
