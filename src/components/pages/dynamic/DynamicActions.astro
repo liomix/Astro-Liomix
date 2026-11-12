@@ -37,7 +37,6 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 	>
 		<dynamic-lottie-icon
 			data-animation="comment-chats"
-			data-speed="0.35"
 			style="font-size:1.35rem"></dynamic-lottie-icon>
 		<span class="dynamic-action-count" data-dynamic-comment-count>0</span>
 	</button>
@@ -85,7 +84,8 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		outline-offset: 1px;
 	}
 
-	/* 图标是彩色素材，没法跟着 color 变，所以激活态靠底色 + 动画自身的颜色 */
+	/* 激活态：数字跟着 color 变主题色；评论气泡的 fill 也走 currentColor 一起变，
+	   点赞爱心是彩色素材（素材本身的红），只有底色和数字跟随 */
 	.dynamic-action.is-active {
 		background: var(--btn-regular-bg);
 		color: var(--primary);

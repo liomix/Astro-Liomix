@@ -72,7 +72,7 @@ function paintCommentCount(button: HTMLElement): void {
 	node.textContent = formatCompactNumber(base);
 }
 
-/** 播一次图标动画：点赞是爱心弹出 + 粒子，评论是气泡 */
+/** 播一次图标动画：只有点赞的爱心会弹一下，评论气泡保持静止（点击时不要动画） */
 function playIcon(button: HTMLElement): void {
 	button
 		.querySelector<HTMLElement & { play?: () => void }>("dynamic-lottie-icon")
@@ -116,12 +116,13 @@ function toggleComments(button: HTMLElement): void {
 	// 那时抽屉照样抽出，里面给一句「评论系统未配置」的空态
 	const entry = button.closest<HTMLElement>("[data-dynamic-entry]");
 	if (!entry) return;
-	// 已经贴着这条动态打开着 → 收起；否则（含切到另一条）打开并换内容
+	// 已贴着这条动态打开着 → 收起；否则（含切到另一条）打开并换内容
 	if (button.classList.contains("is-active")) {
 		closeCommentDrawer();
 		return;
 	}
-	playIcon(button);
+	// 这里刻意不播图标动画：气泡素材是白色，播起来像闪一下白团；
+	// 点击态的颜色变化交给 .is-active（图标 fill 走 currentColor）
 	openCommentDrawer(
 		entry.dataset.commentSrc ?? "",
 		button,

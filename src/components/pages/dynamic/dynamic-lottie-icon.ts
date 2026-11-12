@@ -139,7 +139,9 @@ function defineElement(): void {
 				});
 				// 静止在末帧：爱心是完整的心，评论是完整的气泡
 				this.player.goToAndStop(this.lastFrame, true);
-				// 评论素材只有 6 帧（0.1s），原速播等于闪一下，所以支持 data-speed 放慢
+				// 短素材（几帧）原速播等于闪一下，需要慢放时用 data-speed。
+				// 注意：评论气泡目前点击不播动画（见 dynamic-actions.ts 的 toggleComments），
+				// 所以页面上已经没有地方用到它，能力保留给别的素材。
 				const speed = Number(this.dataset.speed ?? "");
 				if (Number.isFinite(speed) && speed > 0 && speed !== 1) {
 					this.player.setSpeed?.(speed);
@@ -161,72 +163,10 @@ function defineElement(): void {
 	customElements.define("dynamic-lottie-icon", DynamicLottieIcon);
 }
 
-/** 全局样式只注入一次：尺寸用 1em，容器改 font-size 就能缩放 */
-let styled = false;
-function injectStyles(): void {
-	if (styled || typeof document === "undefined") return;
-	styled = true;
-	// dev 下模块可能被两个岛各实例化一份，用 DOM 标记兜底，避免重复插入 <style>
-	if (document.querySelector("style[data-dynamic-lottie]")) return;
-	const style = document.createElement("style");
-	style.dataset.dynamicLottie = "true";
-	style.textContent = `
-dynamic-lottie-icon {
-	display: inline-block;
-	flex: none;
-	width: 1em;
-	height: 1em;
-	line-height: 0;
-	transition: filter 0.18s ease, opacity 0.18s ease;
-}
-dynamic-lottie-icon svg {
-	display: block;
-	width: 100%;
-	height: 100%;
-	/* 素材画布留白很多，按内容实际占比放大；--lottie-zoom 可以按素材覆盖。
-	   必须 !important —— lottie 会给 <svg> 写内联 transform: translate3d(0,0,0) */
-	transform: scale(var(--lottie-zoom, 1)) !important;
-	transform-origin: 50% 50%;
-}
-
-/* 爱心：素材本体只占画布 24%，放大 3.2 倍后接近正常图标大小；
-   点赞瞬间会弹到 34%，略微溢出容器就是「跳出来」的效果，不做裁切。
-   未点赞时和评论气泡保持同一套配色：浅色压成深灰，暗色反白，
-   所以用 brightness(0) 压黑后暗色再 invert(1)，而不是 grayscale —— 素材是红心，
-   grayscale 出来是浅灰，和气泡的深灰对不上 */
-dynamic-lottie-icon[data-animation="like-heart"] {
-	--lottie-zoom: 3.2;
-	filter: brightness(0);
-	opacity: 0.55;
-}
-:root.dark dynamic-lottie-icon[data-animation="like-heart"] {
-	filter: brightness(0) invert(1);
-	opacity: 0.8;
-}
-/* 已点赞：放回素材本身的彩色（红心）。暗色规则多了 :root.dark 一级，
-   这里必须同样带上，否则会被上面那条压住 */
-.is-active dynamic-lottie-icon[data-animation="like-heart"],
-:root.dark .is-active dynamic-lottie-icon[data-animation="like-heart"] {
-	filter: none;
-	opacity: 1;
-}
-
-/* 气泡素材是 Telegram 的白色贴纸图标，本身已占满画布，不用放大。
-   浅色主题压成深灰，暗色主题保持白 */
-dynamic-lottie-icon[data-animation="comment-chats"] {
-	filter: brightness(0);
-	opacity: 0.55;
-}
-:root.dark dynamic-lottie-icon[data-animation="comment-chats"] {
-	filter: none;
-	opacity: 0.8;
-}
-`;
-	document.head.append(style);
-}
-
 export function registerDynamicLottieIcons(): void {
 	if (typeof window === "undefined") return;
-	injectStyles();
+	// 尺寸、放大倍率、配色全在 src/styles/lottie-icon.css（随 main.css 打包）。
+	// 以前这里是运行时往 <head> 注入 <style>，Swup 换页时 head 被整份替换、
+	// 注入的节点被删掉且不会补回，图标就会按素材原始 1080×1000 画成巨大红心。
 	if (!customElements.get("dynamic-lottie-icon")) defineElement();
 }

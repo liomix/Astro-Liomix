@@ -10,6 +10,7 @@
 @import './light-dark-switch.css';
 @import './categories.css';
 @import './layout-base.css';
+@import './lottie-icon.css';
 
 @plugin '@tailwindcss/typography';
 

@@ -1,0 +1,80 @@
+/**
+ * 动态卡片里的 Lottie 图标（点赞爱心 / 评论气泡）
+ * ---------------------------------------------------------------------------
+ * 这段样式以前是 dynamic-lottie-icon.ts 在运行时 document.head.append(<style>) 注入的，
+ * 结果被 Swup 的 updateHead 顶掉（换页会整份替换 <head>，里面对不上新文档的节点全删），
+ * 而 injectStyles() 里的 `styled` 布尔量又拦住了再次注入 ——
+ * 于是导航一次之后图标就变成没有样式的裸 <svg>：
+ * 宽度退化成动画素材的 1080×1000，爱心按画布 24% 画出来 ≈ 260px，
+ * brightness(0) 也没了，显示成原始红心，横跨整张卡片。
+ *
+ * 所以这些规则必须活在打包产物里（Layout.astro 引入 main.css 时一并加载），
+ * 不能依赖运行时机 —— 静态 CSS 不会被换页干掉，也不存在"晚一帧"的问题。
+ */
+
+dynamic-lottie-icon {
+	display: inline-block;
+	flex: none;
+	width: 1em;
+	height: 1em;
+	line-height: 0;
+	transition: filter 0.18s ease, opacity 0.18s ease;
+}
+
+dynamic-lottie-icon svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	/* 素材画布留白很多，按内容实际占比放大；--lottie-zoom 可以按素材覆盖。
+	   必须 !important —— lottie 会给 <svg> 写内联 transform: translate3d(0,0,0) */
+	transform: scale(var(--lottie-zoom, 1)) !important;
+	transform-origin: 50% 50%;
+}
+
+/* 爱心：素材本体只占画布 24%，放大 3.2 倍后接近正常图标大小；
+   点赞瞬间会弹到 34%，略微溢出容器就是「跳出来」的效果，不做裁切。
+   未点赞时和评论气泡保持同一套配色：浅色压成深灰，暗色反白，
+   所以用 brightness(0) 压黑后暗色再 invert(1)，而不是 grayscale —— 素材是红心，
+   grayscale 出来是浅灰，和气泡的深灰对不上 */
+dynamic-lottie-icon[data-animation="like-heart"] {
+	--lottie-zoom: 3.2;
+	filter: brightness(0);
+	opacity: 0.55;
+}
+
+:root.dark dynamic-lottie-icon[data-animation="like-heart"] {
+	filter: brightness(0) invert(1);
+	opacity: 0.8;
+}
+
+/* 已点赞：放回素材本身的彩色（红心）。暗色规则多了 :root.dark 一级，
+   这里必须同样带上，否则会被上面那条压住 */
+.is-active dynamic-lottie-icon[data-animation="like-heart"],
+:root.dark .is-active dynamic-lottie-icon[data-animation="like-heart"] {
+	filter: none;
+	opacity: 1;
+}
+
+/* 气泡素材是 Telegram 的白色贴纸图标，本身已占满画布，不用放大。
+ *
+ * 配色不用 filter：素材的四层全是纯白填充（fill: [1,1,1,1]，无渐变无描边），
+ * 所以直接把填充色换成 currentColor —— 图标从此跟着按钮的 color 走，
+ * 也就是完全由主题控制：
+ *   静止      → var(--content-meta)
+ *   悬浮      → var(--primary)（.dynamic-action:hover）
+ *   抽屉打开  → var(--primary)（.dynamic-action.is-active）
+ *   日/夜切换 → 自动跟随，不再需要一条 :root.dark 特判
+ *
+ * 必须打在具体的形状元素上（path / ellipse …）：lottie 渲染填充时写的是
+ * fill="rgb(255,255,255)" 这个 presentation attribute，它会赢过从 <g> 继承下来的值，
+ * 而 presentation attribute 的优先级又低于任何 CSS 规则 —— 所以普通声明就能覆盖；
+ * 这里仍加 !important，是防以后 lottie 改成写内联 style（内联只有 !important 能压）。 */
+dynamic-lottie-icon[data-animation="comment-chats"] svg {
+	fill: currentColor !important;
+}
+
+dynamic-lottie-icon[data-animation="comment-chats"] svg
+	:where(path, circle, ellipse, rect, polygon, polyline) {
+	fill: currentColor !important;
+	transition: fill 0.18s ease;
+}

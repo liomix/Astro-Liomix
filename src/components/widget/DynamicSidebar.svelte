@@ -296,7 +296,6 @@ function visibleImages(entry: DynamicEntry) {
 					>
 						<dynamic-lottie-icon
 							data-animation="comment-chats"
-							data-speed="0.35"
 							style="font-size:1.25rem"></dynamic-lottie-icon>
 						<span class="pop-action-count" data-dynamic-comment-count>0</span>
 					</a>
