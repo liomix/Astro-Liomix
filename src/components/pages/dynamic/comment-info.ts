@@ -11,6 +11,7 @@
  * 写进根元素的 data-*，客户端不重复引一套 i18n。
  */
 import {
+	avatarGradientOf,
 	avatarUrlOf,
 	COMMENT_EMAIL_MAX,
 	COMMENT_NAME_MAX,
@@ -123,6 +124,17 @@ export function initCommentInfo(chat: HTMLElement): void {
 	};
 
 	/**
+	 * 邮箱 → 渐变底色，铺到 .tg-chat 的变量上。
+	 * 顶栏头像和弹窗预览读的是同一对变量，写一次两处一起变。
+	 * 只有 QQ 头像那样的真实图片会盖住它，其余情况这就是头像本身。
+	 */
+	const paintAvatarColors = (email: string): void => {
+		const paint = avatarGradientOf(email || defaults.email || defaults.name);
+		chat.style.setProperty("--avatar-from", paint.from);
+		chat.style.setProperty("--avatar-to", paint.to);
+	};
+
+	/**
 	 * 把身份铺到界面上：顶栏（头像 / 昵称 / 邮箱）＋ 输入栏开关。
 	 * ready 只看「有没有保存过」，不是「字段看着像不像」——
 	 * 默认值虽然填好了，但没点过保存就仍然算没设置。
@@ -133,6 +145,7 @@ export function initCommentInfo(chat: HTMLElement): void {
 
 		if (headName) headName.textContent = name || defaults.name || "?";
 		if (headSub) headSub.textContent = email || (ready ? "" : subEmpty);
+		paintAvatarColors(email);
 		paintAvatar(headAvatar, user);
 
 		chat.dataset.identityReady = ready ? "true" : "false";
@@ -146,6 +159,7 @@ export function initCommentInfo(chat: HTMLElement): void {
 		const current = getCommentUser() ?? defaults;
 		if (nameInput) nameInput.value = current.name;
 		if (emailInput) emailInput.value = current.email;
+		paintAvatarColors(current.email);
 		paintAvatar(popAvatar, current);
 		hideError();
 
@@ -224,12 +238,15 @@ export function initCommentInfo(chat: HTMLElement): void {
 		save();
 	});
 
-	// 邮箱一边敲一边换头像预览：只有格式合法时才去算 QQ 号，避免半截地址也发请求
-	const preview = () => {
+	// 邮箱一边敲一边换头像预览：只有格式合法时才去算 QQ 号，避免半截地址也发请求；
+	// 底色同理 —— 合法了才换成这个邮箱的色，输入到一半时先保持原来的
+	const preview = (): void => {
 		const email = (emailInput?.value ?? "").trim();
+		const valid = isValidEmail(email);
+		paintAvatarColors(valid ? email : "");
 		paintAvatar(popAvatar, {
 			name: nameInput?.value ?? "",
-			email: isValidEmail(email) ? email : "",
+			email: valid ? email : "",
 		});
 		hideError();
 	};

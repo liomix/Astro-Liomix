@@ -24,6 +24,7 @@
  */
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
 
 interface Props {
 	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
@@ -45,6 +46,13 @@ const {
 
 /** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致 */
 const initial = (name.trim().slice(0, 1) || "?").toUpperCase();
+
+/**
+ * 首屏就先按默认邮箱把渐变色算好：脚本要等模块加载完才跑，
+ * 这一帧里头像得已经是「这个身份的颜色」，不能先蓝一下再变。
+ * 访客保存过自己的邮箱时，脚本会把它换成自己的那对色。
+ */
+const avatarPaint = avatarGradientOf(contact || name);
 
 interface ChatMessage {
 	/** in = 对方（来访者）/ out = 自己 */
@@ -211,6 +219,7 @@ const emojiCategories: EmojiCategory[] = [
 	class="tg-chat"
 	data-tg-chat
 	data-tg-path={path}
+	style={`--avatar-from:${avatarPaint.from};--avatar-to:${avatarPaint.to}`}
 	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}

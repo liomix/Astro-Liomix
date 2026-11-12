@@ -172,7 +172,15 @@ html.dark .tg-wallpaper canvas {
 	justify-content: center;
 	overflow: hidden;
 	border-radius: 9999px;
-	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	/* 渐变色由评论身份按邮箱哈希算出来（comment-user.ts 的 avatarGradientOf），
+	   写在 .tg-chat 的 --avatar-from / --avatar-to 上。
+	   先铺一层纯色打底：万一浏览器不认 oklch，渐变整条失效，还有这个蓝兜着 */
+	background-color: #3f7fe0;
+	background-image: linear-gradient(
+		140deg,
+		var(--avatar-from, #7cc0f8),
+		var(--avatar-to, #3f7fe0)
+	);
 	color: #fff;
 	font-size: 0.88rem;
 	font-weight: 600;

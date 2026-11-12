@@ -6,7 +6,10 @@
  * 头像**不单独存**：它永远由「邮箱 + 昵称」现算 ——
  *   1. 邮箱是 QQ 邮箱（qq.com / vip.qq.com / foxmail.com）且 @ 前是纯数字 →
  *      用腾讯官方的 qlogo 接口拿 QQ 头像；
- *   2. 其余情况（含非 QQ 邮箱、QQ 邮箱用了别名）→ 昵称首字。
+ *   2. 其余情况（含非 QQ 邮箱、QQ 邮箱用了别名）→ **按邮箱哈希出来的渐变底 + 昵称首字**。
+ *      颜色在本地算，不发任何请求，同一个邮箱永远是同一对色；
+ *      这样外国访客也有属于自己、且永远不糊的头像，不必依赖 Gravatar
+ *      （实测部分地区不可达）或任何生成式头像服务。
  * 这样就不存在「改了昵称头像还是旧的」这种两份数据打架的情况。
  *
  * 这个模块只做纯数据，不碰 DOM：SSR 时被 import 也不会访问 window。
@@ -59,7 +62,7 @@ export function qqAvatarFallbackUrl(qq: string, size = 640): string {
 	return `https://q.qlogo.cn/headimg_dl?dst_uin=${encodeURIComponent(qq)}&spec=${size}`;
 }
 
-/** 这个身份该用的头像地址；没有 QQ 头像时返回空串（调用方画首字彩圆） */
+/** 这个身份该用的头像图地址；没有 QQ 头像时返回空串（调用方画渐变 + 首字） */
 export function avatarUrlOf(
 	user: Pick<CommentUser, "email"> | null | undefined,
 ): string {
@@ -75,6 +78,67 @@ export function avatarUrlOf(
 export function initialOf(name: string): string {
 	const chars = Array.from(name.trim());
 	return (chars[0] ?? "?").toUpperCase();
+}
+
+/**
+ * FNV-1a 32 位哈希：够短、无依赖，同一个邮箱永远同一个结果。
+ * 不用 md5 / sha 是因为这里只要「稳定打散」，不涉及安全；
+ * 而 Web Crypto 全是异步的，画个头像不该去等一个 Promise。
+ */
+function hash32(value: string): number {
+	let hash = 2166136261;
+	for (let i = 0; i < value.length; i++) {
+		hash = Math.imul(hash ^ value.charCodeAt(i), 16777619);
+	}
+	return hash >>> 0;
+}
+
+export interface AvatarGradient {
+	/** 渐变起点色 */
+	from: string;
+	/** 渐变终点色 */
+	to: string;
+}
+
+/**
+ * 邮箱 → 一对渐变色（没有 QQ 头像时垫在首字下面）。
+ *
+ * 用 oklch 而不是 hsl：oklch 的 L 是**感知**亮度，色相怎么转，看起来明度都差不多，
+ * 白色首字在每个色相上的对比度也就稳定；hsl 里黄色会亮到发白、蓝色会暗成一块。
+ *
+ * 色相避开 55°–135°：那一段在 oklch 里是黄 / 黄绿 / 橄榄，白字压不住、也显土。
+ * 红橙区只留约四分之一权重（否则一片蓝紫，谁都分不出谁），其余均匀落在
+ * 绿 → 青 → 蓝 → 紫 → 品红。
+ * 两个色只差 14°–36°，渐变才像同一条色带；跨得远了中间会穿过灰土区，脏。
+ *
+ * 亮度锁在 0.56–0.60：再低就发闷、和深色底糊在一起；再高白字开始发飘。
+ */
+const HUE_GAP_START = 55;
+const HUE_GAP_END = 135;
+
+/** 在色相环上取一个点，跳过黄绿禁区，并给红橙区留一点权重 */
+function prettyHue(hash: number): number {
+	// 独立于主 hash 的高位再取一次，避免和后面的 delta / 亮度相关
+	const roll = hash % 100;
+	const step = (hash >>> 8) % 1000;
+	if (roll < 26) return step % HUE_GAP_START; // 红 / 橙
+	return HUE_GAP_END + (step % (360 - HUE_GAP_END)); // 绿 → 品红
+}
+
+export function avatarGradientOf(email: string): AvatarGradient {
+	const hash = hash32(email.trim().toLowerCase());
+	const hue = prettyHue(hash);
+	const delta = 14 + ((hash >>> 9) % 23);
+	// 往前往后都行，但落到禁区内就掉头
+	let hue2 = (hash >>> 13) % 2 === 0 ? hue + delta : hue - delta;
+	if (hue2 > HUE_GAP_START && hue2 < HUE_GAP_END) hue2 = hue - delta;
+	hue2 = ((hue2 % 360) + 360) % 360;
+
+	const light = 0.56 + ((hash >>> 17) % 5) / 100;
+	return {
+		from: `oklch(${light.toFixed(3)} 0.14 ${hue})`,
+		to: `oklch(${(light - 0.07).toFixed(3)} 0.17 ${hue2})`,
+	};
 }
 
 /** 邮箱格式：只做「有且只有一个 @、域名带点」的最低限度判断，不追求 RFC 完整 */

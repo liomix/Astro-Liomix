@@ -218,7 +218,14 @@
 	justify-content: center;
 	overflow: hidden;
 	border-radius: 9999px;
-	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	/* 和顶栏头像同一套色：由邮箱哈希算出来，写在 .tg-chat 的变量上。
+	   纯色那层是 oklch 不被支持时的兜底 */
+	background-color: #3f7fe0;
+	background-image: linear-gradient(
+		140deg,
+		var(--avatar-from, #7cc0f8),
+		var(--avatar-to, #3f7fe0)
+	);
 	color: #fff;
 	font-size: 1.25rem;
 	font-weight: 600;
