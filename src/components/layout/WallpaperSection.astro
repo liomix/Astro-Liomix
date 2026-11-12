@@ -27,6 +27,12 @@ const wallpaperPosition = state.isFullscreenMode
 // 这里做一次换算，避免首屏渲染时闪一下默认模糊值（JS 初始化后会再写一遍同样的值）
 const overlayTransparency = backgroundWallpaper.overlay?.transparency ?? 0.5;
 const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
+// 壁纸的输出尺寸与质量由 backgroundWallpaper.imageWidths / imageQuality 单独控制：
+// 满屏线稿画面用全局的 q85 + 1920 上限会明显发糊，2 倍屏更是直接放大显示。
+// 移动端维持 640/828 不变，窄屏没必要为一张全屏图下 3240。
+const wallpaperWidths = backgroundWallpaper.imageWidths ?? [1280, 1920];
+const wallpaperWidth = Math.max(...wallpaperWidths);
+const wallpaperQuality = backgroundWallpaper.imageQuality ?? state.configQuality;
 ---
 
 <!-- Wallpaper - 如果允许切换则始终渲染，否则只渲染当前模式 -->
@@ -67,11 +73,11 @@ const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
                         class="object-cover h-full"
                         src={src}
                         position={wallpaperPosition}
-                        width={1920}
-                        widths={[1280, 1920]}
+                        width={wallpaperWidth}
+                        widths={wallpaperWidths}
                         sizes="100vw"
                         loading="eager"
-                        quality={state.configQuality}
+                        quality={wallpaperQuality}
                     />
                 </template>
             </div>
@@ -101,13 +107,13 @@ const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
                         class="object-cover h-full"
                         src={backgroundImages.desktop[0]}
                         position={wallpaperPosition}
-                        width={1920}
-                        widths={[1280, 1920]}
+                        width={wallpaperWidth}
+                        widths={wallpaperWidths}
                         sizes="100vw"
                         loading="eager"
                         fetchpriority="high"
                         fadeIn={false}
-                        quality={state.configQuality}
+                        quality={wallpaperQuality}
                     />
                 </div>
             )}
@@ -143,11 +149,11 @@ const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
                         class="object-cover h-full"
                         src={backgroundImages.desktop[0]}
                         position={wallpaperPosition}
-                        width={1920}
-                        widths={[1280, 1920]}
+                        width={wallpaperWidth}
+                        widths={wallpaperWidths}
                         sizes="100vw"
                         loading="eager"
-                        quality={state.configQuality}
+                        quality={wallpaperQuality}
                     />
                 </template>
             </div>
@@ -177,13 +183,13 @@ const overlayBlur = `${((1 - overlayTransparency) * 20).toFixed(1)}px`;
                         class="object-cover h-full"
                         src={backgroundImages.desktop[0]}
                         position={wallpaperPosition}
-                        width={1920}
-                        widths={[1280, 1920]}
+                        width={wallpaperWidth}
+                        widths={wallpaperWidths}
                         sizes="100vw"
                         loading="eager"
                         fetchpriority="high"
                         fadeIn={false}
-                        quality={state.configQuality}
+                        quality={wallpaperQuality}
                     />
                 </div>
             )}

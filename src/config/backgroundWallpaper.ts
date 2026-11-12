@@ -7,62 +7,42 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	playerEnable: true,
 	/**
 	 * 背景图片配置
-	 * 图片路径支持三种格式：
-	 * 1. public 目录（以 "/" 开头，不优化）："/assets/images/banner.avif"
-	 * 2. src 目录（不以 "/" 开头，自动优化但会增加构建时间，推荐）："assets/images/banner.avif"
-	 * 3. 远程 URL："https://example.com/banner.jpg"
-	 * 注意：远程URL和public目录的图片不会被优化，请确保图片体积足够小以免影响加载速度
 	 *
-	 * 建议不要替换d1-d6，m1-m6这些默认示例图片，但你可以删除掉节省空间
-	 * 因为以后可能会更换示例图片，导致你自定义的图片被覆盖
-	 * 所以建议使用自己的图片的时候命名为其他名称，不要使用d1-d6，m1-m6这些名称
+	 * 本站已清空主题自带的示例壁纸（d1–d6 / m1–m6 与 alan-mikasa 已删除），
+	 * 现在只用自定义壁纸：`website-bg-1.png`（3240×1821 原图），桌面端与移动端共用这一张。
 	 *
-	 * 如果只使用一张图片或者使用随机图API，推荐直接使用字符串格式：
-	 * desktop: "https://t.alcy.cc/pc",   // 随机图API
-	 * desktop: "assets/images/DesktopWallpaper/d1.avif", // 单张图片
+	 * 关于清晰度：壁纸的编码质量与响应式宽度由下面的 imageQuality / imageWidths 单独控制，
+	 * 不走站点全局的 quality: 85 —— 满屏线稿用 q85 会把草和树的纹理压糊，
+	 * 且宽度上限若停在 1920，2 倍屏就只能放大显示。现在最大一档直接给到原图 3240。
 	 *
-	 * mobile: "https://t.alcy.cc/mp", // 随机图API
-	 * mobile: "assets/images/MobileWallpaper/m1.avif", // 单张图片
+	 * 路径支持三种写法：
+	 *   1. src 目录（不以 "/" 开头，走 Astro 图片优化，推荐）："assets/images/DesktopWallpaper/website-bg-1.png"
+	 *   2. public 目录（以 "/" 开头，原样输出不优化）："/assets/images/banner.avif"
+	 *   3. 远程 URL（不优化，体积要小）："https://t.alcy.cc/pc"
 	 *
-	 * 支持配置多张图片（数组），每次刷新页面随机显示一张：
+	 * 单张直接用字符串；多张写成数组，每次刷新随机取一张：
 	 * desktop: [
-	 * "assets/images/DesktopWallpaper/d1.avif",
-	 * "assets/images/DesktopWallpaper/d2.avif",
-	 * ],
-	 *
-	 * mobile:[
-	 *   "assets/images/MobileWallpaper/m1.avif",
-	 *   "assets/images/MobileWallpaper/m2.avif",
+	 *   "assets/images/DesktopWallpaper/website-bg-1.png",
+	 *   "assets/images/DesktopWallpaper/website-bg-2.png",
 	 * ],
 	 */
 	src: {
-		// 桌面背景图片（支持单张或多张随机）
-		desktop: "assets/images/DesktopWallpaper/alan-mikasa.jpg",
-		// 想恢复成多张随机时，注释掉上面一行，改用下面这组：
-		// desktop: [
-		// 	"assets/images/DesktopWallpaper/d1.avif",
-		// 	"assets/images/DesktopWallpaper/d2.avif",
-		// 	"assets/images/DesktopWallpaper/d3.avif",
-		// 	"assets/images/DesktopWallpaper/d4.avif",
-		// 	"assets/images/DesktopWallpaper/d5.avif",
-		// 	"assets/images/DesktopWallpaper/d6.avif",
-		// ],
-		// 移动背景图片（支持单张或多张随机）
-		// mobile: "assets/images/MobileWallpaper/m1.avif",
-		mobile: [
-			"assets/images/MobileWallpaper/m1.avif",
-			"assets/images/MobileWallpaper/m2.avif",
-			"assets/images/MobileWallpaper/m3.avif",
-			"assets/images/MobileWallpaper/m4.avif",
-			"assets/images/MobileWallpaper/m5.avif",
-			"assets/images/MobileWallpaper/m6.avif",
-		],
+		// 桌面背景图片（3240×1821 原图，多张时改成数组，每次刷新随机一张）
+		desktop: "assets/images/DesktopWallpaper/website-bg-1.png",
+		// 移动背景图片：暂时共用桌面这张（竖屏下 object-cover 裁成中间一竖条）。
+		// 以后有了竖图：放进 src/assets/images/MobileWallpaper/，把这行指过去即可。
+		mobile: "assets/images/DesktopWallpaper/website-bg-1.png",
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
 		// playerUrl: "/assets/videos/firefly.mp4",
 		playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4",
 	},
+	// 壁纸专用的输出设置（不影响正文 / 封面图，那些仍走 siteConfig 的 quality: 85）
+	// 壁纸是满屏铺满的线稿画面，q85 会把草和树的纹理压成一团；同时宽度上限要放到原图尺寸，
+	// 否则 2 倍屏（DPR 2）只能拿到 1920 再放大，糊是必然的。
+	imageQuality: 92,
+	imageWidths: [1280, 1920, 2560, 3240],
 	// 横幅壁纸和全屏壁纸共享配置
 	common: {
 		// 壁纸遮罩暗度，让横幅文字显示更清晰，0-1之间，值越大越暗

@@ -11,6 +11,9 @@ export type BackgroundWallpaperConfig = {
 				mobile?: string | string[];
 				playerUrl?: string | string[]; // 背景视频播放地址，支持单个视频路径或数组（多视频列表循环）
 		  }; // 支持单个图片、图片数组或分别设置桌面端和移动端图片
+	// 壁纸专用的输出设置：留空则沿用站点全局 quality（85）与 [1280, 1920]
+	imageQuality?: number; // 1-100，仅作用于壁纸；线稿类画面 90 以上才不会出现压缩糊边
+	imageWidths?: number[]; // 响应式宽度（由小到大），最后一项请 ≤ 原图宽度
 	// 横幅壁纸和全屏壁纸共享配置
 	common?: {
 		dimOpacity?: number; // 横幅文字遮罩暗度，0-1之间，值越大越暗，默认0.15
