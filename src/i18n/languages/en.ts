@@ -440,6 +440,7 @@ export const en: Translation = {
 	[Key.wallpaperSettings]: "Wallpaper Settings",
 	[Key.wallpaperTitle]: "Home Wallpaper Title",
 	[Key.wallpaperCarousel]: "Wallpaper Carousel",
+	[Key.commentWallpaper]: "Comment Wallpaper",
 	[Key.wavesAnimation]: "Waves Animation",
 	[Key.gradientTransition]: "Gradient Transition",
 	[Key.sakuraEffect]: "Sakura Effect",

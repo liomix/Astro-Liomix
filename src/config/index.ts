@@ -48,6 +48,10 @@ export type {
 	WidgetSpecificConfig,
 } from "../types/config";
 export type {
+	CommentWallpaperConfig,
+	CommentWallpaperItem,
+} from "../types/commentWallpaperConfig"; // 评论区壁纸类型
+export type {
 	BuiltinFontProvider,
 	CustomFontProvider,
 	FontDefinition,
@@ -60,6 +64,11 @@ export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配�
 export { booknavConfig, booknavPageConfig } from "./booknavConfig"; // 书签导航配置
 // 功能配置
 export { commentConfig } from "./commentConfig"; // 评论系统配置
+export {
+	COMMENT_WALLPAPER_STORAGE_KEY,
+	commentWallpaperConfig,
+	getCommentWallpaper,
+} from "./commentWallpaperConfig"; // 评论区（动态页评论抽屉）壁纸配置
 export { coverImageConfig } from "./coverImageConfig"; // 封面图配置
 export { displaySettingsConfig } from "./displaySettingsConfig"; // 显示设置面板开关配置
 export { dynamicConfig } from "./dynamicConfig"; // 动态页面配置

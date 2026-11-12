@@ -52,21 +52,32 @@ const contact = (
 </CommentLayout>
 
 <script>
+	import { setChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
+
 	window.addEventListener("message", (event) => {
-		if (
-			event.origin !== window.location.origin ||
-			event.data?.type !== "dynamic-comment-theme"
-		) {
+		if (event.origin !== window.location.origin) return;
+
+		if (event.data?.type === "dynamic-comment-theme") {
+			document.documentElement.classList.toggle(
+				"dark",
+				Boolean(event.data.dark),
+			);
+			document.documentElement.dataset.theme = event.data.dark
+				? "dark"
+				: "light";
+			// 主题色相也跟着换：iframe 是独立文档，父窗口改 --hue 不会自动传进来
+			if (event.data.hue) {
+				document.documentElement.style.setProperty(
+					"--hue",
+					String(event.data.hue),
+				);
+			}
 			return;
 		}
-		document.documentElement.classList.toggle("dark", Boolean(event.data.dark));
-		document.documentElement.dataset.theme = event.data.dark ? "dark" : "light";
-		// 主题色相也跟着换：iframe 是独立文档，父窗口改 --hue 不会自动传进来
-		if (event.data.hue) {
-			document.documentElement.style.setProperty(
-				"--hue",
-				String(event.data.hue),
-			);
+
+		// 父窗口（设置面板）换了评论区壁纸：壁纸画在本文档里，只能由这边换
+		if (event.data?.type === "dynamic-comment-wallpaper" && event.data.id) {
+			setChatWallpaper(String(event.data.id));
 		}
 	});
 </script>

@@ -21,14 +21,15 @@
  *      相对祖先定位而不是视口，挂 body 才稳。
  */
 
-import { CHAT_WALLPAPER_SRC } from "@/components/pages/dynamic/comment-wallpaper";
+import { getChatWallpaperSrc } from "@/components/pages/dynamic/comment-wallpaper";
+import { getStoredCommentWallpaper } from "@/utils/setting-utils";
 
 const BOUND_KEY = "__fireflyCommentDrawerBound";
 
 let activeTrigger: HTMLElement | null = null;
 let frame: HTMLIFrameElement | null = null;
 let themeObserver: MutationObserver | null = null;
-let prefetched = false;
+let prefetchLink: HTMLLinkElement | null = null;
 
 function getDrawer(): HTMLElement | null {
 	return document.querySelector<HTMLElement>("[data-comment-drawer]");
@@ -62,6 +63,23 @@ function observeTheme(): void {
 		attributes: true,
 		attributeFilter: ["class", "style"],
 	});
+}
+
+/**
+ * 把访客在「设置 → 壁纸」里选中的那张转给 iframe。
+ * 壁纸画在 iframe 自己的文档里（顶栏 / 输入栏的毛玻璃要从它上面采样），
+ * 父窗口碰不到它的 DOM，只能递个 id 过去让它自己换。
+ */
+function syncFrameWallpaper(): void {
+	const win = frame?.contentWindow;
+	if (!win) return;
+	win.postMessage(
+		{
+			type: "dynamic-comment-wallpaper",
+			id: getStoredCommentWallpaper(),
+		},
+		window.location.origin,
+	);
 }
 
 /**
@@ -137,7 +155,10 @@ export function openCommentDrawer(
 			frame.className = "comment-drawer-frame";
 			// 只在点开时才创建，没必要 lazy（隐藏容器里的 lazy iframe 会拖到滑出来才加载）
 			frame.setAttribute("allow", "clipboard-write");
-			frame.addEventListener("load", syncFrameTheme);
+			frame.addEventListener("load", () => {
+				syncFrameTheme();
+				syncFrameWallpaper();
+			});
 			body.replaceChildren(frame);
 		}
 		frame.title = trigger.getAttribute("aria-label") || "Comments";
@@ -145,6 +166,9 @@ export function openCommentDrawer(
 			frame.dataset.src = src;
 			frame.src = src;
 		}
+		// iframe 一直留在页面上（收起只是移出视口）：切页后回来、或期间在设置里
+		// 换了壁纸，都要再对一次，不然抽屉里还是上次那张
+		syncFrameWallpaper();
 	} else {
 		// 本站没接评论服务：抽屉照常抽出，里面给一句空态，而不是点了没反应
 		const empty = document.createElement("p");
@@ -233,16 +257,23 @@ function onResize(): void {
 }
 
 /**
- * 悬浮 / 聚焦到评论按钮时先发一条 prefetch 提示：2.2MB 的壁纸 JSON 别等
- * 打开抽屉才开始下。只发一次，重复调用无副作用。
+ * 悬浮 / 聚焦到评论按钮时先发一条 prefetch 提示：几 MB 的壁纸 JSON 别等
+ * 打开抽屉才开始下。换过壁纸之后同一个 <link> 改 href 重新预热，不重复插标签。
  */
 function prefetchWallpaper(): void {
-	if (prefetched) return;
-	prefetched = true;
+	// 预热的是当前选中的那张：预热别的等于白下几 MB
+	const href = getChatWallpaperSrc(getStoredCommentWallpaper());
+	if (prefetchLink) {
+		if (prefetchLink.getAttribute("href") !== href) {
+			prefetchLink.setAttribute("href", href);
+		}
+		return;
+	}
 	const link = document.createElement("link");
 	link.rel = "prefetch";
 	link.as = "fetch";
-	link.href = CHAT_WALLPAPER_SRC;
+	link.href = href;
+	prefetchLink = link;
 	document.head.append(link);
 }
 
@@ -250,8 +281,12 @@ function onIntent(event: Event): void {
 	const target = event.target as Element | null;
 	if (!target?.closest("[data-dynamic-comment]")) return;
 	prefetchWallpaper();
-	document.removeEventListener("pointerover", onIntent);
-	document.removeEventListener("focusin", onIntent);
+}
+
+/** 设置面板换了壁纸：同步给 iframe，顺手把 preload 预热换成新那张 */
+function onWallpaperChange(): void {
+	syncFrameWallpaper();
+	if (prefetchLink) prefetchWallpaper();
 }
 
 export function bindCommentDrawer(): void {
@@ -266,6 +301,7 @@ export function bindCommentDrawer(): void {
 	document.addEventListener("keydown", onKeydown);
 	document.addEventListener("pointerover", onIntent, { passive: true });
 	document.addEventListener("focusin", onIntent);
+	window.addEventListener("commentWallpaperChange", onWallpaperChange);
 	window.addEventListener("resize", onResize, { passive: true });
 	window.addEventListener("message", onFrameMessage);
 	// 切页时抽屉 DOM 会被 Swup 换掉，顺手把状态清干净

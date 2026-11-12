@@ -32,6 +32,7 @@ import {
 	getStoredBannerTitleEnabled,
 	getStoredCardBorderEnabled,
 	getStoredCardFollowThemeEnabled,
+	getStoredCommentWallpaper,
 	getStoredFullscreenLayout,
 	getStoredGradientEnabled,
 	getStoredOverlayCardOpacity,
@@ -47,6 +48,7 @@ import {
 	setBannerTitleEnabled,
 	setCardBorderEnabled,
 	setCardFollowThemeEnabled,
+	setCommentWallpaper,
 	setFullscreenLayout,
 	setGradientEnabled,
 	setHue,
@@ -65,7 +67,9 @@ import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import {
 	backgroundWallpaper,
+	commentWallpaperConfig,
 	displaySettingsConfig,
+	dynamicConfig,
 	siteConfig,
 } from "@/config";
 import type {
@@ -135,6 +139,19 @@ let cardBorderEnabled = $state(false);
 const defaultCardBorderEnabled = getDefaultCardBorderEnabled();
 let cardFollowThemeEnabled = $state(false);
 const defaultCardFollowThemeEnabled = getDefaultCardFollowThemeEnabled();
+
+// 评论区壁纸：动态页评论抽屉里铺满聊天区的那张 Lottie（选项登记在 commentWallpaperConfig）
+const commentWallpapers = commentWallpaperConfig.wallpapers;
+const defaultCommentWallpaper = commentWallpaperConfig.defaultId;
+const isCommentWallpaperSwitchable =
+	commentWallpaperConfig.switchable &&
+	commentWallpapers.length > 1 &&
+	// 评论抽屉只存在于动态页，页关了或没开评论就没有可换的对象
+	siteConfig.pages.dynamic &&
+	dynamicConfig.showComment !== false;
+// 初值用默认那张，挂载后再读 localStorage —— 这个组件是 client:load，
+// 首屏会在服务端渲染一遍，那里没有 localStorage
+let commentWallpaperId = $state(defaultCommentWallpaper);
 
 // 日夜模式：日间 / 夜间 / 跟随系统 / 定时
 let themeMode: LIGHT_DARK_MODE = $state(getDefaultTheme());
@@ -447,6 +464,19 @@ function switchFullscreenLayout(layout: FullscreenWallpaperLayout) {
 	setFullscreenLayout(layout);
 }
 
+/* ---------------- 评论区壁纸 ---------------- */
+
+function selectCommentWallpaper(id: string) {
+	if (commentWallpaperId === id) return;
+	commentWallpaperId = id;
+	// 写 localStorage + 广播：动态页的评论抽屉会把新 id 转给它里面的 iframe
+	setCommentWallpaper(id);
+}
+
+function resetCommentWallpaper() {
+	selectCommentWallpaper(defaultCommentWallpaper);
+}
+
 function resetLayout() {
 	currentLayout = effectiveDefaultLayout;
 	localStorage.removeItem("postListLayout");
@@ -683,6 +713,9 @@ onMount(() => {
 	overlayTransparency = getStoredOverlayTransparency();
 	overlayCardOpacity = getStoredOverlayCardOpacity();
 	overlayPanelTransparency = getStoredOverlayPanelTransparency();
+
+	// 从localStorage读取评论区壁纸
+	commentWallpaperId = getStoredCommentWallpaper();
 
 	// 读取当前日夜模式与定时时间段
 	themeMode = getStoredTheme();
@@ -1216,6 +1249,42 @@ onMount(() => {
 					</div>
 				</button>
 				{/if}
+			</div>
+		</div>
+		{/if}
+
+		<!-- Comment Wallpaper Section：动态页评论抽屉里那张壁纸，
+		     和上面的页面壁纸无关，所以不受壁纸模式影响，始终可选 -->
+		{#if isCommentWallpaperSwitchable}
+		<div>
+			<div class="section-title">
+				{i18n(I18nKey.commentWallpaper)}
+				<button aria-label="Reset to Default" class="btn-regular rounded-md active:scale-90"
+						class:opacity-0={commentWallpaperId === defaultCommentWallpaper}
+						class:pointer-events-none={commentWallpaperId === defaultCommentWallpaper}
+						disabled={commentWallpaperId === defaultCommentWallpaper}
+						aria-hidden={commentWallpaperId === defaultCommentWallpaper ? "true" : undefined}
+						onclick={resetCommentWallpaper}>
+					<div class="text-(--btn-content)">
+						<Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.75rem]"></Icon>
+					</div>
+				</button>
+			</div>
+			<div class="grid grid-cols-3 gap-2">
+				{#each commentWallpapers as item (item.id)}
+				<button
+					class="btn-regular rounded-md p-1.5 flex flex-col items-center gap-1.5 active:scale-95 transition-all relative overflow-hidden"
+					class:opacity-60={commentWallpaperId !== item.id}
+					class:bg-(--btn-regular-bg-hover)={commentWallpaperId === item.id}
+					aria-pressed={commentWallpaperId === item.id}
+					onclick={() => selectCommentWallpaper(item.id)}
+				>
+					<!-- 缩略色块：用素材主色拉一道渐变。真动画有几 MB，面板里不加载它 -->
+					<span class="block h-12 w-full rounded-sm border border-(--line-divider)"
+						  style={`background-image: linear-gradient(135deg, ${item.colors.join(", ")})`}></span>
+					<span class="text-xs font-medium">{item.name}</span>
+				</button>
+				{/each}
 			</div>
 		</div>
 		{/if}

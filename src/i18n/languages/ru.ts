@@ -441,6 +441,7 @@ export const ru: Translation = {
 	[Key.wallpaperSettings]: "Настройки обоев",
 	[Key.wallpaperTitle]: "Заголовок главных обоев",
 	[Key.wallpaperCarousel]: "Карусель обоев",
+	[Key.commentWallpaper]: "Обои комментариев",
 	[Key.wavesAnimation]: "Анимация волн",
 	[Key.gradientTransition]: "Градиентный переход",
 	[Key.sakuraEffect]: "Эффект сакуры",

@@ -438,6 +438,7 @@ export const ko: Translation = {
 	[Key.wallpaperSettings]: "배경화면 설정",
 	[Key.wallpaperTitle]: "홈 배경화면 제목",
 	[Key.wallpaperCarousel]: "배경화면 캐러셀",
+	[Key.commentWallpaper]: "댓글 배경",
 	[Key.wavesAnimation]: "파도 애니메이션",
 	[Key.gradientTransition]: "그라디언트 전환",
 	[Key.sakuraEffect]: "벚꽃 효과",

@@ -432,6 +432,7 @@ export const zh_TW: Translation = {
 	[Key.wallpaperSettings]: "壁紙設置",
 	[Key.wallpaperTitle]: "首頁壁紙標題",
 	[Key.wallpaperCarousel]: "壁紙輪播",
+	[Key.commentWallpaper]: "評論區壁紙",
 	[Key.wavesAnimation]: "水波紋動畫",
 	[Key.gradientTransition]: "漸變過渡",
 	[Key.sakuraEffect]: "櫻花特效",
