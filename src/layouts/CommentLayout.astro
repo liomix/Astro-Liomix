@@ -16,6 +16,10 @@
 import "@/styles/main.css";
 import "@/styles/variables.styl";
 import { siteConfig } from "@/config";
+import {
+	COMMENT_WALLPAPER_STORAGE_KEY,
+	commentWallpaperConfig,
+} from "@/config/commentWallpaperConfig";
 
 interface Props {
 	title?: string;
@@ -26,6 +30,20 @@ interface Props {
 const { title = "", lang = "zh-CN" } = Astro.props;
 /** 站点默认主题色相：用户没在设置里改过色时用它，保证 iframe 里 --hue 一定有值 */
 const defaultHue = siteConfig.themeColor.hue;
+
+/**
+ * 壁纸 id → 垫底色（取色板第一个色）。
+ * 内联脚本按访客实际选中的那张写进 --tg-wallpaper-tint，让评论页在壁纸还没画出来
+ * 的那几帧就露出壁纸自己的色调 —— 而不是聊天底色那块浅灰白。
+ */
+const wallpaperTints: Record<string, string> = Object.fromEntries(
+	commentWallpaperConfig.wallpapers.map((item) => [
+		item.id,
+		item.colors[0] ?? "",
+	]),
+);
+const wallpaperStorageKey = COMMENT_WALLPAPER_STORAGE_KEY;
+const wallpaperDefaultId = commentWallpaperConfig.defaultId;
 ---
 
 <html lang={lang} data-default-hue={defaultHue}>
@@ -33,7 +51,14 @@ const defaultHue = siteConfig.themeColor.hue;
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
-		<script is:inline>
+		<script
+			is:inline
+			define:vars={{
+				wpTints: wallpaperTints,
+				wpKey: wallpaperStorageKey,
+				wpDefaultId: wallpaperDefaultId,
+			}}
+		>
 			(function () {
 				// 「装在评论抽屉里」这件事只能在这里判断：这一页是预渲染的静态路由，
 				// 查询参数到不了服务端（Astro.url.search 在构建产物里是空的），
@@ -78,6 +103,25 @@ const defaultHue = siteConfig.themeColor.hue;
 				}
 				if (!hue) hue = document.documentElement.dataset.defaultHue;
 				if (hue) document.documentElement.style.setProperty("--hue", hue);
+
+				// 壁纸垫底色：浅色下用访客选的那张壁纸的主色，壁纸还没画出来的那几帧
+				// 露的就是它 —— 这是「打开抽屉第一眼不是白」的最后一道兜底。
+				// 深色下不写：深色底本身就不是白，而浅色垫底会把画布（opacity .5）照亮
+				if (!dark) {
+					var tint = null;
+					try {
+						tint = wpTints[localStorage.getItem(wpKey)];
+					} catch (error) {
+						tint = null;
+					}
+					if (!tint) tint = wpTints[wpDefaultId];
+					if (tint) {
+						document.documentElement.style.setProperty(
+							"--tg-wallpaper-tint",
+							tint,
+						);
+					}
+				}
 			})();
 		</script>
 	</head>

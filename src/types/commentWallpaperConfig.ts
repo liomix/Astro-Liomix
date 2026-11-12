@@ -7,7 +7,10 @@ export interface CommentWallpaperItem {
 	name: string;
 	/** Lottie JSON 地址，相对站点根目录（放在 public 下，不要写 BASE_URL） */
 	src: string;
-	/** 缩略色块用的色板：取素材里的主色拉一道渐变，让面板里一眼能区分 */
+	/**
+	 * 色板。第一个是主色，兼作「壁纸画出来之前的垫底色」——挑最接近成品整体明度的那个，
+	 * 太深会让打开抽屉时先暗一下；其余只用于设置面板上的缩略色块。
+	 */
 	colors: string[];
 }
 

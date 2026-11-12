@@ -693,7 +693,10 @@ dynamic-feed {
 	flex-direction: column;
 	width: var(--comment-drawer-width, 17.5rem);
 	max-width: 100vw;
-	background: var(--card-bg);
+	/* 垫底色：iframe 里的文档还没到之前，露的就是这一层。
+	   --comment-drawer-tint 由脚本按访客选的壁纸写入（深色下不写，回退卡片底色）——
+	   不写的话浅色下这里是近白的卡片底色，冷启动那一下就是白屏 */
+	background: var(--comment-drawer-tint, var(--card-bg));
 	border-left: 1px solid var(--line-divider);
 	/* 左上角跟公告卡片同一个圆角（卡片用的是 --radius-large）；
 	   左下角贴着视口底，保持直角。overflow 负责把左侧边框和 iframe 一起裁圆 */

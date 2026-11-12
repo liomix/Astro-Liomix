@@ -11,32 +11,28 @@
  *   文档里，模糊天然成立；父窗口那层抽屉只剩外壳（圆角 + 滑入 + 阴影），连
  *   「让 iframe 变透明」这种非标准依赖都不需要了。
  *
- * 关于「闪烁」：
- *   这些素材都是一次性的「涂鸦逐个长出」——所有图层 ip=0 / op=末帧，首帧基本空白、
- *   末帧才铺满。loop 会在回绕处从满屏跳回空白，看起来就是每圈闪一下。所以只播一遍、
- *   停在末帧，之后交给 CSS 的极缓缩放位移维持「活着」的感觉（telegram-chat.css 的
- *   tg-wallpaper-drift）。
+ * 关于「素材不是循环动画」：
+ *   所有图层都是 ip=0 / op=末帧的一次性「涂鸦逐个长出」，首帧基本空白、末帧才铺满。
+ *   loop 会在回绕处从满屏跳回空白，看起来就是每圈闪一下。所以这里**只画末帧**，
+ *   播完的状态一次到位；之后交给 CSS 的极缓缩放位移维持「活着」的感觉
+ *   （telegram-chat.css 的 tg-wallpaper-drift）。
+ *
+ * 为什么不播生长：
+ *   抽屉一滑出来，壁纸就该是成品 —— 播生长的话，打开抽屉先看到一片空白、再看着它
+ *   长满，等于「先开抽屉、壁纸后出现」。素材的开场在这里只能帮倒忙，所以首帧直接跳末帧。
  *
  * 关于「换壁纸」：
  *   不是把旧 canvas 拆了再画新的（中间会露出壁纸层底色，闪一下）。新壁纸先叠在旧壁纸
- *   上面画好、直接落到末帧，再淡入、再拆旧层 —— 交接过程一帧空白都没有，而且换壁纸
- *   不需要重播生长动画。
- *
- * 关于「生长只播一次」：
- *   每张壁纸各播一遍生长，播过就记进 localStorage（键 comment-wallpaper-bloomed），
- *   所以换另一条动态（iframe 重载）、整页刷新都不会再重播。这个标记必须存在 iframe
- *   之外：每次重载都是一个全新的 JS 上下文，模块里的 bloomed 一定归零。
- *   在设置里换到另一张时走即时交叉淡入、不播生长 —— 一次切换不该让人干等 2.6 秒；
- *   那张壁纸的「第一次生长」留给它下次作为新文档的壁纸被加载时。
+ *   上面画好、落到末帧，再撤掉「透明待命」标记显形、再拆旧层 —— 交接过程一帧空白都没有。
+ *   整个过程没有 opacity 过渡：淡入本身就是一次「底色→壁纸」的可见变化。
  *
  * 性能：
- *   - lottie-web 与几 MB 的 JSON 都按需加载：抽屉首次展开时 iframe 才创建，壁纸跟着
- *     这个页面一起加载；悬浮评论按钮时抽屉会先发一条 prefetch 提示，把当前那张预热进
- *     HTTP 缓存（dynamic-comment-drawer.ts）。
- *   - 用 rAF 推进帧并限到 30fps（整帧上千层画一遍要 10ms 上下，跑满 60fps 会拖慢
- *     消息区滚动）；标签页切走时 rAF 自动停，回来时进度已过 1，直接落末帧。
- *   - 长完之后立刻取消 rAF，不再重绘 canvas —— 之后的「动」交给合成层的 CSS 变换。
- *   - prefers-reduced-motion：直接画末帧，不播、也不漂移。
+ *   - lottie-web 与几 MB 的 JSON 都按需加载：悬浮 / 聚焦评论按钮时，抽屉会先把 iframe
+ *     建好并在后台加载（dynamic-comment-drawer.ts 的 prewarmDrawer），等真正点开时
+ *     壁纸已经画好了 —— 这也是「打开即成品」的另一半。
+ *   - 只画一帧就停，没有逐帧 rAF：整帧上千层画一遍要 10ms 上下，之后的「动」
+ *     全交给合成层的 CSS 变换。
+ *   - prefers-reduced-motion：同样画末帧，只是不漂移。
  */
 
 import {
@@ -49,16 +45,6 @@ const BASE = (import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
 
 /** 素材帧率，只在拿不到 totalFrames 时兜底 */
 const SOURCE_FPS = 120;
-/** 把素材原本 1 秒的生长拉长到 2.6 秒：够从容，又不至于让人盯着等 */
-const BLOOM_MS = 2600;
-/** 生长动画的重绘上限，见文件头 */
-const PLAYBACK_FPS = 30;
-/** 两帧之间的最小间隔（毫秒） */
-const FRAME_INTERVAL = 1000 / PLAYBACK_FPS;
-/** 换壁纸时旧层的淡出时长，跟 telegram-chat.css 里 .tg-wallpaper 的过渡对齐 */
-const HANDOVER_MS = 460;
-/** 已经播过生长的壁纸 id（JSON 数组）：跨 iframe 重载与整页刷新都有效 */
-const BLOOMED_STORAGE_KEY = "comment-wallpaper-bloomed";
 
 interface LottieAnimation {
 	currentFrame: number;
@@ -79,9 +65,6 @@ interface WallpaperView {
 	/** 抽屉宽度随视口变化，容器一变就得让 lottie 按新尺寸重排 */
 	observer: ResizeObserver | null;
 	resizeRaf: number;
-	raf: number;
-	/** 生长动画已播完，停在末帧，之后只做 CSS 漂移 */
-	bloomed: boolean;
 }
 
 interface WallpaperEntry {
@@ -103,8 +86,34 @@ export function getChatWallpaperSrc(id?: string | null): string {
 	return `${BASE}${getCommentWallpaper(id).src}`;
 }
 
-function prefersReducedMotion(): boolean {
-	return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+/**
+ * 某张壁纸的垫底色（取色板第一个色，见 commentWallpaperConfig）。
+ * 评论页自己用 applyWallpaperTint 写进根节点；父窗口拿它给 iframe 那层补底色 ——
+ * iframe 里的文档还没到之前，浏览器给 iframe 的默认垫底是白的。
+ */
+export function getChatWallpaperTint(id?: string | null): string {
+	return getCommentWallpaper(id).colors[0] || "";
+}
+
+/**
+ * 把壁纸垫底色写进 <html> 的 --tg-wallpaper-tint。
+ *
+ * 这是「画布还没画上 / 还差一两帧」时露的那层色，取配置里的第一个色（最接近成品
+ * 整体明度的那个）。用它垫底，空窗露出来的是壁纸的色调，而不是一块白。
+ *
+ * 深色下清掉这个变量：深色底本身就不是白，而浅色垫底会把 opacity .5 的画布照亮，
+ * 夜间整块发亮。CSS 里所有用到它的地方都带 var(--tg-chat-bg) 兜底，清掉即回退。
+ *
+ * 为什么挂在根节点而不是壁纸层上：主题可以在运行时切换，切换时要重算一次 ——
+ * 挂在根节点 + 留一个重算入口，才不会留下一份过期的浅色垫底。
+ */
+export function applyWallpaperTint(id?: string | null): void {
+	const root = document.documentElement;
+	const tint = root.classList.contains("dark")
+		? ""
+		: getChatWallpaperTint(id ?? storedWallpaperId());
+	if (tint) root.style.setProperty("--tg-wallpaper-tint", tint);
+	else root.style.removeProperty("--tg-wallpaper-tint");
 }
 
 /** 访客选中的那张：直接读 localStorage，不必把整个 setting-utils 拉进这个页面 */
@@ -116,49 +125,6 @@ function storedWallpaperId(): string {
 		).id;
 	} catch {
 		return getCommentWallpaper(null).id;
-	}
-}
-
-/**
- * 播过生长的壁纸 id 集合。
- * localStorage 读不出来（隐私模式 / 被禁用）就退回内存版：本文件的这一次加载里
- * 仍然只播一遍，只是下次重载会再播 —— 多播一次总比一直不播好。
- */
-let bloomedIds: Set<string> | null = null;
-
-function readBloomedIds(): Set<string> {
-	if (bloomedIds) return bloomedIds;
-	const ids = new Set<string>();
-	try {
-		const raw = localStorage.getItem(BLOOMED_STORAGE_KEY);
-		const parsed: unknown = raw ? JSON.parse(raw) : null;
-		if (Array.isArray(parsed)) {
-			for (const item of parsed) {
-				if (typeof item === "string") ids.add(item);
-			}
-		}
-	} catch {
-		// 坏数据或不可用：当作没播过
-	}
-	bloomedIds = ids;
-	return ids;
-}
-
-function hasBloomed(id: string): boolean {
-	return readBloomedIds().has(id);
-}
-
-function markBloomed(id: string): void {
-	const ids = readBloomedIds();
-	if (ids.has(id)) return;
-	ids.add(id);
-	try {
-		// 顺手清掉配置里已经删掉的 id，别让这个键越积越长
-		const known = new Set(commentWallpaperConfig.wallpapers.map((w) => w.id));
-		const keep = [...ids].filter((item) => known.has(item));
-		localStorage.setItem(BLOOMED_STORAGE_KEY, JSON.stringify(keep));
-	} catch {
-		// 存不进去只影响「下次还会再播一遍」，不影响画面
 	}
 }
 
@@ -192,53 +158,13 @@ function loadWallpaperData(src: string): Promise<unknown> {
 	return pending;
 }
 
-function stopRaf(view: WallpaperView): void {
-	if (!view.raf) return;
-	cancelAnimationFrame(view.raf);
-	view.raf = 0;
-}
-
 function lastFrame(view: WallpaperView): number {
 	const animation = view.animation;
 	if (!animation) return 0;
 	return Math.max(1, Math.round(animation.totalFrames || SOURCE_FPS) - 1);
 }
 
-/**
- * 播一遍生长动画：首帧 → 末帧，播完停在末帧并打上 data-bloom="done"，
- * 之后的画面靠 CSS 的漂移维持动感。
- */
-function startBloom(view: WallpaperView): void {
-	const animation = view.animation;
-	if (!animation || view.raf || view.bloomed) return;
-
-	const end = lastFrame(view);
-	const from = Math.min(Math.max(animation.currentFrame || 0, 0), end);
-	const startedAt = performance.now() - (from / end) * BLOOM_MS;
-	let paintedAt = 0;
-
-	const tick = (now: number): void => {
-		const progress = (now - startedAt) / BLOOM_MS;
-		if (progress >= 1) {
-			view.raf = 0;
-			view.bloomed = true;
-			animation.goToAndStop(end, true);
-			view.layer.dataset.bloom = "done";
-			return;
-		}
-		// rAF 是 60/120Hz，这里按上限抽帧，别把整帧重绘跑满刷新率
-		if (now - paintedAt >= FRAME_INTERVAL) {
-			paintedAt = now;
-			animation.goToAndStop(Math.round(progress * end), true);
-		}
-		view.raf = requestAnimationFrame(tick);
-	};
-
-	view.raf = requestAnimationFrame(tick);
-}
-
 function destroyView(view: WallpaperView): void {
-	stopRaf(view);
 	if (view.resizeRaf) cancelAnimationFrame(view.resizeRaf);
 	view.resizeRaf = 0;
 	view.observer?.disconnect();
@@ -274,15 +200,10 @@ function findIdleLayer(chat: HTMLElement): HTMLElement | null {
 }
 
 /**
- * 画一张壁纸。
- * @param replay 是否播生长动画：这张壁纸还没播过、且是首次挂载才播；
- *   换壁纸走即时落末帧（那张的第一次生长留给它下次作为新文档壁纸被加载时）
+ * 画一张壁纸：直接落到末帧。
+ * 这里刻意不播生长 —— 抽屉滑出来时壁纸就该是成品，见文件头。
  */
-async function paint(
-	chat: HTMLElement,
-	id: string,
-	replay: boolean,
-): Promise<void> {
+async function paint(chat: HTMLElement, id: string): Promise<void> {
 	const token = ++paintToken;
 	const src = getChatWallpaperSrc(id);
 
@@ -294,26 +215,30 @@ async function paint(
 	const previous = current?.chat === chat ? current : null;
 	const existing = previous ? null : findIdleLayer(chat);
 	const layer = existing ?? createLayer();
-	// 新层叠在旧层之上（两层同为 z-index: 0，DOM 顺序靠后的压在上面）：
-	// 它画好、淡入之后才拆旧层，中间不会露出壁纸层底色
-	if (previous) previous.view.layer.after(layer);
-	else if (!existing) chat.prepend(layer);
+	// 垫底色跟着这张壁纸走：万一画布要晚一两帧，露出来的是壁纸的色调，不是白
+	applyWallpaperTint(id);
+	// 新层叠在旧层之上（两层同为 z-index: 0，DOM 顺序靠后的压在上面）。
+	// 换壁纸时先设成 pending（透明）：它还在画、画完末帧才显形，中间透出的是
+	// 下面那张旧壁纸 —— 不会有一帧纯色垫底盖在旧图上
+	if (previous) {
+		layer.dataset.pending = "true";
+		previous.view.layer.after(layer);
+	} else if (!existing) {
+		chat.prepend(layer);
+	}
 
 	const view: WallpaperView = {
 		layer,
 		animation: null,
 		observer: null,
 		resizeRaf: 0,
-		raf: 0,
-		bloomed: false,
 	};
-	const reducedMotion = prefersReducedMotion();
 
 	try {
 		view.animation = player.loadAnimation({
 			container: layer,
 			renderer: "canvas",
-			// 素材不是无缝循环（末帧满、首帧空），帧由自己的 rAF 推进
+			// 不循环、不自动播：末帧由下面那句 goToAndStop 一次性画出来
 			loop: false,
 			autoplay: false,
 			animationData: data,
@@ -333,31 +258,21 @@ async function paint(
 	observeSize(view);
 	current = { chat, id, view };
 
-	if (replay && !reducedMotion) {
-		// 播之前就记账：中途关掉抽屉 / 切走页面，下次也不该从头再长一遍
-		markBloomed(id);
-		startBloom(view);
-	} else {
-		// 换壁纸 / 少动画偏好：直接把末帧画出来
-		view.bloomed = true;
-		view.animation.goToAndStop(lastFrame(view), true);
-		layer.dataset.bloom = "done";
-	}
+	// 直接画末帧：打开抽屉的第一眼就该是成品图，不是一片空白慢慢长满
+	view.animation.goToAndStop(lastFrame(view), true);
+	// data-bloom 只表示「已经画完」，CSS 靠它挂上极缓的漂移
+	layer.dataset.bloom = "done";
+	// 末帧已经在画布上了：撤掉 pending，这一层立刻带上自己的垫底色，不再透出旧层。
+	// 这里没有任何 opacity 过渡 —— 上一版那 400ms 淡入就是「白色过渡」的来源
+	layer.removeAttribute("data-pending");
 
-	// 淡入放在下一帧：先让浏览器吃到 data-ready 之前的那一帧（opacity: 0），
-	// 与 data-ready 同帧写入的话过渡可能被合并掉，直接跳成不透明
-	requestAnimationFrame(() => {
-		if (token !== paintToken) return;
-		layer.dataset.ready = "true";
-	});
-
-	// 旧层等新层淡完再撤：交接期间它一直垫在下面，用户看不到任何空白
+	// 旧层多留一帧再撤：等浏览器把新画布合成上去，交接期间一直有东西垫在下面
 	if (previous) {
 		const retired = previous.view;
-		window.setTimeout(() => {
+		requestAnimationFrame(() => {
 			retired.layer.remove();
 			destroyView(retired);
-		}, HANDOVER_MS);
+		});
 	}
 }
 
@@ -369,26 +284,20 @@ async function paint(
 export function mountChatWallpaper(chat: HTMLElement, id?: string): void {
 	const target = getCommentWallpaper(id ?? storedWallpaperId());
 	if (current?.chat === chat && current.view.layer.isConnected) {
-		// 已经挂过：只有选中的壁纸换了才重画，而且不重播生长动画
+		// 已经挂过：只有选中的壁纸换了才重画
 		if (target.id === current.id) return;
-		void paint(chat, target.id, false);
+		void paint(chat, target.id);
 		return;
 	}
-	// 换另一条动态（iframe 重载）会走到这里：这张壁纸播过就直接落末帧，
-	// 没播过的才让它长一次 —— 状态记在 localStorage，模块变量在这里是靠不住的
-	void paint(chat, target.id, !hasBloomed(target.id));
+	void paint(chat, target.id);
 }
 
-/**
- * 换壁纸：不播生长，直接交叉淡入到新那张。
- * 也刻意不写 bloomed 记录：切过去是即时换图，那张壁纸的「第一次生长」
- * 留给它下次作为新文档的壁纸被加载时，这样一次切换不会让人干等 2.6 秒。
- */
+/** 换壁纸：新层画好末帧后交叉淡入，旧层等淡完再拆 */
 export function setChatWallpaper(id: string): void {
 	const chat =
 		current?.chat ?? document.querySelector<HTMLElement>("[data-tg-chat]");
 	if (!chat) return;
 	const target = getCommentWallpaper(id);
 	if (current?.chat === chat && current.id === target.id) return;
-	void paint(chat, target.id, false);
+	void paint(chat, target.id);
 }

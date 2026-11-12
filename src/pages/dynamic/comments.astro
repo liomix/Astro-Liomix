@@ -52,7 +52,10 @@ const contact = (
 </CommentLayout>
 
 <script>
-	import { setChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
+	import {
+		applyWallpaperTint,
+		setChatWallpaper,
+	} from "@/components/pages/dynamic/comment-wallpaper";
 
 	window.addEventListener("message", (event) => {
 		if (event.origin !== window.location.origin) return;
@@ -72,6 +75,16 @@ const contact = (
 					String(event.data.hue),
 				);
 			}
+			// 垫底色只在浅色下有意义：切深浅时重算一次，免得留着一份过期的浅色底
+			applyWallpaperTint();
+			return;
+		}
+
+		// 换了一条动态看评论：抽屉里是同一个预渲染页面，父窗口只把 path 递过来，
+		// 不重载文档（重载等于白屏几百毫秒）。path 目前只作标记，等接真实评论数据才用它查
+		if (event.data?.type === "dynamic-comment-path") {
+			const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
+			if (chat) chat.dataset.tgPath = String(event.data.path || "");
 			return;
 		}
 

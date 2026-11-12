@@ -9,6 +9,7 @@ import {
 	bindCommentDrawer,
 	closeCommentDrawer,
 	openCommentDrawer,
+	scheduleDrawerWarm,
 } from "@/components/pages/dynamic/dynamic-comment-drawer";
 import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
 import { formatCompactNumber } from "@/utils/number-utils";
@@ -159,6 +160,9 @@ export function registerDynamicActions(): void {
 	// 抽屉外壳只认几何与开合，顶栏内容（昵称 / 头像 / 关闭文案）都由评论页自己渲染，
 	// 所以这里不需要再传任何站点信息
 	bindCommentDrawer();
+	// 每次进动态页（含 Swup 换页后重新挂载）都排一次空闲预热：
+	// 触屏 / 键盘这些没有悬浮事件的路径，靠它才能做到「点开就是壁纸」
+	scheduleDrawerWarm();
 
 	if (registered) return;
 	registered = true;

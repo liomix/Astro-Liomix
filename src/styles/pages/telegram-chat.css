@@ -45,19 +45,21 @@
 	--tg-divider: rgb(255 255 255 / 0.08);
 }
 
-/* 页面撑满 iframe，滚动交给消息区自己处理 */
+/* 页面撑满 iframe，滚动交给消息区自己处理。
+   底色同样用壁纸主色：这是「文档已经画出来、壁纸层还没接管」那一瞬的垫底，
+   用聊天底色的话就是一块浅灰白 —— 打开抽屉第一眼看到的白主要来自这里 */
 html:has(.page-comment-embed),
 body:has(.page-comment-embed) {
 	height: 100%;
 	overflow: hidden;
-	background: var(--tg-chat-bg) !important;
+	background: var(--tg-wallpaper-tint, var(--tg-chat-bg)) !important;
 }
 
 .page-comment-embed {
 	height: 100%;
 	margin: 0;
 	padding: 0;
-	background: var(--tg-chat-bg);
+	background: var(--tg-wallpaper-tint, var(--tg-chat-bg));
 }
 
 .tg-chat {
@@ -66,7 +68,7 @@ body:has(.page-comment-embed) {
 	height: 100%;
 	flex-direction: column;
 	overflow: hidden;
-	background: var(--tg-chat-bg);
+	background: var(--tg-wallpaper-tint, var(--tg-chat-bg));
 	color: var(--tg-text);
 	font-family:
 		-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
@@ -80,21 +82,25 @@ body:has(.page-comment-embed) {
 /* 铺满聊天区的最底层，canvas 由 comment-wallpaper.ts 塞进来。
    顶栏与输入栏的 backdrop-filter 采样的就是它 —— 全在同一个文档里，天然成立，
    不需要任何跨 iframe 的透明技巧。
-   底色兜两件事：生长动画第 0 帧是空的；素材加载失败时也不至于露出页面白底 */
+
+   这一层**不做淡入**：画布挂上去画的就是末帧成品，任何 opacity 过渡都只是凭空
+   多演几百毫秒的「底色 → 壁纸」，看起来就是那块白色过渡。
+   垫底色也不再是聊天底色，而是这张壁纸自己的主色（--tg-wallpaper-tint，由
+   CommentLayout 的内联脚本按访客选中的那张写进 <html>；深色下不写，回退聊天底色）
+   —— 万一 canvas 还差一两帧才画上，露出来的也是壁纸的色调，而不是一块白 */
 .tg-wallpaper {
 	position: absolute;
 	inset: 0;
 	z-index: 0;
 	overflow: hidden;
 	pointer-events: none;
-	background-color: #fff;
-	/* 动画就绪前不淡入：那几百毫秒里露出的是上面这层底色，而不是一块空 canvas */
-	opacity: 0;
-	transition: opacity 400ms ease;
+	background-color: var(--tg-wallpaper-tint, var(--tg-chat-bg));
 }
 
-.tg-wallpaper[data-ready="true"] {
-	opacity: 1;
+/* 换壁纸时新层先透明叠在旧层上：画完末帧再显形，中间透出的就是下面那张旧壁纸。
+   不让它一开始就带着垫底色，否则会有一帧纯色盖在旧图上 —— 那又是一次「闪一下」 */
+.tg-wallpaper[data-pending="true"] {
+	background-color: transparent;
 }
 
 .tg-wallpaper canvas {
@@ -125,22 +131,14 @@ body:has(.page-comment-embed) {
    压暗要压的是「明度」而不是「往画面上盖东西」—— 盖一层半透明黑会把色相一起洗掉，
    看起来是一块脏灰；挂 filter 又会让 canvas 整块变成不透明层。
    照 Telegram Web K 处理深色壁纸的路子：深色底 + 只降 canvas 的不透明度。
-   - 底色取自 --tg-chat-bg，和聊天页底色同色，接缝处不会露边；
-   - canvas 压到 0.5，涂鸦的粉紫还在，只是整体沉下去，深色气泡不至于发灰；
-   - 底色同时兜住生长动画的空首帧：加载期间露出的是深夜蓝，不是浅色底 */
-html.dark .tg-wallpaper {
-	background-color: var(--tg-chat-bg);
-}
-
+   底色在上面 .tg-wallpaper 里就是 --tg-chat-bg（两套主题同一条规则），
+   画布没出来时露的是聊天底色；这里只负责把画布压到 0.5 ——
+   涂鸦的粉紫还在，只是整体沉下去，深色气泡不至于发灰 */
 html.dark .tg-wallpaper canvas {
 	opacity: 0.5;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.tg-wallpaper {
-		transition: none;
-	}
-
 	.tg-wallpaper canvas {
 		animation: none;
 	}
