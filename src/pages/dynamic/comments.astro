@@ -13,7 +13,9 @@ import { i18n } from "@/i18n/translation";
 import CommentLayout from "@/layouts/CommentLayout.astro";
 import "@/styles/pages/dynamic-comments.css";
 import "@/styles/pages/telegram-chat.css";
-import { resolveRawAvatarUrl } from "@/utils/avatar-utils";
+// 评论身份（顶栏入口 + CommentInfoPop）的样式，必须排在 telegram-chat.css 之后：
+// 它要覆盖 .tg-head-avatar 的显示规则、给 .tg-composer 补 position: relative
+import "@/styles/pages/comment-info.css";
 
 if (!siteConfig.pages.dynamic || dynamicConfig.showComment === false) {
 	return Astro.redirect("/404/");
@@ -23,17 +25,9 @@ if (!siteConfig.pages.dynamic || dynamicConfig.showComment === false) {
 // data 属性上，等接了真实数据源再用。这一页是预渲染的静态路由，构建期拿不到
 // 查询参数，真正的值由 TelegramChat 的脚本从地址栏补写
 
-// 顶栏头像：视频头像塞不进 <img>，优先取它的封面帧；静态头像直接用它自己。
-// 都拿不到就留空，组件退回首字母彩圆（Telegram 无头像账号的画法）
-const avatarIsStillImage = /\.(?:png|jpe?g|webp|avif|gif|svg)$/i.test(
-	profileConfig.avatar || "",
-);
-const stillAvatar =
-	profileConfig.avatarPoster ||
-	(avatarIsStillImage ? profileConfig.avatar : "");
-const avatarUrl = resolveRawAvatarUrl(stillAvatar || "");
-
-// 顶栏那行联系方式直接取「Email」那条社交链接，不另立一份配置
+// 顶栏现在展示的是「访客的评论身份」，默认值取站点昵称 + Email 链接：
+// 没设置过的访客点开弹窗就是预填好的这两条，改成自己的保存一次才解锁输入框。
+// 头像不再用站点头像 —— 它由邮箱算（QQ 邮箱取 qlogo，其余用昵称首字）
 const contact = (
 	profileConfig.links.find((link) => link.name.toLowerCase() === "email")
 		?.url || ""
@@ -44,7 +38,6 @@ const contact = (
 	<main class="page-comment-embed">
 		<TelegramChat
 			name={profileConfig.name}
-			avatar={avatarUrl}
 			contact={contact}
 			closeLabel={i18n(I18nKey.tabClose)}
 		/>

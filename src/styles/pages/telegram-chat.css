@@ -180,10 +180,8 @@ html.dark .tg-wallpaper canvas {
 	user-select: none;
 }
 
-/* 有真实头像图时去掉渐变色，图片铺满整圆 */
-.tg-head-avatar.has-image {
-	background: none;
-}
+/* 有真实头像图时把渐变撤掉、图片铺满整圆 —— 这条规则在 comment-info.css 里，
+   按 [data-has-image="true"] 判断（头像现在由评论身份算出来，不是站点固定头像） */
 
 .tg-head-avatar img {
 	display: block;

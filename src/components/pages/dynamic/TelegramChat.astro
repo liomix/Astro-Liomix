@@ -28,11 +28,9 @@ import { i18n } from "@/i18n/translation";
 interface Props {
 	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
 	path?: string;
-	/** 顶栏标题：站点昵称，相当于 Telegram 里的聊天对象名字 */
+	/** 默认昵称：访客还没设置过身份时，顶栏与弹窗先填这个值 */
 	name?: string;
-	/** 顶栏头像（视频头像取封面帧后的地址），空则退回首字母彩圆 */
-	avatar?: string;
-	/** 顶栏头像下的那行联系方式（邮箱），空则不占行 */
+	/** 默认邮箱：同上，来自站点配置里的 Email 链接 */
 	contact?: string;
 	/** 关闭按钮的无障碍文案 */
 	closeLabel?: string;
@@ -41,7 +39,6 @@ interface Props {
 const {
 	path = "/dynamic/",
 	name = "",
-	avatar = "",
 	contact = "",
 	closeLabel = "Close",
 } = Astro.props;
@@ -217,19 +214,62 @@ const emojiCategories: EmojiCategory[] = [
 	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}
+	data-tg-default-name={name}
+	data-tg-default-email={contact}
+	data-tg-ci-sub-empty={i18n(I18nKey.commentInfoSubEmpty)}
+	data-tg-ci-name-required={i18n(I18nKey.commentInfoNameRequired)}
+	data-tg-ci-email-invalid={i18n(I18nKey.commentInfoEmailInvalid)}
+	data-identity-ready="false"
 >
 	{/* 壁纸画在聊天页自己身上：顶栏、消息区、输入栏同处一个文档，
 	    顶栏与输入栏的 backdrop-filter 直接采样它 —— 不需要任何跨文档技巧 */}
 	<div class="tg-wallpaper" data-tg-wallpaper aria-hidden="true"></div>
 
 	<header class="tg-head">
-		<span class:list={["tg-head-avatar", avatar && "has-image"]} aria-hidden="true">
-			{avatar ? <img src={avatar} alt="" decoding="async" /> : initial}
-		</span>
-		<span class="tg-head-text">
-			<span class="tg-head-title">{name}</span>
-			{contact && <span class="tg-head-sub">{contact}</span>}
-		</span>
+		{/* 顶栏整块就是「我的评论身份」入口：点开是 CommentInfoPop。
+		    头像/昵称/邮箱由脚本按 localStorage 里存的身份覆盖这里的初始值，
+		    初始值取站点配置（昵称 + Email 链接），这样没设置过的访客也不是一片空白 */}
+		<button
+			type="button"
+			class="tg-head-id"
+			data-ci-open
+			aria-haspopup="dialog"
+			aria-label={i18n(I18nKey.commentInfoOpen)}
+		>
+			<span
+				class="tg-head-avatar"
+				data-ci-head-avatar
+				data-has-image="false"
+				aria-hidden="true"
+			>
+				<img data-avatar-img alt="" decoding="async" hidden />
+				<span data-avatar-initial>{initial}</span>
+			</span>
+			<span class="tg-head-text">
+				<span class="tg-head-title" data-ci-head-name>{name}</span>
+				<span class="tg-head-sub" data-ci-head-sub>{contact}</span>
+			</span>
+			<span class="tg-head-edit" aria-hidden="true">
+				<svg viewBox="0 0 24 24" focusable="false">
+					{/* 铅笔 + 笔杆分界线：线稿比原来那支实心笔更轻，小尺寸下轮廓也不会糊成一团 */}
+					<path
+						d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+					<path
+						d="M15 5l4 4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</span>
+		</button>
 		{
 			/* 关闭按钮常驻 DOM，只在「装在抽屉里」时显示：
 			   这一页是预渲染的静态路由，查询参数到不了服务端，
@@ -403,7 +443,101 @@ const emojiCategories: EmojiCategory[] = [
 				tabindex="-1"
 				aria-hidden="true"
 			/>
+
+			{/* 身份没填完时这层盖住整条输入栏，点它直接打开 CommentInfoPop。
+			    用覆盖层而不是逐个控件绑事件：textarea 被 disabled 之后根本不派发
+			    点击事件，包一层最省事，表情 / 附件 / 发送也一并挡住 */}
+			<button
+				type="button"
+				class="tg-composer-lock"
+				data-ci-open
+				aria-haspopup="dialog"
+			>
+				{i18n(I18nKey.commentInfoLocked)}
+			</button>
 		</form>
+	</div>
+
+	{/* CommentInfoPop：评论信息弹窗。铺满整个聊天页（.tg-chat 是 position: relative），
+	    和顶栏、输入栏同处一个文档，主题变量直接可用，不涉及任何跨 iframe 通信 */}
+	<div class="ci-pop" data-ci-pop hidden>
+		<div class="ci-mask" data-ci-mask></div>
+		<div
+			class="ci-card"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="comment-info-title"
+		>
+			<div class="ci-head">
+				<span class="ci-title" id="comment-info-title">
+					{i18n(I18nKey.commentInfoTitle)}
+				</span>
+				<button
+					type="button"
+					class="ci-close"
+					data-ci-close
+					aria-label={i18n(I18nKey.tabClose)}
+					title={i18n(I18nKey.tabClose)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path
+							d="M6 6 18 18M18 6 6 18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="ci-body">
+				{/* 头像单独一行、居中：它是这张卡片的视觉主体，说明文字已经去掉 */}
+				<div class="ci-avatar-row">
+					<span class="ci-avatar" data-ci-avatar data-has-image="false">
+						<img data-avatar-img alt="" decoding="async" hidden />
+						<span data-avatar-initial>?</span>
+					</span>
+				</div>
+
+				<label class="ci-field">
+					<span class="ci-label">{i18n(I18nKey.commentInfoName)}</span>
+					<input
+						class="ci-input"
+						type="text"
+						name="comment-name"
+						maxlength="24"
+						autocomplete="nickname"
+						data-ci-name
+						placeholder={i18n(I18nKey.commentInfoNamePlaceholder)}
+					/>
+				</label>
+
+				<label class="ci-field">
+					<span class="ci-label">{i18n(I18nKey.commentInfoEmail)}</span>
+					<input
+						class="ci-input"
+						type="email"
+						name="comment-email"
+						maxlength="64"
+						autocomplete="email"
+						data-ci-email
+						placeholder={i18n(I18nKey.commentInfoEmailPlaceholder)}
+					/>
+				</label>
+
+				<p class="ci-error" data-ci-error hidden></p>
+			</div>
+
+			<div class="ci-foot">
+				<button type="button" class="ci-btn" data-ci-cancel>
+					{i18n(I18nKey.commentInfoCancel)}
+				</button>
+				<button type="button" class="ci-btn ci-btn--primary" data-ci-save>
+					{i18n(I18nKey.commentInfoSave)}
+				</button>
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -422,6 +556,7 @@ const emojiCategories: EmojiCategory[] = [
 </template>
 
 <script>
+	import { initCommentInfo } from "@/components/pages/dynamic/comment-info";
 	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
 	import { Marked } from "marked";
 
@@ -695,6 +830,10 @@ const emojiCategories: EmojiCategory[] = [
 
 		// 壁纸垫在最底层：顶栏与输入栏的毛玻璃都从它上面采样
 		mountChatWallpaper(chat);
+
+		// 评论身份（昵称 / 邮箱 / 头像）与弹窗：放在其余初始化之前，
+		// 它会决定输入栏是不是锁着，晚了会先闪一下「可以输入」的状态
+		initCommentInfo(chat);
 
 		// 这一页是预渲染的静态路由，构建期拿不到 ?path=，只能在这里按地址栏补一次
 		const pathParam = new URLSearchParams(window.location.search).get("path");

@@ -1,0 +1,358 @@
+/* 评论身份：顶栏入口 + CommentInfoPop 弹窗
+   ---------------------------------------------------------------------------
+   顶栏那一块（头像 / 昵称 / 邮箱）现在整个是一个按钮，点开弹窗改昵称、邮箱。
+   头像由邮箱算出来：QQ 邮箱取 qlogo 头像，其余用昵称首字。
+
+   样式单独成文件而不是塞进 telegram-chat.css，是因为它管的是「身份」这条线，
+   和聊天气泡、表情面板那些没有关系；在 dynamic/comments.astro 里紧跟
+   telegram-chat.css 之后 import，覆盖顺序也正好。 */
+
+/* ---------------- 顶栏身份按钮 ---------------- */
+
+/* 负 margin 让 hover 底色撑出一点呼吸空间，视觉上又不会把整条顶栏撑高 */
+.tg-head-id {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	align-items: center;
+	gap: 0.55rem;
+	margin: -0.2rem;
+	padding: 0.2rem;
+	border: 0;
+	border-radius: 0.7rem;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background-color 0.16s ease;
+}
+
+.tg-head-id:hover {
+	background: color-mix(in srgb, var(--tg-text) 7%, transparent);
+}
+
+.tg-head-id:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+/* 编辑入口是个小圆钮：常驻但克制，悬浮才浮出主题色淡底。
+   margin-left: auto 把它顶到最右，昵称再长也不会挤掉；
+   它只是视觉上的「圆钮」，真正的点击目标是整块 .tg-head-id */
+.tg-head-edit {
+	display: inline-flex;
+	width: 1.6rem;
+	height: 1.6rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	margin-left: auto;
+	border-radius: 9999px;
+	color: var(--tg-meta);
+	opacity: 0.7;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease,
+		opacity 0.16s ease;
+}
+
+.tg-head-edit svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.tg-head-id:hover .tg-head-edit,
+.tg-head-id:focus-visible .tg-head-edit {
+	background: color-mix(in srgb, var(--tg-accent) 14%, transparent);
+	color: var(--tg-accent);
+	opacity: 1;
+}
+
+/* ---------------- 头像盒 ---------------- */
+
+/* 头像盒里固定两层：<img data-avatar-img> + <span data-avatar-initial>。
+   图片没到 / 加载失败时露首字彩圆，到了就把首字收起来、底色撤掉。
+   注意 [hidden] 要显式压掉：telegram-chat.css 里 .tg-head-avatar img { display: block }
+   的优先级高于 UA 的 [hidden]，不写这条，加载失败的破图会一直挂在圆里 */
+[data-avatar-img][hidden] {
+	display: none !important;
+}
+
+.tg-head-avatar[data-has-image="false"] [data-avatar-img],
+.ci-avatar[data-has-image="false"] [data-avatar-img] {
+	display: none;
+}
+
+.tg-head-avatar[data-has-image="true"],
+.ci-avatar[data-has-image="true"] {
+	background: none;
+}
+
+.tg-head-avatar[data-has-image="true"] [data-avatar-initial],
+.ci-avatar[data-has-image="true"] [data-avatar-initial] {
+	display: none;
+}
+
+/* ---------------- CommentInfoPop ---------------- */
+
+/* 铺满整个聊天页（.tg-chat 是 position: relative），
+   和顶栏、输入栏同处一个文档，主题变量直接用 */
+.ci-pop {
+	position: absolute;
+	inset: 0;
+	z-index: 40;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+
+.ci-pop[hidden] {
+	display: none;
+}
+
+.ci-mask {
+	position: absolute;
+	inset: 0;
+	animation: ci-fade 0.16s ease;
+	background: rgb(0 0 0 / 0.32);
+	-webkit-backdrop-filter: blur(3px);
+	backdrop-filter: blur(3px);
+}
+
+.ci-card {
+	position: relative;
+	width: min(19.5rem, 100%);
+	max-height: 100%;
+	padding: 0.9rem 0.95rem 0.95rem;
+	overflow: auto;
+	border-radius: 1rem;
+	background: var(--tg-panel);
+	color: var(--tg-text);
+	box-shadow: 0 18px 46px rgb(0 0 0 / 0.28);
+	animation: ci-rise 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes ci-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes ci-rise {
+	from {
+		opacity: 0;
+		transform: translateY(8px) scale(0.98);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ci-mask,
+	.ci-card {
+		animation: none;
+	}
+}
+
+.ci-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+
+.ci-title {
+	font-size: 0.95rem;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.ci-close {
+	display: inline-flex;
+	width: 1.8rem;
+	height: 1.8rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.ci-close svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.ci-close:hover {
+	background: color-mix(in srgb, var(--tg-text) 8%, transparent);
+	color: var(--tg-text);
+}
+
+.ci-close:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+.ci-body {
+	margin-top: 0.7rem;
+}
+
+/* 预览头像单独居中成一行：卡片打开后第一眼看到的是「你的头像」 */
+.ci-avatar-row {
+	display: flex;
+	justify-content: center;
+	margin-bottom: 0.55rem;
+}
+
+.ci-avatar {
+	display: inline-flex;
+	width: 3.4rem;
+	height: 3.4rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 9999px;
+	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	color: #fff;
+	font-size: 1.25rem;
+	font-weight: 600;
+	line-height: 1;
+	user-select: none;
+}
+
+.ci-avatar img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.ci-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.28rem;
+	margin-top: 0.65rem;
+}
+
+.ci-label {
+	color: var(--tg-meta);
+	font-size: 0.72rem;
+	line-height: 1;
+}
+
+.ci-input {
+	height: 2.35rem;
+	padding: 0 0.7rem;
+	border: 1px solid var(--tg-divider);
+	border-radius: 0.6rem;
+	background: color-mix(in srgb, var(--tg-text) 5%, transparent);
+	color: inherit;
+	font: inherit;
+	outline: none;
+	transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.ci-input::placeholder {
+	color: color-mix(in srgb, var(--tg-meta) 85%, transparent);
+}
+
+.ci-input:focus {
+	border-color: var(--tg-accent);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--tg-accent) 16%, transparent);
+}
+
+.ci-error {
+	margin: 0.55rem 0 0;
+	color: #e5484d;
+	font-size: 0.72rem;
+	line-height: 1.3;
+}
+
+.ci-error[hidden] {
+	display: none;
+}
+
+.ci-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.45rem;
+	margin-top: 0.9rem;
+}
+
+.ci-btn {
+	height: 2.15rem;
+	padding: 0 0.95rem;
+	border: 1px solid transparent;
+	border-radius: 0.6rem;
+	background: color-mix(in srgb, var(--tg-text) 8%, transparent);
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+	transition: background-color 0.16s ease, filter 0.16s ease;
+}
+
+.ci-btn:hover {
+	background: color-mix(in srgb, var(--tg-text) 13%, transparent);
+}
+
+.ci-btn:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+.ci-btn--primary,
+.ci-btn--primary:hover {
+	background: var(--tg-accent);
+	color: #fff;
+}
+
+.ci-btn--primary:hover {
+	filter: brightness(1.06);
+}
+
+/* ---------------- 输入栏门禁 ---------------- */
+
+/* 没填完身份时整条输入栏盖一层：点它就回到弹窗。
+   用覆盖层而不是给每个控件绑事件 —— textarea 被 disabled 之后不派发点击事件，
+   包一层最省事，表情 / 附件 / 发送也一并挡住 */
+.tg-composer {
+	position: relative;
+}
+
+.tg-composer-lock {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.8rem;
+	border: 0;
+	background: color-mix(in srgb, var(--tg-panel) 66%, transparent);
+	-webkit-backdrop-filter: blur(10px) saturate(1.4);
+	backdrop-filter: blur(10px) saturate(1.4);
+	color: var(--tg-accent);
+	font: inherit;
+	font-size: 0.78rem;
+	cursor: pointer;
+	transition: color 0.16s ease;
+}
+
+.tg-composer-lock:hover {
+	color: color-mix(in srgb, var(--tg-accent) 80%, white);
+}
+
+.tg-composer-lock:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+.tg-chat[data-identity-ready="false"] .tg-composer-lock {
+	display: flex;
+}
