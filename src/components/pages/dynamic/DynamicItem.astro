@@ -87,7 +87,10 @@ const profileUrl = url(dynamicConfig.profileUrl || "/");
 					{published}
 				</time>
 			</a>
-			<DynamicActions />
+			<DynamicActions
+				likes={entry.data.likes}
+				comments={entry.data.comments}
+			/>
 		</footer>
 	</article>
 </dynamic-entry>

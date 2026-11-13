@@ -68,6 +68,8 @@ export const zh_TW: Translation = {
 	[Key.dynamicPermalink]: "此動態的固定連結",
 	[Key.dynamicLike]: "按讚",
 	[Key.dynamicComment]: "留言",
+	[Key.dynamicLikes]: "獲讚",
+	[Key.dynamicComments]: "留言",
 	[Key.dynamicCollapseGallery]: "收起",
 	[Key.dynamicViewOriginal]: "查看大圖",
 	[Key.dynamicPreviousImage]: "上一張圖片",

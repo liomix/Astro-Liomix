@@ -35,7 +35,7 @@
 }
 
 .books-hero-stat-label {
-	color: color-mix(in srgb, var(--primary) 38%, var(--content-meta));
+	color: var(--content-meta);
 	font-size: 0.7rem;
 	font-weight: 500;
 	letter-spacing: 0.02em;
@@ -46,7 +46,7 @@
 	display: flex;
 	align-items: baseline;
 	gap: 0.18rem;
-	color: rgb(0 0 0 / 88%);
+	color: var(--primary);
 	font-size: 1.5rem;
 	font-variant-numeric: tabular-nums;
 	font-weight: 700;
@@ -54,8 +54,9 @@
 	line-height: 1;
 }
 
+/* 单位（min / h / 本）跟着数字走，但不上主题色：只有数字本身是主角 */
 .books-hero-stat-value small {
-	color: color-mix(in srgb, var(--primary) 45%, var(--content-meta));
+	color: var(--content-meta);
 	font-size: 0.72rem;
 	font-weight: 600;
 	letter-spacing: 0;
@@ -67,10 +68,6 @@
 		color-mix(in srgb, var(--primary) 20%, transparent),
 		color-mix(in srgb, var(--primary) 7%, transparent)
 	);
-}
-
-:root.dark .books-hero-stat-value {
-	color: rgb(255 255 255 / 92%);
 }
 
 /* ── 书架区 ── */

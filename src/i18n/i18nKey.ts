@@ -68,6 +68,9 @@ enum I18nKey {
 	dynamicPermalink = "dynamicPermalink",
 	dynamicLike = "dynamicLike",
 	dynamicComment = "dynamicComment",
+	// 动态页横幅的三项统计：动态 / 获赞 / 评论（数字是全部动态的合计）
+	dynamicLikes = "dynamicLikes",
+	dynamicComments = "dynamicComments",
 	dynamicCollapseGallery = "dynamicCollapseGallery",
 	dynamicViewOriginal = "dynamicViewOriginal",
 	dynamicPreviousImage = "dynamicPreviousImage",

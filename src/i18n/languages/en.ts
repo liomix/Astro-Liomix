@@ -68,6 +68,8 @@ export const en: Translation = {
 	[Key.dynamicPermalink]: "Permalink to this moment",
 	[Key.dynamicLike]: "Like",
 	[Key.dynamicComment]: "Comment",
+	[Key.dynamicLikes]: "Likes",
+	[Key.dynamicComments]: "Comments",
 	[Key.dynamicCollapseGallery]: "Collapse",
 	[Key.dynamicViewOriginal]: "View full size",
 	[Key.dynamicPreviousImage]: "Previous image",

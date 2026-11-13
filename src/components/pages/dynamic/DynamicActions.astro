@@ -12,6 +12,17 @@ import { i18n } from "@/i18n/translation";
 
 const likeLabel = i18n(I18nKey.dynamicLike);
 const commentLabel = i18n(I18nKey.dynamicComment);
+
+interface Props {
+	/** 点赞基数（数据源里带的初始值，访客自己那一票另算） */
+	likes?: number;
+	/** 评论数（本站没接评论服务时就是 0） */
+	comments?: number;
+}
+
+// 动态流是模板克隆出来的，基数由 DynamicFeed 事后写到按钮上；
+// 静态渲染的条目（详情页）直接把值交给这里
+const { likes = 0, comments = 0 } = Astro.props;
 ---
 
 <div class="dynamic-actions">
@@ -19,6 +30,7 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		type="button"
 		class="dynamic-action"
 		data-dynamic-like
+		data-like-base={likes}
 		aria-pressed="false"
 		aria-label={likeLabel}
 		title={likeLabel}
@@ -31,6 +43,7 @@ const commentLabel = i18n(I18nKey.dynamicComment);
 		type="button"
 		class="dynamic-action"
 		data-dynamic-comment
+		data-comment-base={comments}
 		aria-expanded="false"
 		aria-label={commentLabel}
 		title={commentLabel}

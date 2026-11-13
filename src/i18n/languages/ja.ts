@@ -68,6 +68,8 @@ export const ja: Translation = {
 	[Key.dynamicPermalink]: "この投稿への固定リンク",
 	[Key.dynamicLike]: "いいね",
 	[Key.dynamicComment]: "コメント",
+	[Key.dynamicLikes]: "いいね",
+	[Key.dynamicComments]: "コメント",
 	[Key.dynamicCollapseGallery]: "閉じる",
 	[Key.dynamicViewOriginal]: "拡大表示",
 	[Key.dynamicPreviousImage]: "前の画像",

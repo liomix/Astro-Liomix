@@ -68,6 +68,8 @@ export const zh_CN: Translation = {
 	[Key.dynamicPermalink]: "此动态的固定链接",
 	[Key.dynamicLike]: "点赞",
 	[Key.dynamicComment]: "评论",
+	[Key.dynamicLikes]: "获赞",
+	[Key.dynamicComments]: "评论",
 	[Key.dynamicCollapseGallery]: "收起",
 	[Key.dynamicViewOriginal]: "查看大图",
 	[Key.dynamicPreviousImage]: "上一张图片",

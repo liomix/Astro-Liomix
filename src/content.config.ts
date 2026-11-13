@@ -33,6 +33,9 @@ type DynamicData = {
 	published: Date;
 	pinned: boolean;
 	location: string;
+	/** 点赞基数 / 评论数：只用于动态页页头的统计，静态站没有后端，缺省 0 */
+	likes: number;
+	comments: number;
 };
 
 type ProjectLink = {
@@ -102,6 +105,9 @@ const dynamicCollection: ContentCollection<DynamicData> = defineCollection({
 		published: z.date(),
 		pinned: z.boolean().optional().default(false),
 		location: z.string().optional().default(""),
+		// 页头统计用的两个数字，可写在 frontmatter 里；不写就是 0
+		likes: z.number().int().min(0).optional().default(0),
+		comments: z.number().int().min(0).optional().default(0),
 	}),
 });
 

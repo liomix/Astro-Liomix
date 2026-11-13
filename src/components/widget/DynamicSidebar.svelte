@@ -14,9 +14,11 @@ import {
 } from "@/components/pages/dynamic/dynamic-actions";
 import SidebarPop from "@/components/widget/SidebarPop.svelte";
 import { formatDynamicDate } from "@/utils/date-utils";
+import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { fetchWithDedup } from "@/utils/fetch-dedup";
 import { hasVideoExtension } from "@/utils/image-animation";
 import { fetchMemos } from "@/utils/memos-adapter";
+import { formatCompactNumber } from "@/utils/number-utils";
 import { url } from "@/utils/url-utils";
 
 interface DynamicEntry {
@@ -27,6 +29,9 @@ interface DynamicEntry {
 	searchText?: string;
 	pinned?: boolean;
 	location?: string;
+	/** 点赞基数 / 评论数：动态页头统计用的同一份数字，缺省 0 */
+	likes?: number;
+	comments?: number;
 }
 
 interface MemosConfig {
@@ -115,8 +120,19 @@ function formatDate(timestamp: number): string {
 	return formatDynamicDate(date);
 }
 
+// 锚点 ID 要和动态页里那条的 id 完全一致（那边用同一个工具函数生成）
 function permalinkOf(id: string): string {
-	return url(`/dynamic/#dynamic-${id}`);
+	return url(`/dynamic/#${dynamicAnchor(id)}`);
+}
+
+/**
+ * 评论按钮的地址：同样是那条动态，但多一个 ?comment=<id>。
+ * 动态页读到它会滚动到该条并自动拉开评论抽屉，等于「点评论 = 直接看评论」。
+ */
+function commentLinkOf(id: string): string {
+	return url(
+		`/dynamic/?comment=${encodeURIComponent(id)}#${dynamicAnchor(id)}`,
+	);
 }
 
 function openModal() {
@@ -280,6 +296,7 @@ function visibleImages(entry: DynamicEntry) {
 						type="button"
 						class="pop-action"
 						data-dynamic-like
+						data-like-base={entry.likes ?? 0}
 						aria-pressed="false"
 						aria-label={likeLabel}
 						title={likeLabel}
@@ -289,7 +306,7 @@ function visibleImages(entry: DynamicEntry) {
 					</button>
 					<a
 						class="pop-action"
-						href={permalinkOf(entry.id)}
+						href={commentLinkOf(entry.id)}
 						aria-label={commentLabel}
 						title={commentLabel}
 						onclick={closeModal}
@@ -297,7 +314,9 @@ function visibleImages(entry: DynamicEntry) {
 						<dynamic-lottie-icon
 							data-animation="comment-chats"
 							style="font-size:1.25rem"></dynamic-lottie-icon>
-						<span class="pop-action-count" data-dynamic-comment-count>0</span>
+						<span class="pop-action-count" data-dynamic-comment-count
+							>{formatCompactNumber(entry.comments ?? 0)}</span
+						>
 					</a>
 				</div>
 			</footer>

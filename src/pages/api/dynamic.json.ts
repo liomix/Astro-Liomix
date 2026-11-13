@@ -31,6 +31,9 @@ export async function GET(): Promise<Response> {
 				searchText: dynamicSearchText(entry),
 				pinned: entry.data.pinned || false,
 				location: entry.data.location.trim(),
+				// 页头统计（动态 / 获赞 / 评论）用的两个数字，frontmatter 里没写就是 0
+				likes: entry.data.likes,
+				comments: entry.data.comments,
 			};
 		}),
 	);

@@ -1,5 +1,4 @@
 ---
-import { Icon } from "astro-icon/components";
 import DynamicFeed from "@/components/pages/dynamic/DynamicFeed.svelte";
 import DynamicItemTemplate from "@/components/pages/dynamic/DynamicItemTemplate.astro";
 import { dynamicConfig, siteConfig } from "@/config";
@@ -28,48 +27,24 @@ const memos = dynamicConfig.memos;
 ---
 
 <MainGridLayout title={title} description={description}>
-	<section class="page-shell" aria-labelledby="dynamic-page-title">
+	<section class="page-shell">
 		<div>
-			<header class="page-hero card-base">
-				<div class="page-hero-main">
-					<div class="page-hero-icon" aria-hidden="true">
-						<Icon name="material-symbols:forum-rounded" />
-					</div>
-					<div class="page-hero-text">
-						<h2 id="dynamic-page-title" class="page-hero-title">{title}</h2>
-						{description && <p class="page-hero-sub">{description}</p>}
-					</div>
-					<div class="page-hero-count" aria-label={i18n(I18nKey.dynamic)}>
-						<Icon name="material-symbols:dynamic-feed-rounded" />
-						<strong data-dynamic-page-count>0</strong>
-						<span>{i18n(I18nKey.dynamic)}</span>
-					</div>
-				</div>
-				<div class="page-toolbar">
-					<label class="page-toolbar-search">
-						<span class="page-toolbar-icon" aria-hidden="true">
-							<Icon name="material-symbols:search-rounded" />
-						</span>
-						<input
-							type="search"
-							data-dynamic-search
-							aria-label={i18n(I18nKey.dynamicSearch)}
-							placeholder={i18n(I18nKey.dynamicSearch)}
-						/>
-					</label>
-					<label class="page-toolbar-year">
-						<span class="page-toolbar-icon" aria-hidden="true">
-							<Icon name="material-symbols:calendar-month-rounded" />
-						</span>
-						<select data-year-select aria-label={i18n(I18nKey.year)}>
-							<option value="all">{i18n(I18nKey.dynamicAllYears)}</option>
-						</select>
-						<span class="page-toolbar-caret" aria-hidden="true">
-							<Icon name="material-symbols:expand-more-rounded" />
-						</span>
-					</label>
-				</div>
-			</header>
+			{/* 页头只剩三项统计：动态 / 获赞 / 评论。
+			   数字由 DynamicFeed 在全量数据到位后写入（获赞含访客自己点的赞） */}
+			<ul class="page-hero-stats card-base">
+				<li class="page-hero-stat">
+					<span class="page-hero-stat-value" data-dynamic-stat="posts">0</span>
+					<span class="page-hero-stat-label">{i18n(I18nKey.dynamic)}</span>
+				</li>
+				<li class="page-hero-stat">
+					<span class="page-hero-stat-value" data-dynamic-stat="likes">0</span>
+					<span class="page-hero-stat-label">{i18n(I18nKey.dynamicLikes)}</span>
+				</li>
+				<li class="page-hero-stat">
+					<span class="page-hero-stat-value" data-dynamic-stat="comments">0</span>
+					<span class="page-hero-stat-label">{i18n(I18nKey.dynamicComments)}</span>
+				</li>
+			</ul>
 
 			<DynamicFeed
 				client:load

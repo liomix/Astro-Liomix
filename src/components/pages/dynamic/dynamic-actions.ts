@@ -16,6 +16,12 @@ import { formatCompactNumber } from "@/utils/number-utils";
 
 const LIKES_KEY = "firefly-dynamic-likes";
 
+/** dynamic:like-change 的 detail：哪条动态、点成了什么样 */
+export type LikeChangeDetail = {
+	id: string;
+	liked: boolean;
+};
+
 /**
  * 这个模块同时被动态流和侧栏弹窗两个岛 import，dev 下 Vite 有机会把它实例化两份。
  * 只用模块内的布尔量挡不住 —— 两份各挂一个捕获监听，点一次会连续点赞 + 取消，
@@ -25,7 +31,12 @@ const BOUND_KEY = "__fireflyDynamicActionsBound";
 
 let registered = false;
 
-function readLikes(): Set<string> {
+/**
+ * 已经点过赞的动态 id 集合。
+ * 对外导出是因为动态页横幅要拿它算「获赞」总数（基数 + 自己点的那些），
+ * 点赞后横幅得跟着变 —— 见 toggleLike 里派发的 dynamic:like-change。
+ */
+export function readLikedIds(): Set<string> {
 	try {
 		const raw = localStorage.getItem(LIKES_KEY);
 		if (!raw) return new Set();
@@ -66,7 +77,9 @@ function paintLikeCount(button: HTMLElement, liked: boolean): void {
 
 /** 评论数：评论系统接上后才会有真实数字，现在按 data-comment-base 预置（默认 0） */
 function paintCommentCount(button: HTMLElement): void {
-	const node = button.querySelector<HTMLElement>("[data-dynamic-comment-count]");
+	const node = button.querySelector<HTMLElement>(
+		"[data-dynamic-comment-count]",
+	);
 	if (!node) return;
 	const base = Number(button.dataset.commentBase ?? "") || 0;
 	node.textContent = formatCompactNumber(base);
@@ -81,7 +94,7 @@ function playIcon(button: HTMLElement): void {
 
 /** 把已点赞状态同步到（新渲染出来的）按钮上 */
 export function syncDynamicLikeStates(root: ParentNode = document): void {
-	const likes = readLikes();
+	const likes = readLikedIds();
 	root
 		.querySelectorAll<HTMLElement>("[data-dynamic-like]")
 		.forEach((button) => {
@@ -100,7 +113,7 @@ export function syncDynamicLikeStates(root: ParentNode = document): void {
 function toggleLike(button: HTMLElement): void {
 	const id = likeId(button);
 	if (!id) return;
-	const likes = readLikes();
+	const likes = readLikedIds();
 	if (likes.has(id)) likes.delete(id);
 	else likes.add(id);
 	writeLikes(likes);
@@ -109,6 +122,13 @@ function toggleLike(button: HTMLElement): void {
 	button.setAttribute("aria-pressed", String(liked));
 	paintLikeCount(button, liked);
 	if (liked) playIcon(button);
+	// 动态页横幅的「获赞」是全部动态的合计，点赞一变就得重算；
+	// 侧栏弹窗里点的赞也算（监听在 DynamicFeed 上，页面不在时自然没人接）
+	document.dispatchEvent(
+		new CustomEvent<LikeChangeDetail>("dynamic:like-change", {
+			detail: { id, liked },
+		}),
+	);
 }
 
 function toggleComments(button: HTMLElement): void {

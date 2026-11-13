@@ -48,7 +48,7 @@ export const profileConfig: ProfileConfig = {
 	name: "liomix",
 
 	// 个人签名
-	bio: "Binary ghosts of illusion and shadow",
+	bio: "Death and Strawberries",
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons

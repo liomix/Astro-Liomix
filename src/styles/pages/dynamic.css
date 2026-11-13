@@ -1,279 +1,91 @@
-/* 动态页专属：筛选栏、动态流与条目、图集查看器、评论抽屉、空态 */
+/* 动态页专属：页头统计条、动态流与条目、图集查看器、评论抽屉、空态 */
 
 dynamic-feed {
 	display: block;
 }
 
-/* ===== 页头：品牌图标 + 标题 + 计数胶囊 + 统一筛选条 ===== */
+/* ===== 页头：只剩三项统计（动态 / 获赞 / 评论） ===== */
 
-.page-hero {
+/* 统计条：三等分，格间一条发丝线。数字是主角，标签退到后面。
+   整条就是页头本身，不再套一层卡片，外面只留一道主色描边 + 斜向淡渐变 */
+.page-hero-stats {
 	position: relative;
 	display: grid;
-	gap: 1.125rem;
-	isolation: isolate;
-	margin-bottom: 1rem;
-	padding: 1.4rem 1.6rem 1.5rem;
+	margin: 0 0 1rem;
+	padding: 0;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 	overflow: hidden;
-}
-
-/* 左上角柔光，给扁平卡片一点体积感 */
-.page-hero::before {
-	position: absolute;
-	inset: -30% -5% auto -5%;
-	z-index: -1;
-	height: 13rem;
-	background:
-		radial-gradient(
-			58% 100% at 12% 0%,
-			color-mix(in oklch, var(--primary) 20%, transparent),
-			transparent 72%
-		),
-		radial-gradient(
-			42% 100% at 78% 0%,
-			color-mix(in oklch, var(--primary) 9%, transparent),
-			transparent 76%
-		);
-	content: "";
-	pointer-events: none;
-}
-
-.page-hero-main {
-	display: flex;
-	align-items: center;
-	gap: 0.875rem;
-	min-width: 0;
-	flex-wrap: wrap;
-}
-
-.page-hero-icon {
-	display: grid;
-	width: 3.125rem;
-	height: 3.125rem;
-	flex: 0 0 3.125rem;
-	place-items: center;
-	border-radius: 0.875rem;
-	background: linear-gradient(
-		150deg,
-		color-mix(in oklch, var(--primary) 80%, white) 0%,
-		var(--primary) 58%,
-		color-mix(in oklch, var(--primary) 88%, black) 100%
+	border: 1px solid color-mix(in oklch, var(--primary) 16%, var(--line-divider));
+	background-image: linear-gradient(
+		135deg,
+		color-mix(in oklch, var(--primary) 11%, transparent),
+		color-mix(in oklch, var(--primary) 3%, transparent)
 	);
-	box-shadow:
-		0 10px 20px -10px color-mix(in oklch, var(--primary) 70%, transparent),
-		inset 0 1px 0 rgb(255 255 255 / 30%);
-	color: white;
-	font-size: 1.7rem;
+	list-style: none;
 }
 
-:root.dark .page-hero-icon {
-	color: rgb(0 0 0 / 72%);
-	box-shadow:
-		0 10px 20px -12px rgb(0 0 0 / 45%),
-		inset 0 1px 0 rgb(255 255 255 / 14%);
-}
-
-.page-hero-text {
-	min-width: 0;
-	flex: 1;
-}
-
-.page-hero-title {
-	margin: 0;
-	color: rgb(0 0 0 / 90%);
-	font-size: 1.55rem;
-	font-weight: 700;
-	letter-spacing: -0.01em;
-	line-height: 1.2;
-}
-
-:root.dark .page-hero-title {
-	color: rgb(255 255 255 / 92%);
-}
-
-.page-hero-sub {
-	margin: 0.3rem 0 0;
-	color: var(--content-meta);
-	font-size: 0.875rem;
-	line-height: 1.55;
-}
-
-.page-hero-count {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.3rem;
-	margin-left: auto;
-	padding: 0.35rem 0.7rem 0.35rem 0.6rem;
-	border: 1px solid color-mix(in oklch, var(--primary) 26%, transparent);
-	border-radius: 999px;
-	background: color-mix(in oklch, var(--primary) 10%, transparent);
-	color: var(--primary);
-	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
-}
-
-.page-hero-count svg {
-	font-size: 1.05rem;
-}
-
-.page-hero-count strong {
-	font-size: 0.95rem;
-	font-weight: 700;
-	line-height: 1;
-}
-
-.page-hero-count span {
-	color: var(--content-meta);
-	font-size: 0.75rem;
-	font-weight: 500;
-}
-
-/* ===== 筛选条：搜索 + 年份，统一 44px 触控高度 ===== */
-
-.page-toolbar {
-	display: flex;
-	align-items: center;
-	gap: 0.625rem;
-	min-width: 0;
-}
-
-.page-toolbar-search,
-.page-toolbar-year {
+.page-hero-stat {
 	position: relative;
 	display: flex;
-	align-items: center;
 	min-width: 0;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.15rem;
+	padding: 0.85rem 0.5rem 0.8rem;
+	transition: background-color 0.18s ease;
 }
 
-.page-toolbar-search {
-	flex: 1;
-}
-
-.page-toolbar-year {
-	flex: 0 0 auto;
-}
-
-.page-toolbar-icon,
-.page-toolbar-caret {
+.page-hero-stat + .page-hero-stat::before {
 	position: absolute;
-	display: grid;
-	place-items: center;
-	color: var(--content-meta);
-	pointer-events: none;
-	transition: color 0.15s ease;
+	top: 20%;
+	bottom: 20%;
+	left: 0;
+	width: 1px;
+	background: color-mix(in oklch, var(--primary) 14%, var(--line-divider));
+	content: "";
 }
 
-.page-toolbar-icon {
-	left: 0.8rem;
-	font-size: 1.15rem;
-}
-
-.page-toolbar-caret {
-	right: 0.55rem;
-	font-size: 1.2rem;
-}
-
-.page-toolbar-search:focus-within .page-toolbar-icon,
-.page-toolbar-year:focus-within .page-toolbar-icon {
+.page-hero-stat-value {
 	color: var(--primary);
+	font-size: 1.8rem;
+	font-variant-numeric: tabular-nums;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+	line-height: 1.1;
+	transition: color 0.18s ease;
 }
 
-.page-toolbar-search input,
-.page-toolbar-year select {
-	box-sizing: border-box;
-	width: 100%;
-	min-height: 2.75rem;
-	border: 1px solid var(--line-divider);
-	border-radius: 0.75rem;
-	outline: none;
-	background: color-mix(in oklch, var(--content-meta) 6%, transparent);
-	color: rgb(0 0 0 / 88%);
-	padding: 0.5rem 1rem 0.5rem 2.6rem;
-	font-family: inherit;
-	font-size: 0.9rem;
-	transition:
-		border-color 0.15s ease,
-		background-color 0.15s ease,
-		box-shadow 0.15s ease;
-}
-
-.page-toolbar-year select {
-	appearance: none;
-	width: auto;
-	min-width: 9rem;
-	padding-right: 2.3rem;
-	color-scheme: light;
+.page-hero-stat-label {
+	color: var(--content-meta);
+	font-size: 0.78rem;
 	font-weight: 500;
-	cursor: pointer;
+	letter-spacing: 0.06em;
+	line-height: 1.4;
 }
 
-.page-toolbar-search input::placeholder {
-	color: color-mix(in oklch, var(--content-meta) 80%, transparent);
-}
-
-.page-toolbar-search input:hover,
-.page-toolbar-year select:hover {
-	border-color: color-mix(in oklch, var(--primary) 40%, var(--line-divider));
-}
-
-.page-toolbar-search input:focus-visible,
-.page-toolbar-year select:focus-visible {
-	border-color: var(--primary);
-	background: var(--card-bg);
-	box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 20%, transparent);
-}
-
-.page-toolbar-year select option {
-	background: var(--float-panel-bg);
-	color: rgb(0 0 0 / 88%);
-}
-
-:root.dark .page-toolbar-search input,
-:root.dark .page-toolbar-year select {
-	color: rgb(255 255 255 / 88%);
-}
-
-:root.dark .page-toolbar-year select {
-	color-scheme: dark;
-}
-
-:root.dark .page-toolbar-year select option {
-	color: rgb(255 255 255 / 88%);
+/* 悬停只提主色，不做位移：这里不是按钮，别让人以为点了会跳走 */
+.page-hero-stat:hover {
+	background: color-mix(in oklch, var(--primary) 10%, transparent);
 }
 
 @media (max-width: 640px) {
-	.page-hero {
-		gap: 1rem;
-		padding: 1.15rem 1.15rem 1.25rem;
+	.page-hero-stat {
+		padding: 0.8rem 0.35rem 0.7rem;
 	}
 
-	.page-hero-icon {
-		width: 2.75rem;
-		height: 2.75rem;
-		flex: 0 0 2.75rem;
-		border-radius: 0.75rem;
+	.page-hero-stat-value {
 		font-size: 1.5rem;
 	}
 
-	.page-hero-title {
-		font-size: 1.35rem;
-	}
-
-	.page-toolbar {
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	.page-toolbar-year select {
-		width: 100%;
-		min-width: 0;
+	.page-hero-stat-label {
+		font-size: 0.72rem;
+		letter-spacing: 0.02em;
 	}
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.page-toolbar-icon,
-	.page-toolbar-caret,
-	.page-toolbar-search input,
-	.page-toolbar-year select {
+	.page-hero-stat,
+	.page-hero-stat-value {
 		transition: none;
 	}
 }
@@ -865,19 +677,6 @@ dynamic-feed {
 
 :root.dark .page-author:hover {
 	color: var(--primary);
-}
-
-/* 透明模式适配 */
-body.wallpaper-transparent .page-toolbar-search input {
-	background: transparent;
-}
-
-body.wallpaper-transparent .page-toolbar-year select {
-	background: transparent;
-}
-
-body.wallpaper-transparent .page-toolbar-year select option {
-	background: var(--card-bg);
 }
 
 @media (max-width: 768px) {

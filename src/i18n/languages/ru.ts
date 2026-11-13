@@ -68,6 +68,8 @@ export const ru: Translation = {
 	[Key.dynamicPermalink]: "Постоянная ссылка на публикацию",
 	[Key.dynamicLike]: "Нравится",
 	[Key.dynamicComment]: "Комментарии",
+	[Key.dynamicLikes]: "Лайки",
+	[Key.dynamicComments]: "Комментарии",
 	[Key.dynamicCollapseGallery]: "Свернуть",
 	[Key.dynamicViewOriginal]: "Открыть оригинал",
 	[Key.dynamicPreviousImage]: "Предыдущее изображение",
