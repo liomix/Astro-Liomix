@@ -93,13 +93,6 @@ enum I18nKey {
 	commentChatCopy = "commentChatCopy",
 	commentChatCopied = "commentChatCopied",
 	commentChatCode = "commentChatCode",
-	commentChatCatSmileys = "commentChatCatSmileys",
-	commentChatCatAnimals = "commentChatCatAnimals",
-	commentChatCatFood = "commentChatCatFood",
-	commentChatCatActivity = "commentChatCatActivity",
-	commentChatCatTravel = "commentChatCatTravel",
-	commentChatCatObjects = "commentChatCatObjects",
-	commentChatCatSymbols = "commentChatCatSymbols",
 	// 评论身份弹窗（顶栏那块点开的 CommentInfoPop）
 	commentInfoTitle = "commentInfoTitle",
 	commentInfoOpen = "commentInfoOpen",

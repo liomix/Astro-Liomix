@@ -6,8 +6,9 @@
  *   气泡 17px 圆角 + 靠发送者一侧的 6px 小角（源码 SharedConfig.bubbleRadius = 17，
  *   近侧角 Math.min(6, bubbleRadius)）；对方白/深灰气泡靠左、自己浅绿/蓝气泡靠右；
  *   时间贴在气泡右下角（不放已读回执的双勾）；底部是输入栏，右侧纸飞机
- *   （空输入时灰、有文字才点亮成蓝色）。表情面板按 Telegram 的 emoji 键盘做，
- *   底部一排分类 tab 切换不同类型的表情。
+ *   （空输入时灰、有文字才点亮成蓝色）。表情面板放的是自定义表情包：
+ *   数据来自 config/commentEmojiConfig.ts 登记的 JSON（一份 JSON = 一个 tab），
+ *   点一下插进输入框，和文字一起发出去。
  *
  * 群聊式头像：对方消息左侧跟一个首字母彩圆（Telegram 没有用户头像时的默认画法），
  * 连发多条只在最后一条下方露头像、只在第一条上方显示昵称 —— 和 Telegram 分组规则一致。
@@ -22,9 +23,10 @@
  * 消息目前是内置示例（静态站没有后端），发送只是本地追加一条气泡，不落库。
  * 以后接真实评论数据时，只要把 messages 换成接口返回即可。
  */
+import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
+import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
 
 interface Props {
 	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
@@ -53,6 +55,10 @@ const initial = (name.trim().slice(0, 1) || "?").toUpperCase();
  * 访客保存过自己的邮箱时，脚本会把它换成自己的那对色。
  */
 const avatarPaint = avatarGradientOf(contact || name);
+
+/** 表情包：面板里一栏一个系列，只有一个系列时不渲染 tab 栏（见下方 markup） */
+const packs = commentEmojiConfig.packs;
+const showTabs = packs.length > 1;
 
 interface ChatMessage {
 	/** in = 对方（来访者）/ out = 自己 */
@@ -111,8 +117,14 @@ const messages: ChatMessage[] = [
 const rows = messages.map((message, index) => {
 	const prev = messages[index - 1];
 	const next = messages[index + 1];
-	const samePrev = message.side === "in" && prev?.side === "in" && prev.author === message.author;
-	const sameNext = message.side === "in" && next?.side === "in" && next.author === message.author;
+	const samePrev =
+		message.side === "in" &&
+		prev?.side === "in" &&
+		prev.author === message.author;
+	const sameNext =
+		message.side === "in" &&
+		next?.side === "in" &&
+		next.author === message.author;
 	return {
 		...message,
 		showAuthor: message.side === "in" && !samePrev,
@@ -120,106 +132,13 @@ const rows = messages.map((message, index) => {
 		initial: (message.author || "?").slice(0, 1),
 	};
 });
-
-/**
- * 表情面板按 Telegram 的 emoji 键盘分栏：底部一排分类 tab，点哪个显示哪一类。
- * 图标用单色描边 SVG（Telegram 的 tab 就是单色线稿，不是彩色 emoji）。
- * 没有「旗帜」一栏 —— 里面全是国家/地区旗帜，站内不适合出现。
- */
-interface EmojiCategory {
-	id: string;
-	label: string;
-	/** tab 图标（svg 子节点，样式由 .tg-emoji-tab-icon 统一描边） */
-	icon: string;
-	emojis: string[];
-}
-
-const emojiCategories: EmojiCategory[] = [
-	{
-		id: "smileys",
-		label: i18n(I18nKey.commentChatCatSmileys),
-		icon: '<circle cx="12" cy="12" r="8.6"/><path d="M8.6 14.3a4.2 4.2 0 0 0 6.8 0"/><circle cx="9.2" cy="10" r="0.9" fill="currentColor" stroke="none"/><circle cx="14.8" cy="10" r="0.9" fill="currentColor" stroke="none"/>',
-		emojis: [
-			"😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣",
-			"😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰",
-			"😘", "😋", "😛", "😜", "🤪", "🤨", "🧐", "🤓",
-			"😎", "🥳", "😏", "😒", "🙄", "😴", "🥲", "😭",
-		],
-	},
-	{
-		id: "animals",
-		label: i18n(I18nKey.commentChatCatAnimals),
-		icon: '<circle cx="7" cy="9.6" r="1.6"/><circle cx="11" cy="8.2" r="1.6"/><circle cx="15.4" cy="9" r="1.6"/><circle cx="12.2" cy="15.6" r="3.1"/><circle cx="18" cy="12.6" r="1.5"/>',
-		emojis: [
-			"🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼",
-			"🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🙈",
-			"🐔", "🐧", "🐦", "🦆", "🦉", "🦄", "🐝", "🦋",
-			"🐌", "🐞", "🐢", "🐍", "🐙", "🦀", "🐳", "🐬",
-		],
-	},
-	{
-		id: "food",
-		label: i18n(I18nKey.commentChatCatFood),
-		icon: '<path d="M6.4 9.2h9.2v5.2a4 4 0 0 1-4 4h-1.2a4 4 0 0 1-4-4z"/><path d="M15.6 10.4h1.5a2.4 2.4 0 0 1 0 4.8h-1.5"/><path d="M5.4 20.4h11"/>',
-		emojis: [
-			"🍎", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒",
-			"🥑", "🍅", "🌽", "🥕", "🍞", "🧀", "🍳", "🥓",
-			"🍔", "🍟", "🍕", "🌭", "🍜", "🍣", "🍰", "🍩",
-			"☕", "🍵", "🧋", "🍺", "🍷", "🥂", "🍫", "🍿",
-		],
-	},
-	{
-		id: "activity",
-		label: i18n(I18nKey.commentChatCatActivity),
-		icon: '<circle cx="12" cy="12" r="8.4"/><path d="M12 3.6c3 2.4 3 14.4 0 16.8M3.6 12h16.8"/>',
-		emojis: [
-			"⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏓", "🏸",
-			"🥊", "🎯", "🎳", "🎮", "🎲", "🧩", "🎨", "🎬",
-			"🎤", "🎧", "🎸", "🎹", "🥁", "🎺", "🏆", "🥇",
-			"🎉", "🎊", "🎈", "🎁", "🎂", "🎪", "🎡", "🎠",
-		],
-	},
-	{
-		id: "travel",
-		label: i18n(I18nKey.commentChatCatTravel),
-		icon: '<path d="M3.4 20.4 21 12 3.4 3.6l3.1 7.2 9 1.2-9 1.2z"/>',
-		emojis: [
-			"🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑",
-			"🚒", "🚐", "🚚", "🚜", "🛴", "🚲", "🛵", "🏍️",
-			"✈️", "🚀", "🛸", "🚁", "⛵", "🚤", "🚂", "🚄",
-			"🗺️", "🗽", "🗼", "🏰", "🏖️", "🏔️", "🌋", "🌈",
-		],
-	},
-	{
-		id: "objects",
-		label: i18n(I18nKey.commentChatCatObjects),
-		icon: '<path d="M9.4 17.6h5.2"/><path d="M10.2 20.2h3.6"/><path d="M12 3.4a5.8 5.8 0 0 1 3.4 10.5v1.2a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-1.2A5.8 5.8 0 0 1 12 3.4Z"/>',
-		emojis: [
-			"💡", "🔦", "🕯️", "💻", "🖥️", "⌨️", "🖱️", "📱",
-			"📷", "🎥", "📺", "📻", "⏰", "⏳", "🔋", "🔌",
-			"📦", "📫", "📝", "✏️", "📌", "📎", "🔖", "📚",
-			"💰", "💳", "🔑", "🔨", "🛠️", "🧲", "🧪", "🔬",
-		],
-	},
-	{
-		id: "symbols",
-		label: i18n(I18nKey.commentChatCatSymbols),
-		icon: '<path d="M12 20.2 4.9 13.1a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.5Z"/>',
-		emojis: [
-			"❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍",
-			"💔", "💕", "💖", "💗", "💘", "💝", "✨", "⭐",
-			"🌟", "💫", "⚡", "🔥", "💥", "💦", "🌀", "☀️",
-			"🌙", "☁️", "❄️", "✅", "❌", "❓", "❗", "💯",
-		],
-	},
-];
 ---
 
 <div
 	class="tg-chat"
 	data-tg-chat
 	data-tg-path={path}
-	style={`--avatar-from:${avatarPaint.from};--avatar-to:${avatarPaint.to}`}
+	style={`--avatar-from:${avatarPaint.from};--avatar-to:${avatarPaint.to};--tg-emoji-size:${commentEmojiConfig.size}px`}
 	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}
@@ -346,52 +265,58 @@ const emojiCategories: EmojiCategory[] = [
 	<div class="tg-bottom">
 		<div class="tg-emoji-panel" data-tg-emoji-panel hidden>
 			<div class="tg-emoji-body" data-tg-emoji-body>
-				{
-					emojiCategories.map((category, index) => (
-						<div
-							class="tg-emoji-grid"
-							id={`tg-emoji-cat-${category.id}`}
-							data-tg-emoji-cat={category.id}
-							hidden={index !== 0}
-						>
-							{category.emojis.map((emoji) => (
-								<button
-									type="button"
-									class="tg-emoji-item"
-									data-tg-emoji-insert
-									aria-label={emoji}
-								>
-									{emoji}
-								</button>
-							))}
-						</div>
-					))
-				}
+				{/* 一个系列一栏：网格结构与 emoji 时期的完全一样（8 列、.tg-emoji-item 格子），
+				    只是格子里放的是一张图，点一下插进输入框，能和文字排在同一行 */}
+				{packs.map((pack, index) => (
+					<div
+						class="tg-emoji-grid"
+						id={`tg-emoji-pack-${pack.id}`}
+						data-tg-emoji-cat={pack.id}
+						hidden={index !== 0}
+					>
+						{pack.items.map((item) => (
+							<button
+								type="button"
+								class="tg-emoji-item"
+								data-tg-emoji-src={item.src}
+								data-tg-emoji-name={item.name}
+								title={item.name}
+								aria-label={item.name}
+							>
+								<img src={item.src} alt="" loading="lazy" decoding="async" />
+							</button>
+						))}
+					</div>
+				))}
 			</div>
 
-			<div class="tg-emoji-tabs" role="tablist">
-				{
-					emojiCategories.map((category, index) => (
-						<button
-							type="button"
-							class="tg-emoji-tab"
-							role="tab"
-							data-tg-emoji-tab={category.id}
-							aria-selected={index === 0 ? "true" : "false"}
-							aria-controls={`tg-emoji-cat-${category.id}`}
-							title={category.label}
-							aria-label={category.label}
-						>
-							<svg
-								class="tg-emoji-tab-icon"
-								viewBox="0 0 24 24"
-								aria-hidden="true"
-								set:html={category.icon}
-							/>
-						</button>
-					))
-				}
-			</div>
+			{/* 只有一个系列时不显示 tab 栏：一栏的「分类」没有意义，还会白占一行高度 */}
+			{
+				showTabs && (
+					<div class="tg-emoji-tabs" role="tablist">
+						{packs.map((pack, index) => (
+							<button
+								type="button"
+								class="tg-emoji-tab"
+								role="tab"
+								data-tg-emoji-tab={pack.id}
+								aria-selected={index === 0 ? "true" : "false"}
+								aria-controls={`tg-emoji-pack-${pack.id}`}
+								title={pack.label}
+								aria-label={pack.label}
+							>
+								<svg class="tg-emoji-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+									{/* 表情包：方角 + 右上卷边 + 笑脸，和 Telegram 的表情包 tab 同义 */}
+									<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
+									<path d="M15 3v4a2 2 0 0 0 2 2h4" />
+									<path d="M8.6 13.2h.01M15.4 13.2h.01" />
+									<path d="M9.8 16.1c.55.4 1.3.6 2.2.6s1.65-.2 2.2-.6" />
+								</svg>
+							</button>
+						))}
+					</div>
+				)
+			}
 		</div>
 
 		<form class="tg-composer" data-tg-composer>
@@ -410,15 +335,20 @@ const emojiCategories: EmojiCategory[] = [
 			</button>
 
 			<div class="tg-input-wrap">
-				<textarea
-					class="tg-input"
-					name="message"
-					rows="1"
-					autocomplete="off"
-					writingsuggestions="false"
-					placeholder={i18n(I18nKey.commentChatPlaceholder)}
+				{/* 用 contenteditable 而不是 textarea：贴纸要能像 QQ 那样直接排在文字里。
+				    textarea 只能放纯文本，图片塞不进去，也就没法做「前排 🐱」这种效果。
+				    代价是换行、光标、取值都得自己处理，见脚本里的 insertAtCaret / readComposer */}
+				<div
+					class="tg-input tg-input--rich"
+					role="textbox"
+					aria-multiline="true"
+					contenteditable="true"
+					spellcheck="false"
+					data-tg-input
+					data-empty="true"
+					data-placeholder={i18n(I18nKey.commentChatPlaceholder)}
 					aria-label={i18n(I18nKey.commentChatPlaceholder)}
-					data-tg-input></textarea>
+				></div>
 				<button
 					type="button"
 					class="tg-emoji"
@@ -689,6 +619,9 @@ const emojiCategories: EmojiCategory[] = [
 		"MATH",
 	]);
 
+	/** IMG 上唯一放行的 class：表情包要按行内小图排版，其余 class 一律丢掉 */
+	const IMG_CLASS_WHITELIST = new Set(["tg-emoji-inline"]);
+
 	/**
 	 * 用浏览器自己的解析器过一遍白名单，比正则可靠：
 	 * 先把 HTML 塞进 template（不执行、不加载资源），再逐个节点判断。
@@ -726,6 +659,7 @@ const emojiCategories: EmojiCategory[] = [
 					const keep =
 						(tag === "A" && (name === "href" || name === "title")) ||
 						(tag === "IMG" && (name === "src" || name === "alt" || name === "title")) ||
+						(tag === "IMG" && name === "class") ||
 						(tag === "CODE" && name === "class") ||
 						(tag === "TH" && name === "align") ||
 						(tag === "TD" && name === "align");
@@ -745,6 +679,13 @@ const emojiCategories: EmojiCategory[] = [
 				// 图片只认 http(s) 和站内地址；地址不合法就连图带标签一起删掉，
 				// 不留一个破图占位。外链图不发送 Referer，也不阻塞首屏。
 				if (tag === "IMG") {
+					// class 只按白名单留 token，别的一律不要（这里只认表情包那一个）
+					const tokens = (el.getAttribute("class") ?? "")
+						.split(/\s+/)
+						.filter((token) => IMG_CLASS_WHITELIST.has(token));
+					if (tokens.length > 0) el.setAttribute("class", tokens.join(" "));
+					else el.removeAttribute("class");
+
 					const src = el.getAttribute("src") ?? "";
 					if (!/^(?:https?:\/\/|\/[^/])/i.test(src)) {
 						el.remove();
@@ -850,7 +791,7 @@ const emojiCategories: EmojiCategory[] = [
 
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
-		const input = chat.querySelector<HTMLTextAreaElement>("[data-tg-input]");
+		const composer = chat.querySelector<HTMLElement>("[data-tg-input]");
 		const emojiButton = chat.querySelector<HTMLButtonElement>("[data-tg-emoji]");
 		const emojiPanel = chat.querySelector<HTMLElement>("[data-tg-emoji-panel]");
 		const attachButton = chat.querySelector<HTMLButtonElement>("[data-tg-attach]");
@@ -858,7 +799,7 @@ const emojiCategories: EmojiCategory[] = [
 		const template = document.querySelector<HTMLTemplateElement>(
 			"[data-tg-out-template]",
 		);
-		if (!scroller || !form || !input || !template) return;
+		if (!scroller || !form || !composer || !template) return;
 
 		// 示例消息的时间按“刚刚发生的对话”倒推，硬编码的 21:04 半夜看会很怪
 		chat.querySelectorAll<HTMLElement>("[data-tg-offset]").forEach((node) => {
@@ -903,26 +844,108 @@ const emojiCategories: EmojiCategory[] = [
 		};
 		toBottom();
 
-		// 空输入时纸飞机是灰的、有内容才点亮成蓝色
+		// 空输入时纸飞机是灰的、有内容才点亮成蓝色。
+		// 「有内容」= 有文字或至少有一张贴纸（贴纸是 <img>，textContent 里看不到）
+		const composerHasContent = (): boolean => {
+			if (composer.querySelector("img")) return true;
+			return (composer.textContent ?? "").replace(/\u00a0/g, " ").trim() !== "";
+		};
+
 		const syncSend = () => {
-			chat.dataset.hasText = input.value.trim() ? "true" : "false";
+			const has = composerHasContent();
+			chat.dataset.hasText = has ? "true" : "false";
+			// 占位文案靠这条属性显示（:empty 在只剩一个 <br> 时会失效，不可靠）
+			composer.dataset.empty = has ? "false" : "true";
 		};
 
-		// textarea 会随内容长高（上限交给 CSS 的 max-height，超出后内部滚动）
+		// 输入框随内容长高（上限交给 CSS 的 max-height，超出后内部滚动）
 		const resizeInput = () => {
-			input.style.height = "auto";
-			input.style.height = `${input.scrollHeight}px`;
+			composer.style.height = "auto";
+			composer.style.height = `${composer.scrollHeight}px`;
 		};
 
-		input.addEventListener("input", () => {
+		/**
+		 * 在当前光标处插入一个节点：文字（表情）、换行（Shift+Enter）、贴纸 <img> 都走这里。
+		 * 没有选区或选区在别的元素里时退化成「追加到末尾」，不会把内容插到奇怪的地方。
+		 */
+		const insertAtCaret = (node: Node) => {
+			composer.focus({ preventScroll: true });
+			const selection = window.getSelection();
+			const range =
+				selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+			if (range && composer.contains(range.commonAncestorContainer)) {
+				range.deleteContents();
+				range.insertNode(node);
+			} else {
+				composer.append(node);
+			}
+
+			// 光标落到新节点之后，接着敲字就接在后面
+			const after = document.createRange();
+			after.setStartAfter(node);
+			after.collapse(true);
+			selection?.removeAllRanges();
+			selection?.addRange(after);
+
+			syncSend();
+			resizeInput();
+		};
+
+		/**
+		 * 把编辑器内容读回 Markdown：文字原样、<br> 转换行、表情转成一段行内 <img>。
+		 * 表情直接写成 HTML 交给 marked —— 它会原样透传，随后 sanitizeHtml 只放行
+		 * img[src|alt|title] 和 class 里的 tg-emoji-inline，等于是在白名单里走了一圈。
+		 */
+		const readComposer = (): string => {
+			let out = "";
+			const walk = (node: Node) => {
+				for (const child of Array.from(node.childNodes)) {
+					if (child.nodeType === Node.TEXT_NODE) {
+						out += (child.textContent ?? "").replace(/\u00a0/g, " ");
+						continue;
+					}
+					if (child.nodeName === "BR") {
+						out += "\n";
+						continue;
+					}
+					if (child instanceof HTMLImageElement) {
+						const src = child.dataset.tgEmojiSrc ?? child.getAttribute("src");
+						if (!src) continue;
+						const alt = (child.alt || "").replace(/"/g, "&quot;");
+						out += `<img class="tg-emoji-inline" src="${src}" alt="${alt}">`;
+						continue;
+					}
+					walk(child);
+				}
+			};
+			walk(composer);
+			return out;
+		};
+
+		composer.addEventListener("input", () => {
 			syncSend();
 			resizeInput();
 		});
 
-		// Enter 发送、Shift+Enter 换行 —— textarea 默认会把 Enter 当换行，得拦下来
-		input.addEventListener("keydown", (event) => {
-			if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+		// 粘贴只收纯文本：contenteditable 默认会把剪贴板里的整段 HTML 塞进来，
+		// 样式、链接全跟着进来，气泡里的白名单也挡不住这种「先污染再消毒」
+		composer.addEventListener("paste", (event) => {
+			const text = event.clipboardData?.getData("text/plain");
+			if (text == null) return;
 			event.preventDefault();
+			insertAtCaret(document.createTextNode(text));
+		});
+
+		// Enter 发送、Shift+Enter 换行 —— 浏览器的默认行为是插 <div>/<br>，两种都可能，
+		// 干脆自己插一个 <br>，读回文本时只需要认这一种
+		composer.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" || event.isComposing) return;
+			event.preventDefault();
+			if (event.shiftKey) {
+				insertAtCaret(document.createElement("br"));
+				return;
+			}
 			form.requestSubmit();
 		});
 
@@ -945,7 +968,8 @@ const emojiCategories: EmojiCategory[] = [
 			setEmojiOpen(Boolean(emojiPanel?.hidden));
 		});
 
-		// 分类 tab：点哪个就露出对应那一类，其余收起（Telegram emoji 键盘的行为）
+		// 系列 tab：点哪个就露出哪个表情包系列，其余收起
+		// （只有一个系列时组件不渲染 tab 栏，这里的循环自然空转）
 		const emojiBody = chat.querySelector<HTMLElement>("[data-tg-emoji-body]");
 		const emojiTabs = Array.from(
 			chat.querySelectorAll<HTMLElement>("[data-tg-emoji-tab]"),
@@ -975,19 +999,22 @@ const emojiCategories: EmojiCategory[] = [
 			});
 		}
 
-		// 点表情插入到光标处（和 Telegram 一样贴光标，不是无脑追加到末尾），
-		// 面板保持打开，可以连着点几个
-		chat.querySelectorAll<HTMLElement>("[data-tg-emoji-insert]").forEach((item) => {
+		// 点表情包是「插进输入框」，不是直接发出去：
+		// 这样它就能和文字排在同一行（图片、文字可以混着写，再一起发出去）
+		// 注意选择器是 [data-tg-emoji-src]：输入栏那个开面板的按钮用的是光秃秃的
+		// [data-tg-emoji]，两个属性撞名会把「开面板」的点击绑到第一张表情上
+		chat.querySelectorAll<HTMLElement>("[data-tg-emoji-src]").forEach((item) => {
+			item.addEventListener("mousedown", (event) => event.preventDefault());
 			item.addEventListener("click", () => {
-				const emoji = item.textContent?.trim() ?? "";
-				if (!emoji) return;
-				const start = input.selectionStart ?? input.value.length;
-				const end = input.selectionEnd ?? start;
-				input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
-				const caret = start + emoji.length;
-				input.focus({ preventScroll: true });
-				input.setSelectionRange(caret, caret);
-				syncSend();
+				const src = item.dataset.tgEmojiSrc;
+				if (!src) return;
+				const img = document.createElement("img");
+				img.className = "tg-emoji-inline";
+				img.src = src;
+				img.alt = item.dataset.tgEmojiName ?? "";
+				// 读回内容时按这个取地址：src 会被浏览器补成绝对路径
+				img.dataset.tgEmojiSrc = src;
+				insertAtCaret(img);
 			});
 		});
 
@@ -1053,10 +1080,14 @@ const emojiCategories: EmojiCategory[] = [
 			fileInput.value = "";
 		});
 
+		// ---------------- 发送消息 ----------------
+
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
-			const text = input.value.trim();
-			if (!text) return;
+			// 输入框是富文本：贴纸是 <img>，textContent 里什么都读不到，
+			// 必须走 readComposer 把「文字 + 换行 + 贴纸」按顺序拼回 Markdown
+			const source = readComposer();
+			if (!source.trim()) return;
 
 			const row = (template.content.cloneNode(true) as DocumentFragment)
 				.firstElementChild as HTMLElement | null;
@@ -1065,18 +1096,18 @@ const emojiCategories: EmojiCategory[] = [
 			const time = row.querySelector<HTMLElement>(".tg-time");
 			if (body) {
 				// 模板里的 .tg-text 已经带 tg-text--md，直接按 Markdown 渲染进去
-				setMarkdown(body, text, labels);
+				setMarkdown(body, source, labels);
 			}
 			if (time) time.textContent = stamp(0);
 
 			scroller.append(row);
-			input.value = "";
+			composer.innerHTML = "";
 			syncSend();
 			resizeInput();
 			closeEmoji();
 			// 等浏览器完成一次布局再滚，否则新气泡高度还算不出来
 			requestAnimationFrame(toBottom);
-			input.focus({ preventScroll: true });
+			composer.focus({ preventScroll: true });
 		});
 	}
 

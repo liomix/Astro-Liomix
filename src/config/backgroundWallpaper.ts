@@ -55,18 +55,11 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 			// 是否启用主页横幅文字
 			enable: true,
 			// 主页横幅主标题
-			title: "Lovely firefly!",
+			title: "写在时间之内",
 			// 主页横幅主标题字体大小
 			titleSize: "4.5rem",
-			// 主页横幅副标题
-			subtitle: [
-				"In Reddened Chrysalis, I Once Rest",
-				"From Shattered Sky, I Free Fall",
-				"Amidst Silenced Stars, I Deep Sleep",
-				"Upon Lighted Fyrefly, I Soon Gaze",
-				"From Undreamt Night, I Thence Shine",
-				"In Finalized Morrow, I Full Bloom",
-			],
+			// 主页横幅副标题（打字机开启时按数组顺序循环打字）
+			subtitle: ["时间之外", "我们的星星"],
 			// 主页横幅副标题字体大小
 			subtitleSize: "1.5rem",
 			typewriter: {
@@ -74,12 +67,12 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 				// 打字机开启 → 循环显示所有副标题
 				// 打字机关闭 → 每次刷新随机显示一条副标题
 				enable: true,
-				// 打字速度（毫秒）
-				speed: 100,
+				// 打字速度（毫秒）：中文按 180ms/字，五字短句约 0.9 秒打完，不慌不忙
+				speed: 180,
 				// 删除速度（毫秒）
-				deleteSpeed: 50,
+				deleteSpeed: 90,
 				// 完全显示后的暂停时间（毫秒）
-				pauseTime: 2000,
+				pauseTime: 2600,
 			},
 			// 是否显示标题下方的链接图标（关闭后 links 配置不生效，保留仅为方便以后恢复）
 			linksEnable: false,

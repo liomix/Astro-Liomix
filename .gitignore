@@ -50,3 +50,7 @@ package/
 .claude
 .mimocode
 .workbuddy
+
+# 表情包图片只放本地，不进仓库；同名 JSON 是配置源，必须提交
+public/assets/emoji/*
+!public/assets/emoji/*.json

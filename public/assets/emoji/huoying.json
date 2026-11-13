@@ -1,0 +1,325 @@
+{
+	"category": "huoying",
+	"basePath": "/assets/emoji/huoying/",
+	"defaultSize": {
+		"width": 24,
+		"height": 24
+	},
+	"data": [
+		{
+			"id": "1",
+			"title": "摸头",
+			"file-name": "hy-1.webp"
+		},
+		{
+			"id": "2",
+			"title": "崇拜",
+			"file-name": "hy-2.webp"
+		},
+		{
+			"id": "3",
+			"title": "啊吗特拉斯",
+			"file-name": "hy-3.webp"
+		},
+		{
+			"id": "4",
+			"title": "忆昔当年泪不干",
+			"file-name": "hy-4.webp"
+		},
+		{
+			"id": "5",
+			"title": "魔方亲儿子",
+			"file-name": "hy-5.webp"
+		},
+		{
+			"id": "6",
+			"title": "乐乐",
+			"file-name": "hy-6.webp"
+		},
+		{
+			"id": "7",
+			"title": "哭笑",
+			"file-name": "hy-7.webp"
+		},
+		{
+			"id": "8",
+			"title": "手舞足蹈",
+			"file-name": "hy-8.webp"
+		},
+		{
+			"id": "9",
+			"title": "滑稽",
+			"file-name": "hy-9.webp"
+		},
+		{
+			"id": "10",
+			"title": "吹笛子",
+			"file-name": "hy-10.webp"
+		},
+		{
+			"id": "11",
+			"title": "Hamburger",
+			"file-name": "hy-11.webp"
+		},
+		{
+			"id": "12",
+			"title": "震惊",
+			"file-name": "hy-12.webp"
+		},
+		{
+			"id": "13",
+			"title": "大愤形态2",
+			"file-name": "hy-13.webp"
+		},
+		{
+			"id": "14",
+			"title": "惊讶",
+			"file-name": "hy-14.webp"
+		},
+		{
+			"id": "15",
+			"title": "流泪",
+			"file-name": "hy-15.webp"
+		},
+		{
+			"id": "16",
+			"title": "再不斩",
+			"file-name": "hy-16.webp"
+		},
+		{
+			"id": "17",
+			"title": "老马啊",
+			"file-name": "hy-17.webp"
+		},
+		{
+			"id": "18",
+			"title": "阔南",
+			"file-name": "hy-18.webp"
+		},
+		{
+			"id": "19",
+			"title": "喷水",
+			"file-name": "hy-19.webp"
+		},
+		{
+			"id": "20",
+			"title": "阔南2",
+			"file-name": "hy-20.webp"
+		},
+		{
+			"id": "21",
+			"title": "鬼鲛",
+			"file-name": "hy-21.webp"
+		},
+		{
+			"id": "22",
+			"title": "大愤形态",
+			"file-name": "hy-22.webp"
+		},
+		{
+			"id": "23",
+			"title": "流汗",
+			"file-name": "hy-23.webp"
+		},
+		{
+			"id": "24",
+			"title": "点赞",
+			"file-name": "hy-24.webp"
+		},
+		{
+			"id": "25",
+			"title": "纸风车",
+			"file-name": "hy-25.webp"
+		},
+		{
+			"id": "26",
+			"title": "冰棍",
+			"file-name": "hy-26.webp"
+		},
+		{
+			"id": "27",
+			"title": "得意",
+			"file-name": "hy-27.webp"
+		},
+		{
+			"id": "28",
+			"title": "垂钓",
+			"file-name": "hy-28.webp"
+		},
+		{
+			"id": "29",
+			"title": "困",
+			"file-name": "hy-29.webp"
+		},
+		{
+			"id": "30",
+			"title": "拿过来吧",
+			"file-name": "hy-30.webp"
+		},
+		{
+			"id": "31",
+			"title": "吃汤圆",
+			"file-name": "hy-31.webp"
+		},
+		{
+			"id": "32",
+			"title": "交给你了",
+			"file-name": "hy-32.webp"
+		},
+		{
+			"id": "33",
+			"title": "思考",
+			"file-name": "hy-33.webp"
+		},
+		{
+			"id": "34",
+			"title": "丢飞机",
+			"file-name": "hy-34.webp"
+		},
+		{
+			"id": "35",
+			"title": "聚是一团火",
+			"file-name": "hy-35.webp"
+		},
+		{
+			"id": "36",
+			"title": "没脸看",
+			"file-name": "hy-36.webp"
+		},
+		{
+			"id": "37",
+			"title": "告别",
+			"file-name": "hy-37.webp"
+		},
+		{
+			"id": "38",
+			"title": "套绳子",
+			"file-name": "hy-38.webp"
+		},
+		{
+			"id": "39",
+			"title": "乐",
+			"file-name": "hy-39.webp"
+		},
+		{
+			"id": "40",
+			"title": "破面",
+			"file-name": "hy-40.webp"
+		},
+		{
+			"id": "41",
+			"title": "高招",
+			"file-name": "hy-41.webp"
+		},
+		{
+			"id": "42",
+			"title": "老弟给你了",
+			"file-name": "hy-42.webp"
+		},
+		{
+			"id": "43",
+			"title": "不对劲",
+			"file-name": "hy-43.webp"
+		},
+		{
+			"id": "44",
+			"title": "大声发",
+			"file-name": "hy-44.webp"
+		},
+		{
+			"id": "45",
+			"title": "抛点卷",
+			"file-name": "hy-45.webp"
+		},
+		{
+			"id": "46",
+			"title": "叼玫瑰",
+			"file-name": "hy-46.webp"
+		},
+		{
+			"id": "47",
+			"title": "扇风",
+			"file-name": "hy-47.webp"
+		},
+		{
+			"id": "48",
+			"title": "神临",
+			"file-name": "hy-48.webp"
+		},
+		{
+			"id": "49",
+			"title": "哈基吼",
+			"file-name": "hy-49.webp"
+		},
+		{
+			"id": "50",
+			"title": "送花",
+			"file-name": "hy-50.webp"
+		},
+		{
+			"id": "51",
+			"title": "画脸",
+			"file-name": "hy-51.webp"
+		},
+		{
+			"id": "52",
+			"title": "喝饮料",
+			"file-name": "hy-52.webp"
+		},
+		{
+			"id": "53",
+			"title": "记账",
+			"file-name": "hy-53.webp"
+		},
+		{
+			"id": "54",
+			"title": "心碎",
+			"file-name": "hy-54.webp"
+		},
+		{
+			"id": "55",
+			"title": "兄弟",
+			"file-name": "hy-55.webp"
+		},
+		{
+			"id": "56",
+			"title": "静音",
+			"file-name": "hy-56.webp"
+		},
+		{
+			"id": "57",
+			"title": "虚弱",
+			"file-name": "hy-57.webp"
+		},
+		{
+			"id": "58",
+			"title": "加油",
+			"file-name": "hy-58.webp"
+		},
+		{
+			"id": "59",
+			"title": "反弹",
+			"file-name": "hy-59.webp"
+		},
+		{
+			"id": "60",
+			"title": "鼓舞",
+			"file-name": "hy-60.webp"
+		},
+		{
+			"id": "61",
+			"title": "再战",
+			"file-name": "hy-61.webp"
+		},
+		{
+			"id": "62",
+			"title": "看戏",
+			"file-name": "hy-62.webp"
+		},
+		{
+			"id": "63",
+			"title": "最后一次",
+			"file-name": "hy-63.webp"
+		}
+	]
+}

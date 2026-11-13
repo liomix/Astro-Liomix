@@ -25,6 +25,9 @@
 		var(--tg-panel)
 	);
 	--tg-divider: rgb(0 0 0 / 0.08);
+	/* 行内表情的边长（输入框里和气泡里共用一个值；面板里的格子跟随 emoji 网格，不用这个值）。
+	   配置见 config/commentEmojiConfig.ts，组件会在 .tg-chat 的行内样式里覆盖，这里只是兜底 */
+	--tg-emoji-size: 24px;
 }
 
 :root.dark {
@@ -279,17 +282,20 @@ html[data-embedded] .tg-head-close {
 	overflow-x: hidden;
 	overflow-y: auto;
 	overscroll-behavior: contain;
-	scrollbar-width: thin;
-	scrollbar-color: color-mix(in srgb, var(--tg-meta) 45%, transparent) transparent;
 }
 
-.tg-scroll::-webkit-scrollbar {
-	width: 5px;
+/* 这个页面不画任何滚动条（消息列表、输入框、表情面板、代码块都一样）：
+   内容照旧能滚，只是不显示轨道和滑块，观感更接近客户端 */
+.tg-chat,
+.tg-chat * {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
 }
 
-.tg-scroll::-webkit-scrollbar-thumb {
-	border-radius: 9999px;
-	background: color-mix(in srgb, var(--tg-meta) 45%, transparent);
+.tg-chat *::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
 }
 
 /* 日期分隔：居中的小胶囊 */
@@ -708,6 +714,8 @@ html[data-embedded] .tg-head-close {
 /* 输入栏和顶栏用同一套毛玻璃，糊的都是下面那层壁纸。
    这里不能再用不透明的 --tg-panel，否则壁纸会在这一条上被硬切掉 */
 .tg-composer {
+	position: relative;
+	z-index: 1; /* 压住表情面板的滑出动画，让面板像是从输入栏后面升起来 */
 	display: flex;
 	align-items: flex-end;
 	gap: 0.2rem;
@@ -757,7 +765,8 @@ html[data-embedded] .tg-head-close {
 }
 
 /* 输入框：单行时是个胶囊，内容变多自动往上长（最多约 5 行，再多就内部滚动）。
-   用 textarea 而不是 input，否则 Markdown 的换行、列表、代码块都没法输入 */
+   现在是 contenteditable（不是 textarea）—— 贴纸要能像 QQ 那样排在文字里，
+   textarea 放不了图片。换行靠脚本插 <br>，所以这里用 pre-wrap 保留它 */
 .tg-input {
 	display: block;
 	box-sizing: border-box;
@@ -778,11 +787,17 @@ html[data-embedded] .tg-head-close {
 	resize: none;
 	overflow-y: auto;
 	outline: none;
-	scrollbar-width: thin;
+	/* 自己插的 <br> 要当换行用，长串英文也要能在框内折行 */
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
 
-.tg-input::placeholder {
+/* 占位文案：div 上的 ::placeholder 是无效的，改成空态伪元素。
+   脚本用 data-empty 控制，比 :empty 可靠（只剩一个 <br> 时 :empty 就不成立了） */
+.tg-input--rich[data-empty="true"]::before {
+	content: attr(data-placeholder);
 	color: var(--tg-meta);
+	pointer-events: none;
 }
 
 .tg-input:focus-visible {
@@ -832,21 +847,23 @@ html[data-embedded] .tg-head-close {
 	display: none;
 }
 
-/* 表情面板：往上弹出，和键盘一样占满宽度。
-   上面是可滚动的表情网格，底部是分类 tab（Telegram 的 emoji 键盘布局） */
+/* 表情面板：从输入栏上方弹出，和键盘一样占满宽度。
+   上面是可滚动的表情包网格（超过这个高度就在面板内部滚，不会顶走消息区），
+   底部是系列 tab（只有一个系列时组件不渲染 tab 栏） */
 .tg-emoji-panel {
 	position: absolute;
 	right: 0;
 	bottom: 100%;
 	left: 0;
 	display: flex;
-	max-height: 42vh;
+	max-height: 28vh;
 	flex-direction: column;
 	overflow: hidden;
 	border-top: 1px solid var(--tg-divider);
 	background: var(--tg-panel);
 	box-shadow: 0 -10px 26px -22px rgb(0 0 0 / 0.6);
-	animation: tg-panel-in 0.16s ease-out both;
+	/* 弹出：从输入栏后面往上顶出来，easeOutQuint 收尾，落地干脆不拖沓 */
+	animation: tg-panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .tg-emoji-panel[hidden] {
@@ -859,17 +876,6 @@ html[data-embedded] .tg-head-close {
 	overflow-x: hidden;
 	overflow-y: auto;
 	overscroll-behavior: contain;
-	scrollbar-width: thin;
-	scrollbar-color: color-mix(in srgb, var(--tg-meta) 45%, transparent) transparent;
-}
-
-.tg-emoji-body::-webkit-scrollbar {
-	width: 5px;
-}
-
-.tg-emoji-body::-webkit-scrollbar-thumb {
-	border-radius: 9999px;
-	background: color-mix(in srgb, var(--tg-meta) 45%, transparent);
 }
 
 .tg-emoji-grid {
@@ -884,7 +890,7 @@ html[data-embedded] .tg-head-close {
 	display: none;
 }
 
-/* 底部 tab 栏：窄屏放不下时可以横向滚，不显示滚动条 */
+/* 底部 tab 栏：窄屏放不下时可以横向滚（滚动条由上面的全局规则统一隐藏） */
 .tg-emoji-tabs {
 	display: flex;
 	flex: none;
@@ -893,11 +899,6 @@ html[data-embedded] .tg-head-close {
 	padding: 0.2rem 0.35rem;
 	border-top: 1px solid var(--tg-divider);
 	overflow-x: auto;
-	scrollbar-width: none;
-}
-
-.tg-emoji-tabs::-webkit-scrollbar {
-	display: none;
 }
 
 .tg-emoji-tab {
@@ -963,10 +964,31 @@ html[data-embedded] .tg-head-close {
 	outline-offset: -2px;
 }
 
+/* 格子里放的是一张图（外面套 .tg-emoji-item 保持统一的格子尺寸和 hover）：
+   图片按 contain 填满格子，尺寸完全由格子决定 —— 多大的素材都一样大、一样 hover、
+   一样有选中框；面板里多大不写在配置里 */
+.tg-emoji-item img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	pointer-events: none;
+	-webkit-user-drag: none;
+	user-select: none;
+}
+
+/* 有图时按钮改成 flex 居中（纯文本 emoji 靠 button 默认的居中，两者视觉一致） */
+.tg-emoji-item:has(img) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
 @keyframes tg-panel-in {
 	from {
 		opacity: 0;
-		transform: translateY(6px);
+		/* 相对自身高度的位移：面板高多少就藏多深，视觉上是从输入栏里升出来 */
+		transform: translateY(38%);
 	}
 	to {
 		opacity: 1;
@@ -997,6 +1019,28 @@ html[data-embedded] .tg-head-close {
 	border-radius: 9999px;
 	background: rgb(0 0 0 / 0.34);
 	color: #fff;
+}
+
+/* 表情包 = 一行里的图片（输入框里和气泡里共用一套尺寸）。
+   像 QQ 那样压在文字里：垂直位置略低于基线，四周只留一点点缝；
+   透明底、不裁切，多大的素材都按 contain 塞进同一个正方形 */
+.tg-emoji-inline {
+	width: var(--tg-emoji-size, 24px);
+	height: var(--tg-emoji-size, 24px);
+	object-fit: contain;
+	-webkit-user-drag: none;
+	user-select: none;
+}
+
+/* 气泡里的通用 img 规则是 display:block + 0.6rem 圆角（见上面「Markdown 里的图片」），
+   表情必须按更高特异性压回行内，否则它会独占一行、还会被裁圆角 */
+.tg-text--md img.tg-emoji-inline,
+.tg-input--rich img.tg-emoji-inline {
+	display: inline-block;
+	margin: 0 0.08rem;
+	border-radius: 0;
+	background: none;
+	vertical-align: -0.45em;
 }
 
 /* 发送按钮：纸飞机常驻（不做语音入口，空输入时是灰的，有文字才点亮成蓝色） */

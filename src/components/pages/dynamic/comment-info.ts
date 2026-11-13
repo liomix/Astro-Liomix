@@ -91,7 +91,7 @@ export function initCommentInfo(chat: HTMLElement): void {
 	const headAvatar = chat.querySelector<HTMLElement>("[data-ci-head-avatar]");
 	const headName = chat.querySelector<HTMLElement>("[data-ci-head-name]");
 	const headSub = chat.querySelector<HTMLElement>("[data-ci-head-sub]");
-	const input = chat.querySelector<HTMLTextAreaElement>("[data-tg-input]");
+	const input = chat.querySelector<HTMLElement>("[data-tg-input]");
 
 	// 文案：SSR 按当前语言写进 data-*
 	const subEmpty = chat.dataset.tgCiSubEmpty || "";
@@ -149,7 +149,9 @@ export function initCommentInfo(chat: HTMLElement): void {
 		paintAvatar(headAvatar, user);
 
 		chat.dataset.identityReady = ready ? "true" : "false";
-		if (input) input.disabled = !ready;
+		// 输入框现在是 contenteditable，没有 disabled 可用：关掉 contenteditable
+		// 才能同时挡住键盘输入与粘贴；遮罩层只负责挡鼠标
+		if (input) input.setAttribute("contenteditable", ready ? "true" : "false");
 	};
 
 	const open = (trigger: HTMLElement): void => {
