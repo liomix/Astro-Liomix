@@ -96,6 +96,11 @@ enum I18nKey {
 	commentChatCopy = "commentChatCopy",
 	commentChatCopied = "commentChatCopied",
 	commentChatCode = "commentChatCode",
+	// 消息右键菜单（ChatContextPop）与回复引用
+	commentChatReply = "commentChatReply",
+	commentChatRetract = "commentChatRetract",
+	commentChatRetracted = "commentChatRetracted",
+	commentChatMe = "commentChatMe",
 	// 评论身份弹窗（顶栏那块点开的 CommentInfoPop）
 	commentInfoTitle = "commentInfoTitle",
 	commentInfoOpen = "commentInfoOpen",

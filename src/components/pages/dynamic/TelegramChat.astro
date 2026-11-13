@@ -127,6 +127,8 @@ const rows = messages.map((message, index) => {
 		next.author === message.author;
 	return {
 		...message,
+		/** 稳定 id：撤回记录按它存，不能按当前可见顺序现算 */
+		msgId: `msg-${index + 1}`,
 		showAuthor: message.side === "in" && !samePrev,
 		showAvatar: message.side === "in" && !sameNext,
 		initial: (message.author || "?").slice(0, 1),
@@ -142,6 +144,8 @@ const rows = messages.map((message, index) => {
 	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}
+	data-tg-label-retracted={i18n(I18nKey.commentChatRetracted)}
+	data-tg-label-me={i18n(I18nKey.commentChatMe)}
 	data-tg-default-name={name}
 	data-tg-default-email={contact}
 	data-tg-ci-sub-empty={i18n(I18nKey.commentInfoSubEmpty)}
@@ -231,12 +235,18 @@ const rows = messages.map((message, index) => {
 					class:list={[
 						"tg-row",
 						row.side === "in" ? "tg-row--in" : "tg-row--out",
+						row.side === "in" && row.showAuthor && "tg-row--head",
 						row.side === "in" && row.showAvatar && "tg-row--tail",
 					]}
+					data-tg-msg={row.msgId}
+					data-tg-side={row.side}
+					data-tg-author={row.author ?? ""}
+					data-tg-tone={row.side === "in" ? (row.tone ?? 0) : 0}
 				>
-					{/* 只有一组连发的最后一条才露头像；其余各条靠 padding-left 留空位，
-					   不能把头像留在 DOM 里 —— 它仍占着 flex 宽度，会和 padding 叠一起把气泡挤到右边 */}
-					{row.side === "in" && row.showAvatar && (
+					{/* 头像位始终占着（自己那侧没有）：一组里只有最后一条露出来，其余用
+					   visibility 藏住 —— 撤回 / 新发消息会让分组变化，脚本只需改
+					   tg-row--head / --tail 两个类就能重新排布，不用增删 DOM */}
+					{row.side === "in" && (
 						<span
 							class={`tg-avatar tg-avatar--${row.tone ?? 0}`}
 							aria-hidden="true"
@@ -245,7 +255,7 @@ const rows = messages.map((message, index) => {
 						</span>
 					)}
 					<div class="tg-col">
-						{row.showAuthor && (
+						{row.side === "in" && (
 							<span class={`tg-author tg-author--${row.tone ?? 0}`}>
 								{row.author}
 							</span>
@@ -263,6 +273,33 @@ const rows = messages.map((message, index) => {
 	</div>
 
 	<div class="tg-bottom">
+		{/* 回复预览条：和 Telegram 输入框上方那条一样 —— 左侧竖线 + 名字 + 摘要，
+		    发送后引用块会嵌进新气泡顶部。由 ChatContextPop 控制显隐 */}
+		<div class="tg-reply" data-tg-reply hidden>
+			<span class="tg-reply-line" aria-hidden="true"></span>
+			<span class="tg-reply-body">
+				<span class="tg-reply-name" data-tg-reply-name></span>
+				<span class="tg-reply-text" data-tg-reply-text></span>
+			</span>
+			<button
+				type="button"
+				class="tg-reply-close"
+				data-tg-reply-cancel
+				aria-label={i18n(I18nKey.tabClose)}
+				title={i18n(I18nKey.tabClose)}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						d="M6 6 18 18M18 6 6 18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</button>
+		</div>
+
 		<div class="tg-emoji-panel" data-tg-emoji-panel hidden>
 			<div class="tg-emoji-body" data-tg-emoji-body>
 				{/* 一个系列一栏：网格结构与 emoji 时期的完全一样（8 列、.tg-emoji-item 格子），
@@ -478,11 +515,74 @@ const rows = messages.map((message, index) => {
 			</div>
 		</div>
 	</div>
+
+	{/* ChatContextPop：消息右键菜单（复制 / 回复 / 撤回）。
+	    没有遮罩，贴着指针 fixed 定位，超出视口由脚本翻转；三项之间的分隔线
+	    和 Telegram 的菜单一致，删除（撤回）单独一组并用危险色。
+	    撤回只能删自己发的消息，所以这一组单独包起来，脚本按 data-tg-side 开关。
+	    焦点落在菜单本身（tabindex=-1）而不是第一项：右键一开菜单就高亮「复制」
+	    很扎眼，键盘用户按 ↓ 再进第一项即可 */}
+	<div
+		class="ctx-pop"
+		data-ctx-pop
+		role="menu"
+		tabindex="-1"
+		aria-hidden="true"
+		hidden
+	>
+		<button
+			type="button"
+			class="ctx-item"
+			role="menuitem"
+			data-ctx-action="copy"
+		>
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+				<rect x="9" y="9" width="10.4" height="10.4" rx="2.2"></rect>
+				<path d="M14.6 5.6H6.9A2.3 2.3 0 0 0 4.6 7.9v7.7"></path>
+			</svg>
+			<span class="ctx-label">{i18n(I18nKey.commentChatCopy)}</span>
+		</button>
+
+		<button
+			type="button"
+			class="ctx-item"
+			role="menuitem"
+			data-ctx-action="reply"
+		>
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M9.3 7.2 4.6 11.9l4.7 4.7"></path>
+				<path d="M4.6 11.9h9.6a4.9 4.9 0 0 1 0 9.8h-1.7"></path>
+			</svg>
+			<span class="ctx-label">{i18n(I18nKey.commentChatReply)}</span>
+		</button>
+
+		<div class="ctx-own-only" data-ctx-own-only hidden>
+			<span class="ctx-sep" aria-hidden="true"></span>
+
+			<button
+				type="button"
+				class="ctx-item ctx-item--danger"
+				role="menuitem"
+				data-ctx-action="retract"
+			>
+				<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M5.2 7.4h13.6"></path>
+					<path d="M9.6 7.4V5.6a1.4 1.4 0 0 1 1.4-1.4h2a1.4 1.4 0 0 1 1.4 1.4v1.8"></path>
+					<path d="M6.7 7.4l.8 11a1.6 1.6 0 0 0 1.6 1.5h5.8a1.6 1.6 0 0 0 1.6-1.5l.8-11"></path>
+					<path d="M10.4 11v5.6M13.6 11v5.6"></path>
+				</svg>
+				<span class="ctx-label">{i18n(I18nKey.commentChatRetract)}</span>
+			</button>
+		</div>
+	</div>
+
+	{/* 轻提示：复制成功、撤回后各闪一次，2s 内自己收走 */}
+	<div class="tg-toast" data-tg-toast role="status" aria-live="polite" hidden></div>
 </div>
 
 <!-- 自己发出去的气泡模板，脚本克隆用 -->
 <template data-tg-out-template>
-	<div class="tg-row tg-row--out">
+	<div class="tg-row tg-row--out" data-tg-side="out">
 		<div class="tg-col">
 			<div class="tg-bubble">
 				<div class="tg-text tg-text--md"></div>
@@ -495,6 +595,7 @@ const rows = messages.map((message, index) => {
 </template>
 
 <script>
+	import { initChatContextPop } from "@/components/pages/dynamic/chat-context-pop";
 	import { initCommentInfo } from "@/components/pages/dynamic/comment-info";
 	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
 	import { Marked } from "marked";
@@ -789,6 +890,11 @@ const rows = messages.map((message, index) => {
 		const pathParam = new URLSearchParams(window.location.search).get("path");
 		if (pathParam) chat.dataset.tgPath = pathParam;
 
+		// 消息右键菜单（ChatContextPop）：复制 / 回复 / 撤回。
+		// 放在 ?path= 落定之后 —— 撤回记录按 path 分桶，读早了所有动态会混成一个桶；
+		// 又必须在 toBottom 之前：初始化会先摘掉已撤回的消息，滚动要按最终列表算
+		const chatCtx = initChatContextPop(chat);
+
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
 		const composer = chat.querySelector<HTMLElement>("[data-tg-input]");
@@ -814,9 +920,12 @@ const rows = messages.map((message, index) => {
 		};
 
 		// 示例消息的正文同样按 Markdown 解析：SSR 出来的只是原文，
-		// 这里先读 textContent 再覆盖，原文不会被当成 HTML 二次转义
+		// 这里先读 textContent 再覆盖，原文不会被当成 HTML 二次转义。
+		// 原文顺手存进 data-tg-source —— 右键「复制」要的是 Markdown，不是渲染结果
 		chat.querySelectorAll<HTMLElement>("[data-tg-markdown]").forEach((node) => {
-			setMarkdown(node, node.textContent ?? "", labels);
+			const source = node.textContent ?? "";
+			node.dataset.tgSource = source;
+			setMarkdown(node, source, labels);
 		});
 
 		// 复制按钮用事件委托：消息是后插进来的，不能逐条绑
@@ -964,6 +1073,9 @@ const rows = messages.map((message, index) => {
 
 		const closeEmoji = () => setEmojiOpen(false);
 
+		// 开始回复时收起表情面板：两者都贴在输入框上，同屏会互相挤
+		chat.addEventListener("tg-reply-start", () => closeEmoji());
+
 		emojiButton?.addEventListener("click", () => {
 			setEmojiOpen(Boolean(emojiPanel?.hidden));
 		});
@@ -1067,7 +1179,9 @@ const rows = messages.map((message, index) => {
 			}
 			if (time) time.textContent = stamp(0);
 
+			chatCtx.registerRow(row);
 			scroller.append(row);
+			chatCtx.relayout();
 			requestAnimationFrame(toBottom);
 		};
 
@@ -1094,13 +1208,20 @@ const rows = messages.map((message, index) => {
 			if (!row) return;
 			const body = row.querySelector<HTMLElement>(".tg-text");
 			const time = row.querySelector<HTMLElement>(".tg-time");
+			// 取走待发送的引用：引用块要嵌在气泡顶部、正文之上
+			const quote = chatCtx.takePendingReply();
 			if (body) {
-				// 模板里的 .tg-text 已经带 tg-text--md，直接按 Markdown 渲染进去
+				// 模板里的 .tg-text 已经带 tg-text--md，直接按 Markdown 渲染进去；
+				// 原文留一份给右键「复制」用
+				body.dataset.tgSource = source;
 				setMarkdown(body, source, labels);
 			}
+			if (quote) chatCtx.decorate(row, quote);
 			if (time) time.textContent = stamp(0);
 
+			chatCtx.registerRow(row);
 			scroller.append(row);
+			chatCtx.relayout();
 			composer.innerHTML = "";
 			syncSend();
 			resizeInput();

@@ -336,10 +336,15 @@ html[data-embedded] .tg-head-close {
 	justify-content: flex-end;
 }
 
-/* 同一个人连发时后几条不重复露头像，但要留出等宽空位，
-   否则气泡会跳到左边、看起来参差不齐 */
-.tg-row--in:not(.tg-row--tail) {
-	padding-left: calc(1.75rem + 0.35rem);
+/* 同一个人连发时后几条不露头像，但头像位一直占着（见 .tg-avatar 规则），
+   气泡因此不会左右跳。分组用 class 表达，撤回 / 新消息后脚本重排即可 */
+.tg-row--in:not(.tg-row--tail) .tg-avatar {
+	visibility: hidden;
+}
+
+/* 昵称同理：只有一组的第一条显示，其余不占高度 */
+.tg-row--in:not(.tg-row--head) .tg-author {
+	display: none;
 }
 
 /* 头像 + （昵称 / 气泡）这一列 */
@@ -1105,3 +1110,375 @@ html[data-embedded] .tg-head-close {
 		transition: none;
 	}
 }
+
+/* ---------------- ChatContextPop：右键菜单 / 回复引用 / 轻提示 ---------------- */
+
+/* 引用块的竖线、危险项都用这两个色：竖线跟发送者色调，撤回固定红 */
+:root {
+	--tg-danger: #d9534f;
+	--tg-quote-0: #cf5f5f;
+	--tg-quote-1: #4a9e46;
+	--tg-quote-2: #7c6fce;
+	--tg-quote-3: #d08a28;
+}
+
+:root.dark {
+	--tg-danger: #ff7b72;
+	--tg-quote-0: #f08a8a;
+	--tg-quote-1: #7fd179;
+	--tg-quote-2: #b3a6f5;
+	--tg-quote-3: #f0b460;
+}
+
+/* 气泡里的引用块：左侧 3px 竖线 + 名字 + 单行摘要，和 Telegram 的 reply quote 一致。
+   flex-basis 100% 是必须的 —— 气泡是 flex-wrap 布局，不占满整行会和正文挤在一起 */
+.tg-quote {
+	display: flex;
+	min-width: 0;
+	flex: 0 0 100%;
+	flex-direction: column;
+	gap: 0.04rem;
+	margin: 0 0 0.15rem;
+	padding: 0.18rem 0.45rem 0.2rem 0.5rem;
+	border: 0;
+	border-left: 3px solid var(--tg-quote-color, var(--tg-accent));
+	border-radius: 0.45rem;
+	background: color-mix(
+		in srgb,
+		var(--tg-quote-color, var(--tg-accent)) 10%,
+		transparent
+	);
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.tg-quote:hover {
+	background: color-mix(
+		in srgb,
+		var(--tg-quote-color, var(--tg-accent)) 16%,
+		transparent
+	);
+}
+
+.tg-quote:focus-visible {
+	outline: 2px solid var(--tg-quote-color, var(--tg-accent));
+	outline-offset: 1px;
+}
+
+.tg-row[data-tg-tone="0"] .tg-quote {
+	--tg-quote-color: var(--tg-quote-0);
+}
+
+.tg-row[data-tg-tone="1"] .tg-quote {
+	--tg-quote-color: var(--tg-quote-1);
+}
+
+.tg-row[data-tg-tone="2"] .tg-quote {
+	--tg-quote-color: var(--tg-quote-2);
+}
+
+.tg-row[data-tg-tone="3"] .tg-quote {
+	--tg-quote-color: var(--tg-quote-3);
+}
+
+/* 自己发的消息没有「发送者色调」，引用块跟着输入栏的主题色走 */
+.tg-row--out .tg-quote {
+	--tg-quote-color: var(--tg-accent);
+}
+
+.tg-quote-name {
+	overflow: hidden;
+	color: var(--tg-quote-color, var(--tg-accent));
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tg-quote-text {
+	overflow: hidden;
+	color: color-mix(in srgb, var(--tg-text) 78%, transparent);
+	font-size: 0.78rem;
+	line-height: 1.3;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 引用块被点中后，原消息闪一下（高亮画在气泡上，不是整行矩形） */
+.tg-row.is-flash .tg-bubble {
+	animation: tg-quote-flash 0.9s ease;
+}
+
+@keyframes tg-quote-flash {
+	0% {
+		box-shadow: 0 0 0 0
+			color-mix(in srgb, var(--tg-accent) 55%, transparent);
+	}
+	35% {
+		box-shadow: 0 0 0 4px
+			color-mix(in srgb, var(--tg-accent) 28%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 0 transparent;
+	}
+}
+
+/* 撤回：气泡先缩一下再摘掉，避免列表突然「跳一格」 */
+.tg-row {
+	transition:
+		opacity 0.2s ease,
+		transform 0.2s ease;
+}
+
+.tg-row.is-retracting {
+	opacity: 0;
+	transform: translateY(4px) scale(0.97);
+}
+
+/* 输入框上方的回复预览条：和输入栏共用毛玻璃，左侧竖线是 Telegram 的标志 */
+.tg-reply {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.35rem 0.45rem 0.35rem 0.6rem;
+	border-top: 1px solid var(--tg-divider);
+	background: color-mix(in srgb, var(--tg-panel) 55%, transparent);
+	-webkit-backdrop-filter: blur(22px) saturate(1.6);
+	backdrop-filter: blur(22px) saturate(1.6);
+	animation: tg-reply-in 0.16s ease-out both;
+}
+
+.tg-reply[hidden] {
+	display: none;
+}
+
+@keyframes tg-reply-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+.tg-reply-line {
+	width: 3px;
+	flex: none;
+	align-self: stretch;
+	border-radius: 2px;
+	background: var(--tg-accent);
+}
+
+.tg-reply-body {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	gap: 0.05rem;
+}
+
+.tg-reply-name {
+	overflow: hidden;
+	color: var(--tg-accent);
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tg-reply-text {
+	overflow: hidden;
+	color: var(--tg-meta);
+	font-size: 0.78rem;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tg-reply-close {
+	display: inline-flex;
+	width: 1.75rem;
+	height: 1.75rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease;
+}
+
+.tg-reply-close svg {
+	width: 1rem;
+	height: 1rem;
+}
+
+.tg-reply-close:hover {
+	background: color-mix(in srgb, var(--tg-meta) 16%, transparent);
+	color: var(--tg-text);
+}
+
+/* 右键菜单：无遮罩、贴指针 fixed 定位。宽度按内容撑开，三项一行一个 */
+.ctx-pop {
+	position: fixed;
+	z-index: 60;
+	display: flex;
+	min-width: 9.5rem;
+	flex-direction: column;
+	padding: 0.3rem;
+	border: 1px solid var(--tg-divider);
+	border-radius: 0.85rem;
+	background: color-mix(in srgb, var(--tg-panel) 94%, transparent);
+	box-shadow:
+		0 16px 40px rgb(0 0 0 / 0.24),
+		0 2px 8px rgb(0 0 0 / 0.1);
+	-webkit-backdrop-filter: blur(18px) saturate(1.5);
+	backdrop-filter: blur(18px) saturate(1.5);
+	transform-origin: top left;
+	animation: ctx-pop-in 0.13s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.ctx-pop[hidden] {
+	display: none;
+}
+
+/* 弹窗一开焦点落在菜单容器上（见 openMenu）：看着不该有描边，
+   真正的高亮留给 ↓ 走进去的那一项 */
+.ctx-pop:focus,
+.ctx-pop:focus-visible {
+	outline: none;
+}
+
+@keyframes ctx-pop-in {
+	from {
+		opacity: 0;
+		transform: scale(0.94);
+	}
+}
+
+.ctx-item {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.45rem 0.55rem;
+	border: 0;
+	border-radius: 0.55rem;
+	background: transparent;
+	color: var(--tg-text);
+	font: inherit;
+	font-size: 0.82rem;
+	text-align: left;
+	cursor: pointer;
+	transition: background-color 0.14s ease;
+}
+
+.ctx-item:hover,
+.ctx-item:focus-visible {
+	background: color-mix(in srgb, var(--tg-accent) 12%, transparent);
+	outline: none;
+}
+
+.ctx-item:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+.ctx-icon {
+	width: 1.05rem;
+	height: 1.05rem;
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.6;
+}
+
+/* 撤回是危险操作：单独一组、红字，和 Telegram 菜单里的 Delete 一样 */
+.ctx-item--danger {
+	color: var(--tg-danger);
+}
+
+.ctx-item--danger:hover,
+.ctx-item--danger:focus-visible {
+	background: color-mix(in srgb, var(--tg-danger) 13%, transparent);
+}
+
+.ctx-sep {
+	height: 1px;
+	margin: 0.2rem 0.45rem;
+	background: var(--tg-divider);
+}
+
+/* 「撤回」组只在自己发的消息上出现：包一层交给脚本整体开关。
+   display: contents 让分隔线和按钮仍直接参与弹出菜单的纵向排列，
+   否则会多出一层盒子把 flex 间距吃掉 */
+.ctx-own-only {
+	display: contents;
+}
+
+.ctx-own-only[hidden] {
+	display: none;
+}
+
+/* 轻提示：复制成功 / 已撤回，胶囊贴在输入栏上方 */
+.tg-toast {
+	position: absolute;
+	bottom: 4.6rem;
+	left: 50%;
+	z-index: 50;
+	padding: 0.4rem 0.85rem;
+	border-radius: 9999px;
+	background: rgb(0 0 0 / 0.66);
+	color: #fff;
+	font-size: 0.78rem;
+	line-height: 1.3;
+	opacity: 0;
+	pointer-events: none;
+	transform: translateX(-50%);
+	transition: opacity 0.18s ease;
+}
+
+.tg-toast[hidden] {
+	display: none;
+}
+
+.tg-toast.is-on {
+	opacity: 1;
+}
+
+/* 移动端长按唤出菜单：别让系统顺手弹自己的「复制/分享」气泡，
+   也别在长按的 480ms 里把文字选起来（要复制整条走菜单里的「复制」） */
+@media (hover: none) {
+	.tg-row {
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-reply,
+	.ctx-pop,
+	.tg-row.is-flash .tg-bubble {
+		animation: none;
+	}
+
+	.tg-row,
+	.tg-toast,
+	.tg-quote,
+	.ctx-item {
+		transition: none;
+	}
+}
+
