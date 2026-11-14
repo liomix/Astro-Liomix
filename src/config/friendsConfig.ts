@@ -13,7 +13,7 @@ export const friendsPageConfig: FriendsPageConfig = {
 	// 是否显示底部自定义内容（friends.mdx 中的内容）
 	showCustomContent: true,
 
-	// 是否显示评论区，需要先在commentConfig.ts启用评论系统
+	// 是否显示评论区（自定义评论实现接入后生效）
 	showComment: true,
 
 	// 是否开启随机排序配置，如果开启，就会忽略权重，构建时进行一次随机排序

@@ -1,6 +1,5 @@
 ---
 import { render } from "astro:content";
-import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
 import EncryptedPost from "@components/features/EncryptedPost.astro";
 import KatexManager from "@components/features/KatexManager.astro";
@@ -307,7 +306,6 @@ const seriesData = await getSeriesPosts(entry);
                 updated={entry.data.updated}
                 category={entry.data.category || undefined}
                 tags={entry.data.tags}
-                id={entry.id}
                 showViews={siteStatsConfig.enable && siteStatsConfig.articleViews}
                 viewsId={entry.id}
                 countView={siteStatsConfig.enable && siteStatsConfig.articleViews}
@@ -652,8 +650,7 @@ const seriesData = await getSeriesPosts(entry);
     )
   }
 
-  <!-- 评论 -->
-  {entry.data.comment && !entry.data.password && <Comment post={entry} />}
+  <!-- 评论区：第三方评论实现已移除，待接入自定义实现 -->
 
   <!-- 打赏弹窗：由底部的金币按钮通过 data-sponsor-pop 触发 -->
   {

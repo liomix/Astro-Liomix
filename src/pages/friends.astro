@@ -1,14 +1,8 @@
 ---
 import { getEntry, render } from "astro:content";
-import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
 import { Icon } from "astro-icon/components";
-import {
-	commentConfig,
-	friendsPageConfig,
-	getEnabledFriends,
-	siteConfig,
-} from "@/config";
+import { friendsPageConfig, getEnabledFriends, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
@@ -27,12 +21,6 @@ if (!friendsPost) {
 }
 
 const { Content } = await render(friendsPost);
-
-// 检查评论系统是否启用
-const isCommentEnabled =
-	commentConfig?.type &&
-	commentConfig.type !== "none" &&
-	friendsPageConfig.showComment !== false;
 
 // 使用配置文件中的友链数据，按权重排序
 const items = getEnabledFriends();
@@ -182,12 +170,7 @@ const description =
     </div>
   )}
 
-  <!-- 评论区 -->
-  {isCommentEnabled && (
-    <div class="mt-4">
-      <Comment post={friendsPost} customPath="/friends/" />
-    </div>
-  )}
+  <!-- 评论区：第三方评论实现已移除，待接入自定义实现 -->
 
   <script slot="head" is:inline>
     if (!customElements.get("friend-filter")) {

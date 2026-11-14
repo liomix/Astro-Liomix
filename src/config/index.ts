@@ -30,7 +30,6 @@ export type {
 	BooknavGroup,
 	BooknavItem,
 	BooknavPageConfig,
-	CommentConfig,
 	CoverImageConfig,
 	DisplaySettingsConfig,
 	DynamicConfig,
@@ -64,7 +63,6 @@ export { announcementConfig } from "./announcementConfig"; // 公告配置
 export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配置
 export { booknavConfig, booknavPageConfig } from "./booknavConfig"; // 书签导航配置
 // 功能配置
-export { commentConfig } from "./commentConfig"; // 评论系统配置
 export {
 	COMMENT_WALLPAPER_STORAGE_KEY,
 	commentWallpaperConfig,
