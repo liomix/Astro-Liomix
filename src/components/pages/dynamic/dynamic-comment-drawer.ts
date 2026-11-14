@@ -74,9 +74,9 @@ function observeTheme(): void {
 /**
  * 把「当前是哪条动态」转给 iframe。
  *
- * 抽屉里装的永远是同一个预渲染页面（/dynamic/comments/），消息目前是内置示例，
- * 地址里的 path 只作标记（评论页会写到 [data-tg-chat] 的 dataset 上，等接真实
- * 数据源时才用它去查）。所以换一条动态看评论**不需要**重新加载文档 ——
+ * 抽屉里装的永远是同一个预渲染页面（/dynamic/comments/），地址里的 ?path= 就是
+ * 评论线程的选择器：评论页把它写到 [data-tg-chat] 的 dataset 上，脚本再算成后端
+ * 认的 slug 去拉这一条动态的评论。所以换一条动态看评论**不需要**重新加载文档 ——
  * 重设 src 等于把整页连同几 MB 的壁纸 JSON 再走一遍，那几百毫秒就是白屏。
  */
 function syncFramePath(src: string): void {

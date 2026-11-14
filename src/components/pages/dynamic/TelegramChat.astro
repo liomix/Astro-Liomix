@@ -13,15 +13,31 @@
  * 群聊式头像：对方消息左侧跟一个首字母彩圆（Telegram 没有用户头像时的默认画法），
  * 连发多条只在最后一条下方露头像、只在第一条上方显示昵称 —— 和 Telegram 分组规则一致。
  *
- * 所有消息（示例消息和自己发出去的）都按 GitHub Flavored Markdown 解析
+ * 所有消息（拉回来的评论和自己发出去的）都按 GitHub Flavored Markdown 解析
  * （粗体、斜体、删除线、行内代码 / 代码块、列表、引用、链接、表格、换行），
  * 解析结果先过一遍标签白名单再塞进气泡，避免脚本注入。
  * 代码块会补一条「语言 + 复制」的顶栏：marked 只吐标准的 <pre><code class="language-x">，
  * 顶栏和复制按钮在消毒之后由 DOM 拼（见 decorateCodeBlocks），白名单不用为 button 开口子。
  * 输入框是会自动长高的 textarea：Enter 发送、Shift+Enter 换行，方便写多行 Markdown。
  *
- * 消息目前是内置示例（静态站没有后端），发送只是本地追加一条气泡，不落库。
- * 以后接真实评论数据时，只要把 messages 换成接口返回即可。
+ * 消息来自自建后端（`/api/v1/posts/{slug}/comments`）：打开时按当前动态的 slug
+ * 拉一遍已审核评论，发送时 POST 一条并把气泡追加到本地。新评论默认 pending，
+ * 因此本地气泡上带「待审核」；刷新后它不会立刻回来，审核通过才会出现在列表里。
+ * slug 由 `slugOfPath()` 从 `data-tg-path` 算出（`/dynamic/<id>/` → `dynamic-<id>`），
+ * 所以每条动态是一个独立的评论线程，抽屉切换动态时会重新拉取。
+ * 回复关系也在这一层还原：带 parentId 的那条会按父评论画出引用块（点它跳回原
+ * 消息），父评论不在已加载的消息里时不画 —— 编一个指向空处的引用比没有更糟。
+ *
+ * 列表是分页的：一次只拉 `commentApiConfig.pageSize` 条（最新的那些），顶上留一个
+ * 「加载更早」，滚到顶也会自动接着拉。聊天读法是最新的在下面，所以补历史要往
+ * 前插并保持视口不动，否则每点一次整屏都会跳。
+ *
+ * 自己发出去的评论可以撤回：创建响应里的 deleteToken 只够删这一条，存在
+ * localStorage 里（见 comment-own.ts），右键菜单的「撤回」拿它去调后端。
+ * `commentApiConfig.enable` 关掉时这一页不动任何网络请求，输入栏收起、只显示空态。
+ *
+ * 图片附件按钮暂不开放：后端还没有上传接口，blob: 地址过不了正文的 URL 白名单，
+ * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
  */
 import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
@@ -29,7 +45,7 @@ import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 
 interface Props {
-	/** 消息数据来源标识（当前仅用于 data 属性，方便以后接接口） */
+	/** 消息数据来源，挂到 data 属性上并据此算出评论线程的 slug */
 	path?: string;
 	/** 默认昵称：访客还没设置过身份时，顶栏与弹窗先填这个值 */
 	name?: string;
@@ -60,80 +76,6 @@ const avatarPaint = avatarGradientOf(contact || name);
 const packs = commentEmojiConfig.packs;
 const showTabs = packs.length > 1;
 
-interface ChatMessage {
-	/** in = 对方（来访者）/ out = 自己 */
-	side: "in" | "out";
-	/** 对方昵称；out 消息不需要 */
-	author?: string;
-	/** 头像色调，对应 .tg-avatar--0…3 的渐变 */
-	tone?: number;
-	text: string;
-	/** 相对当前时间的分钟偏移，脚本会换算成 HH:mm */
-	offset: number;
-}
-
-const messages: ChatMessage[] = [
-	{
-		side: "in",
-		author: "阿柴",
-		tone: 0,
-		text: "你这篇写缓存的我看两遍了，四层兜底那段讲得真清楚 👍",
-		offset: -11,
-	},
-	{
-		side: "out",
-		text: "谢谢！主要是踩坑踩出来的，被限流那次印象太深了",
-		offset: -10,
-	},
-	{
-		side: "in",
-		author: "阿柴",
-		tone: 0,
-		text: "后来那个 `WEREAD_COOLDOWN` 你设了多久？",
-		offset: -8,
-	},
-	{
-		side: "out",
-		text: "**15 分钟**。触发一次就全局停手，宁可少抓几次也别把 `Key` 玩废",
-		offset: -7,
-	},
-	{
-		side: "in",
-		author: "木子",
-		tone: 1,
-		text: "稳，这套我抄走了",
-		offset: -6,
-	},
-	{
-		side: "in",
-		author: "木子",
-		tone: 1,
-		text: "我那边先这么写的：\n\n```ts\nconst ttl = 15 * 60_000;\n```\n\n反正被限流以后，*少抓几次* 比什么都强。",
-		offset: -5,
-	},
-];
-
-/** 同一个人连续发言时，只有第一条显示昵称、最后一条露头像（Telegram 的分组规则） */
-const rows = messages.map((message, index) => {
-	const prev = messages[index - 1];
-	const next = messages[index + 1];
-	const samePrev =
-		message.side === "in" &&
-		prev?.side === "in" &&
-		prev.author === message.author;
-	const sameNext =
-		message.side === "in" &&
-		next?.side === "in" &&
-		next.author === message.author;
-	return {
-		...message,
-		/** 稳定 id：撤回记录按它存，不能按当前可见顺序现算 */
-		msgId: `msg-${index + 1}`,
-		showAuthor: message.side === "in" && !samePrev,
-		showAvatar: message.side === "in" && !sameNext,
-		initial: (message.author || "?").slice(0, 1),
-	};
-});
 ---
 
 <div
@@ -145,7 +87,14 @@ const rows = messages.map((message, index) => {
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
 	data-tg-label-code={i18n(I18nKey.commentChatCode)}
 	data-tg-label-retracted={i18n(I18nKey.commentChatRetracted)}
+	data-tg-label-retract-failed={i18n(I18nKey.commentChatRetractFailed)}
+	data-tg-label-retract-replies={i18n(I18nKey.commentChatRetractReplies)}
+	data-tg-label-load-more={i18n(I18nKey.commentChatLoadMore)}
+	data-tg-label-disabled={i18n(I18nKey.commentChatDisabled)}
 	data-tg-label-me={i18n(I18nKey.commentChatMe)}
+	data-tg-label-empty={i18n(I18nKey.commentChatEmpty)}
+	data-tg-label-load-failed={i18n(I18nKey.commentChatLoadFailed)}
+	data-tg-label-send-failed={i18n(I18nKey.commentChatSendFailed)}
 	data-tg-default-name={name}
 	data-tg-default-email={contact}
 	data-tg-ci-sub-empty={i18n(I18nKey.commentInfoSubEmpty)}
@@ -227,49 +176,25 @@ const rows = messages.map((message, index) => {
 	</header>
 
 	<div class="tg-scroll" data-tg-scroll>
-		<div class="tg-day"><span>{i18n(I18nKey.commentChatToday)}</span></div>
+		{/* 「加载更早」：分页只先拉最新一页，历史在用户往上滚时才补。
+		    常驻 DOM、默认 hidden，脚本按还有没有下一页开关 */}
+		<div class="tg-more" data-tg-more hidden>
+			<button type="button" class="tg-more-btn" data-tg-load-more>
+				{i18n(I18nKey.commentChatLoadMore)}
+			</button>
+		</div>
 
-		{
-			rows.map((row) => (
-				<div
-					class:list={[
-						"tg-row",
-						row.side === "in" ? "tg-row--in" : "tg-row--out",
-						row.side === "in" && row.showAuthor && "tg-row--head",
-						row.side === "in" && row.showAvatar && "tg-row--tail",
-					]}
-					data-tg-msg={row.msgId}
-					data-tg-side={row.side}
-					data-tg-author={row.author ?? ""}
-					data-tg-tone={row.side === "in" ? (row.tone ?? 0) : 0}
-				>
-					{/* 头像位始终占着（自己那侧没有）：一组里只有最后一条露出来，其余用
-					   visibility 藏住 —— 撤回 / 新发消息会让分组变化，脚本只需改
-					   tg-row--head / --tail 两个类就能重新排布，不用增删 DOM */}
-					{row.side === "in" && (
-						<span
-							class={`tg-avatar tg-avatar--${row.tone ?? 0}`}
-							aria-hidden="true"
-						>
-							{row.initial}
-						</span>
-					)}
-					<div class="tg-col">
-						{row.side === "in" && (
-							<span class={`tg-author tg-author--${row.tone ?? 0}`}>
-								{row.author}
-							</span>
-						)}
-						<div class="tg-bubble">
-							<div class="tg-text tg-text--md" data-tg-markdown>{row.text}</div>
-							<span class="tg-meta">
-								<span class="tg-time" data-tg-time data-tg-offset={row.offset} />
-							</span>
-						</div>
-					</div>
-				</div>
-			))
-		}
+		{/* 分隔线先藏着：消息是异步拉回来的，直接显示「今天」会在空列表上闪一下，
+		    加载成功后只要日期确实都是今天，脚本再把它露出来 */}
+		<div class="tg-day" data-tg-day hidden>
+			<span>{i18n(I18nKey.commentChatToday)}</span>
+		</div>
+
+		{/* 消息由脚本按后端评论渲染：这里只留状态占位，避免首屏一片空白。
+		    加载完成且有数据时脚本会把这块整个摘掉；空列表 / 请求失败换成对应文案 */}
+		<div class="tg-state" data-tg-state="loading">
+			{i18n(I18nKey.commentChatLoading)}
+		</div>
 	</div>
 
 	<div class="tg-bottom">
@@ -580,7 +505,25 @@ const rows = messages.map((message, index) => {
 	<div class="tg-toast" data-tg-toast role="status" aria-live="polite" hidden></div>
 </div>
 
-<!-- 自己发出去的气泡模板，脚本克隆用 -->
+<!-- 对方（别的访客）的气泡模板：昵称、头像色调、正文、时间都由脚本填 -->
+<template data-tg-in-template>
+	<div class="tg-row tg-row--in" data-tg-side="in">
+		<span class="tg-avatar tg-avatar--0" aria-hidden="true"></span>
+		<div class="tg-col">
+			<span class="tg-author tg-author--0"></span>
+			<div class="tg-bubble">
+				<div class="tg-text tg-text--md" data-tg-markdown></div>
+				<span class="tg-meta">
+					<span class="tg-time"></span>
+					<span class="tg-pending" hidden>{i18n(I18nKey.commentChatPending)}</span>
+				</span>
+			</div>
+		</div>
+	</div>
+</template>
+
+<!-- 自己发出去的气泡模板，脚本克隆用。pending 标记与对方那份同款：
+     后端对所有人都是先 pending，审核通过后才出现在别人的列表里 -->
 <template data-tg-out-template>
 	<div class="tg-row tg-row--out" data-tg-side="out">
 		<div class="tg-col">
@@ -588,6 +531,7 @@ const rows = messages.map((message, index) => {
 				<div class="tg-text tg-text--md"></div>
 				<span class="tg-meta">
 					<span class="tg-time"></span>
+					<span class="tg-pending" hidden>{i18n(I18nKey.commentChatPending)}</span>
 				</span>
 			</div>
 		</div>
@@ -595,9 +539,28 @@ const rows = messages.map((message, index) => {
 </template>
 
 <script>
-	import { initChatContextPop } from "@/components/pages/dynamic/chat-context-pop";
+	import {
+		initChatContextPop,
+		summarizeMarkdown,
+	} from "@/components/pages/dynamic/chat-context-pop";
 	import { initCommentInfo } from "@/components/pages/dynamic/comment-info";
+	import {
+		readOwnComments,
+		rememberOwnComment,
+	} from "@/components/pages/dynamic/comment-own";
+	import {
+		getCommentUser,
+		initialOf,
+	} from "@/components/pages/dynamic/comment-user";
 	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
+	import {
+		type ApiComment,
+		type CommentPage,
+		fetchComments,
+		isCommentApiEnabled,
+		postComment,
+		slugOfPath,
+	} from "@/utils/comment-client";
 	import { Marked } from "marked";
 
 	const pad = (value: number) => String(value).padStart(2, "0");
@@ -605,6 +568,44 @@ const rows = messages.map((message, index) => {
 	function stamp(offsetMinutes: number): string {
 		const date = new Date(Date.now() + offsetMinutes * 60_000);
 		return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+	}
+
+	/** 时间戳是不是今天（本地时区）—— 决定时间要不要带日期 */
+	function isToday(iso: string): boolean {
+		const date = new Date(iso);
+		if (Number.isNaN(date.getTime())) return false;
+		const now = new Date();
+		return (
+			date.getFullYear() === now.getFullYear() &&
+			date.getMonth() === now.getMonth() &&
+			date.getDate() === now.getDate()
+		);
+	}
+
+	/**
+	 * 后端时间戳（RFC3339）→ 气泡右下角的时间。
+	 * 跨天时补上日期：评论可能躺了几天才被审核通过，只显示 HH:mm 会让人以为刚发的。
+	 */
+	function formatTime(iso: string): string {
+		const date = new Date(iso);
+		if (Number.isNaN(date.getTime())) return "";
+		const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+		return isToday(iso)
+			? clock
+			: `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${clock}`;
+	}
+
+	/**
+	 * 按昵称挑一档头像色调（0–3）。
+	 * 后端只回昵称、没有 tone 字段，这里用稳定哈希：同一个名字永远同一种颜色，
+	 * 刷新和换设备都不会变，比按列表顺序分配更不容易让人认错人。
+	 */
+	function toneOf(name: string): number {
+		let hash = 0;
+		for (const char of name) {
+			hash = (hash * 31 + (char.codePointAt(0) ?? 0)) >>> 0;
+		}
+		return hash % 4;
 	}
 
 	/* ---------------- Markdown ---------------- */
@@ -882,6 +883,19 @@ const rows = messages.map((message, index) => {
 		// 壁纸垫在最底层：顶栏与输入栏的毛玻璃都从它上面采样
 		mountChatWallpaper(chat);
 
+		// 接口被关掉时这一页只剩壁纸：不拉数据、不绑输入栏，也不显示「加载失败」——
+		// 那会让人以为服务挂了，而实际上是站点主动关的。输入栏由 CSS 收起，
+		// 没有数据源时回复 / 撤回这些动作本来也没有对象
+		if (!isCommentApiEnabled()) {
+			chat.dataset.tgDisabled = "true";
+			const state = chat.querySelector<HTMLElement>("[data-tg-state]");
+			if (state) {
+				state.dataset.tgState = "empty";
+				state.textContent = chat.dataset.tgLabelDisabled || "";
+			}
+			return;
+		}
+
 		// 评论身份（昵称 / 邮箱 / 头像）与弹窗：放在其余初始化之前，
 		// 它会决定输入栏是不是锁着，晚了会先闪一下「可以输入」的状态
 		initCommentInfo(chat);
@@ -891,8 +905,8 @@ const rows = messages.map((message, index) => {
 		if (pathParam) chat.dataset.tgPath = pathParam;
 
 		// 消息右键菜单（ChatContextPop）：复制 / 回复 / 撤回。
-		// 放在 ?path= 落定之后 —— 撤回记录按 path 分桶，读早了所有动态会混成一个桶；
-		// 又必须在 toBottom 之前：初始化会先摘掉已撤回的消息，滚动要按最终列表算
+		// 必须在 toBottom 之前：初始化会先把已撤回的消息从列表里摘掉，
+		// 滚动位置得按最终列表算；也要在 ?path= 落定之后，拉数据用的就是它
 		const chatCtx = initChatContextPop(chat);
 
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
@@ -902,31 +916,27 @@ const rows = messages.map((message, index) => {
 		const emojiPanel = chat.querySelector<HTMLElement>("[data-tg-emoji-panel]");
 		const attachButton = chat.querySelector<HTMLButtonElement>("[data-tg-attach]");
 		const fileInput = chat.querySelector<HTMLInputElement>("[data-tg-file]");
+		const inTemplate = document.querySelector<HTMLTemplateElement>(
+			"[data-tg-in-template]",
+		);
 		const template = document.querySelector<HTMLTemplateElement>(
 			"[data-tg-out-template]",
 		);
-		if (!scroller || !form || !composer || !template) return;
+		if (!scroller || !form || !composer || !inTemplate || !template) return;
 
-		// 示例消息的时间按“刚刚发生的对话”倒推，硬编码的 21:04 半夜看会很怪
-		chat.querySelectorAll<HTMLElement>("[data-tg-offset]").forEach((node) => {
-			node.textContent = stamp(Number(node.dataset.tgOffset) || 0);
-		});
-
-		// 代码块顶栏的文案由服务端按当前语言渲染，避免在客户端再引一套 i18n
+		// 代码块顶栏与几处状态文案由服务端按当前语言渲染，避免在客户端再引一套 i18n
 		const labels: CodeLabels = {
 			copy: chat.dataset.tgLabelCopy || "Copy",
 			copied: chat.dataset.tgLabelCopied || "Copied",
 			code: chat.dataset.tgLabelCode || "Code",
 		};
 
-		// 示例消息的正文同样按 Markdown 解析：SSR 出来的只是原文，
-		// 这里先读 textContent 再覆盖，原文不会被当成 HTML 二次转义。
-		// 原文顺手存进 data-tg-source —— 右键「复制」要的是 Markdown，不是渲染结果
-		chat.querySelectorAll<HTMLElement>("[data-tg-markdown]").forEach((node) => {
-			const source = node.textContent ?? "";
-			node.dataset.tgSource = source;
-			setMarkdown(node, source, labels);
-		});
+		const textLabels = {
+			empty: chat.dataset.tgLabelEmpty || "No comments yet",
+			loadFailed: chat.dataset.tgLabelLoadFailed || "Failed to load comments",
+			sendFailed: chat.dataset.tgLabelSendFailed || "Failed to send",
+			disabled: chat.dataset.tgLabelDisabled || "Comments are closed",
+		};
 
 		// 复制按钮用事件委托：消息是后插进来的，不能逐条绑
 		chat.addEventListener("click", (event) => {
@@ -951,7 +961,302 @@ const rows = messages.map((message, index) => {
 		const toBottom = () => {
 			scroller.scrollTop = scroller.scrollHeight;
 		};
-		toBottom();
+
+		/* ---------------- 评论数据 ---------------- */
+
+		const stateNode = chat.querySelector<HTMLElement>("[data-tg-state]");
+		const dayNode = chat.querySelector<HTMLElement>("[data-tg-day]");
+		const moreNode = chat.querySelector<HTMLElement>("[data-tg-more]");
+		const moreButton = chat.querySelector<HTMLButtonElement>("[data-tg-load-more]");
+		// 占位文案是 SSR 渲染的，切过一次状态后就没了 —— 先留一份
+		const loadingText = stateNode?.textContent?.trim() ?? "";
+		const moreText = moreButton?.textContent?.trim() ?? "";
+		const ownIds = readOwnComments();
+
+		/** 当前线程的 slug：抽屉每换一条动态就递一个新的 path 过来 */
+		let slug = slugOfPath(chat.dataset.tgPath || "/dynamic/");
+		/** 并发保护：切动态时上一个请求可能后到，只认最后一次 */
+		let loadToken = 0;
+
+		/**
+		 * 已加载消息的索引（id → 评论），跨页累积。
+		 * 回复的父评论可能落在上一页，只按当前这一页找会漏掉引用块。
+		 */
+		let byID = new Map<string, ApiComment>();
+		/** 已经拉到多少条，同时也是下一页的 offset */
+		let loadedCount = 0;
+		/** 后端说还有更早的 */
+		let hasMore = false;
+		/** 正在补页：防连点，也让按钮有个忙态 */
+		let loadingMore = false;
+
+		/**
+		 * 换消息区的状态占位。传 null 表示有数据了，直接把占位摘掉 ——
+		 * 留着会在最后一条消息下面垫一块空白。
+		 */
+		const setState = (
+			kind: "loading" | "empty" | "failed" | null,
+			text?: string,
+		) => {
+			if (!stateNode) return;
+			if (kind === null) {
+				stateNode.remove();
+				return;
+			}
+			stateNode.dataset.tgState = kind;
+			stateNode.textContent = kind === "loading" ? loadingText : (text ?? "");
+			// 摘掉过的占位要重新挂回消息区（放在最后，永远是列表末尾那一条）
+			if (!stateNode.isConnected) scroller.append(stateNode);
+		};
+
+		/** 「加载更早」的显隐：没有更早的、或者正在拉，就别让它可点 */
+		const syncMore = () => {
+			if (!moreNode || !moreButton) return;
+			moreNode.hidden = !hasMore;
+			moreButton.disabled = loadingMore;
+			moreNode.dataset.loading = loadingMore ? "true" : "false";
+		};
+
+		const clearRows = () => {
+			for (const row of Array.from(scroller.querySelectorAll(".tg-row"))) {
+				row.remove();
+			}
+		};
+
+		/** 聊天里「待审核 / 发送失败」那一小截灰字 */
+		const setPending = (row: HTMLElement, on: boolean, text?: string) => {
+			const mark = row.querySelector<HTMLElement>(".tg-pending");
+			if (!mark) return;
+			if (text) mark.textContent = text;
+			mark.hidden = !on;
+		};
+
+		/** 克隆「自己发出去」的气泡模板，填好正文与时间 */
+		const buildOutgoing = (
+			source: string,
+			timeText: string,
+			pending = false,
+		): HTMLElement | null => {
+			const row = (template.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return null;
+			const body = row.querySelector<HTMLElement>(".tg-text");
+			if (body) {
+				// 原文留一份给右键「复制」：气泡里是渲染结果，不是 Markdown
+				body.dataset.tgSource = source;
+				setMarkdown(body, source, labels);
+			}
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (time) time.textContent = timeText;
+			setPending(row, pending);
+			return row;
+		};
+
+		/** 渲染一条别人的评论：昵称、头像色调、正文、时间全从接口数据来 */
+		const renderIncoming = (comment: ApiComment): HTMLElement | null => {
+			const row = (inTemplate.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return null;
+
+			const name = comment.author.name || "?";
+			const tone = toneOf(name);
+			const avatar = row.querySelector<HTMLElement>(".tg-avatar");
+			if (avatar) {
+				avatar.className = `tg-avatar tg-avatar--${tone}`;
+				avatar.textContent = initialOf(name);
+			}
+			const author = row.querySelector<HTMLElement>(".tg-author");
+			if (author) {
+				author.className = `tg-author tg-author--${tone}`;
+				author.textContent = name;
+			}
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (time) time.textContent = formatTime(comment.createdAt);
+
+			const body = row.querySelector<HTMLElement>(".tg-text");
+			if (body) {
+				body.dataset.tgSource = comment.body;
+				setMarkdown(body, comment.body, labels);
+			}
+
+			row.dataset.tgMsg = comment.id;
+			row.dataset.tgAuthor = name;
+			// 引用块的颜色跟着作者走，和头像同一档色调
+			row.dataset.tgTone = String(tone);
+			// 父评论先记在行上：它可能还在后一页没拉回来，等索引补全了再画引用块
+			row.dataset.tgParent = comment.parentId ?? "";
+			chatCtx.registerRow(row);
+			return row;
+		};
+
+		/** 渲染一条自己发过的评论（审核通过后从接口拿回来的那条） */
+		const renderOutgoing = (comment: ApiComment): HTMLElement | null => {
+			const row = buildOutgoing(
+				comment.body,
+				formatTime(comment.createdAt),
+				false,
+			);
+			if (!row) return null;
+			row.dataset.tgMsg = comment.id;
+			row.dataset.tgParent = comment.parentId ?? "";
+			chatCtx.registerRow(row);
+			return row;
+		};
+
+		/**
+		 * 把渲染好的行放进消息区。
+		 *
+		 * 补历史时整批插在第一条消息之前：用一个 fragment 一次性插入，
+		 * 逐条 insertBefore 会把顺序反过来。「加载更早」按钮和「今天」分隔线
+		 * 都排在消息前面，插在第一条消息之前自然就落在它们之后。
+		 */
+		const placeRows = (rows: HTMLElement[], prepend: boolean) => {
+			if (rows.length === 0) return;
+			if (!prepend) {
+				for (const row of rows) scroller.append(row);
+				return;
+			}
+			const fragment = document.createDocumentFragment();
+			for (const row of rows) fragment.append(row);
+			scroller.insertBefore(fragment, scroller.querySelector(".tg-row"));
+		};
+
+		/**
+		 * 按索引给所有还没画引用块的行补上。
+		 *
+		 * 一页里找得到父评论的先画；找不到的先空着，等「加载更早」把那一页
+		 * 拉回来再统一补一遍 —— 否则用户得刷新才能看到回复关系。
+		 * decorate 自己会跳过已经有引用块的行，重复调用是安全的。
+		 */
+		const decorateReplies = () => {
+			for (const row of Array.from(
+				scroller.querySelectorAll<HTMLElement>(".tg-row"),
+			)) {
+				const parentId = row.dataset.tgParent;
+				if (!parentId) continue;
+				const parent = byID.get(parentId);
+				if (!parent) continue;
+				chatCtx.decorate(row, {
+					id: parent.id,
+					name: parent.author.name || "?",
+					text: summarizeMarkdown(parent.body),
+				});
+			}
+		};
+
+		/**
+		 * 把一页评论并进列表。
+		 *
+		 * 后端按时间倒序给，这里翻过来让最旧的在上 —— 聊天读法。
+		 * 认得出是自己的（id 在 ownIds 里）放右侧，其余放左侧：接口不回传邮箱，
+		 * 没有别的办法区分「我」和「别人」。
+		 */
+		const mergePage = (page: CommentPage, prepend: boolean) => {
+			for (const comment of page.items) byID.set(comment.id, comment);
+			loadedCount += page.items.length;
+			hasMore = page.hasMore;
+
+			const rows: HTMLElement[] = [];
+			for (const comment of page.items.slice().reverse()) {
+				const row = ownIds.has(comment.id)
+					? renderOutgoing(comment)
+					: renderIncoming(comment);
+				if (row) rows.push(row);
+			}
+			placeRows(rows, prepend);
+
+			decorateReplies();
+			chatCtx.relayout();
+			syncMore();
+
+			// 「今天」分隔线只在确实全是今天的时候才成立，跨天的评论会露馅。
+			// 补了更早的页之后结论可能反转，所以每次合并都按全量重算
+			if (dayNode) {
+				dayNode.hidden = Array.from(byID.values()).some(
+					(comment) => !isToday(comment.createdAt),
+				);
+			}
+		};
+
+		/** 拉当前线程最新的一页并重建列表 */
+		const loadComments = async () => {
+			const token = ++loadToken;
+			clearRows();
+			byID = new Map();
+			loadedCount = 0;
+			hasMore = false;
+			loadingMore = false;
+			syncMore();
+			if (dayNode) dayNode.hidden = true;
+			setState("loading");
+
+			try {
+				const page = await fetchComments(slug, 0);
+				if (token !== loadToken) return;
+
+				if (page.items.length === 0) {
+					setState("empty", textLabels.empty);
+					return;
+				}
+				setState(null);
+				mergePage(page, false);
+				requestAnimationFrame(toBottom);
+			} catch {
+				if (token !== loadToken) return;
+				setState("failed", textLabels.loadFailed);
+			}
+		};
+
+		/**
+		 * 往前补一页更早的评论。
+		 *
+		 * 新内容插在视口上方，得把滚动位置往上垫回相同的高度，否则整屏会
+		 * 突然跳到最后一条已经读过的消息上。失败只让按钮闪一下提示，
+		 * 不把整个线程打成「加载失败」—— 已经读到的消息仍然有效。
+		 */
+		const loadMore = async () => {
+			if (!hasMore || loadingMore) return;
+			const token = loadToken;
+			loadingMore = true;
+			syncMore();
+
+			const prevHeight = scroller.scrollHeight;
+			const prevTop = scroller.scrollTop;
+
+			try {
+				const page = await fetchComments(slug, loadedCount);
+				if (token !== loadToken) return;
+				mergePage(page, true);
+				scroller.scrollTop = prevTop + (scroller.scrollHeight - prevHeight);
+			} catch {
+				if (token !== loadToken) return;
+				if (moreButton) {
+					moreButton.textContent = textLabels.loadFailed;
+					window.setTimeout(() => {
+						moreButton.textContent = moreText;
+					}, 2000);
+				}
+			} finally {
+				// 换线程之后这个 token 已经作废：新线程的 loadingMore 由 loadComments 重置
+				if (token === loadToken) {
+					loadingMore = false;
+					syncMore();
+				}
+			}
+		};
+
+		moreButton?.addEventListener("click", () => void loadMore());
+
+		// 滚到顶就自动补一页：和 Telegram 一样，不用每次去够那个按钮。
+		// 只在完全贴顶时触发，否则翻页后补偿出的那点偏移会立刻再触发一次
+		scroller.addEventListener(
+			"scroll",
+			() => {
+				if (scroller.scrollTop > 24) return;
+				void loadMore();
+			},
+			{ passive: true },
+		);
 
 		// 空输入时纸飞机是灰的、有内容才点亮成蓝色。
 		// 「有内容」= 有文字或至少有一张贴纸（贴纸是 <img>，textContent 里看不到）
@@ -1185,6 +1490,10 @@ const rows = messages.map((message, index) => {
 			requestAnimationFrame(toBottom);
 		};
 
+		// 后端还没有图片上传接口，而 blob: 地址过不了正文的 URL 白名单 ——
+		// 放出来只会得到「本地看着发出去了、刷新就没了」的假象。等上传接口上线再放开
+		if (attachButton) attachButton.style.display = "none";
+
 		attachButton?.addEventListener("click", () => fileInput?.click());
 		fileInput?.addEventListener("change", () => {
 			const file = fileInput.files?.[0];
@@ -1196,28 +1505,55 @@ const rows = messages.map((message, index) => {
 
 		// ---------------- 发送消息 ----------------
 
+		/**
+		 * 把刚追加的气泡换成后端那一条：换 id、记进 ownIds、按返回的状态决定
+		 * 「待审核」怎么显示。失败时不撤回气泡 —— 内容在里面，用户还能右键复制重发。
+		 */
+		const submitComment = async (
+			row: HTMLElement,
+			body: string,
+			author: { name: string; email: string },
+			parentId?: string,
+		) => {
+			form.dataset.sending = "true";
+			try {
+				const created = await postComment(slug, { author, body, parentId });
+				// 换成后端 id：引用跳转、撤回记录都按它来，刷新后才对得上
+				row.dataset.tgMsg = created.id;
+				row.dataset.tgParent = created.parentId ?? "";
+				// 撤回凭据只有这一次能拿到：连同 id 一起存下来，下次打开还能删
+				rememberOwnComment(created.id, created.deleteToken);
+				ownIds.add(created.id);
+				setPending(row, created.status === "pending");
+			} catch {
+				row.classList.add("is-failed");
+				setPending(row, true, textLabels.sendFailed);
+			} finally {
+				form.dataset.sending = "false";
+			}
+		};
+
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
+			if (form.dataset.sending === "true") return;
 			// 输入框是富文本：贴纸是 <img>，textContent 里什么都读不到，
 			// 必须走 readComposer 把「文字 + 换行 + 贴纸」按顺序拼回 Markdown
 			const source = readComposer();
 			if (!source.trim()) return;
 
-			const row = (template.content.cloneNode(true) as DocumentFragment)
-				.firstElementChild as HTMLElement | null;
-			if (!row) return;
-			const body = row.querySelector<HTMLElement>(".tg-text");
-			const time = row.querySelector<HTMLElement>(".tg-time");
-			// 取走待发送的引用：引用块要嵌在气泡顶部、正文之上
+			// 身份没填全时输入栏本来就是锁着的，这里只是兜底（比如身份被清掉）
+			const user = getCommentUser();
+			const name = user?.name.trim() || chat.dataset.tgDefaultName || "";
+			const email = user?.email.trim() || "";
+			if (!name) return;
+
+			// 取走待发送的引用：引用块要嵌在气泡顶部、正文之上。
+			// 引用的 target 就是原消息的 data-tg-msg，自己发过的那些已经是后端 id，
+			// 提交时直接当 parentId 用
 			const quote = chatCtx.takePendingReply();
-			if (body) {
-				// 模板里的 .tg-text 已经带 tg-text--md，直接按 Markdown 渲染进去；
-				// 原文留一份给右键「复制」用
-				body.dataset.tgSource = source;
-				setMarkdown(body, source, labels);
-			}
+			const row = buildOutgoing(source, stamp(0), true);
+			if (!row) return;
 			if (quote) chatCtx.decorate(row, quote);
-			if (time) time.textContent = stamp(0);
 
 			chatCtx.registerRow(row);
 			scroller.append(row);
@@ -1229,7 +1565,26 @@ const rows = messages.map((message, index) => {
 			// 等浏览器完成一次布局再滚，否则新气泡高度还算不出来
 			requestAnimationFrame(toBottom);
 			composer.focus({ preventScroll: true });
+
+			void submitComment(row, source, { name, email }, quote?.id);
 		});
+
+		/* ---------------- 抽屉切换动态 ---------------- */
+
+		// 抽屉里换一条动态时父窗口只递 path 过来、不重载文档（重载等于白屏），
+		// 线程就靠这里换。同一个 path 会重复到达（打开、尺寸变化都会发），要忽略
+		window.addEventListener("message", (event) => {
+			if (event.origin !== window.location.origin) return;
+			const data = event.data as { type?: string; path?: string } | null;
+			if (data?.type !== "dynamic-comment-path") return;
+			chat.dataset.tgPath = String(data.path || "");
+			const next = slugOfPath(chat.dataset.tgPath || "/dynamic/");
+			if (next === slug) return;
+			slug = next;
+			void loadComments();
+		});
+
+		void loadComments();
 	}
 
 	/* ---------------- 与评论抽屉（父窗口）的桥 ---------------- */

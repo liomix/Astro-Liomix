@@ -57,12 +57,14 @@ export type {
 	FontSelectionConfig,
 } from "../types/fontConfig"; // 字体类型定义
 export type { SiteStatsConfig } from "../types/siteStatsConfig"; // 站点访问量统计类型
+export type { CommentApiConfig } from "../types/commentApiConfig"; // 评论接口类型
 export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
 // 样式配置
 export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配置
 export { booknavConfig, booknavPageConfig } from "./booknavConfig"; // 书签导航配置
 // 功能配置
+export { commentApiConfig } from "./commentApiConfig"; // 评论接口配置
 export {
 	COMMENT_WALLPAPER_STORAGE_KEY,
 	commentWallpaperConfig,

@@ -181,7 +181,7 @@ export function getCommentUser(): CommentUser | null {
 	}
 }
 
-/** 写本地身份；顺带派发 commentUserChange，方便以后接后端时统一监听 */
+/** 写本地身份；顺带派发 commentUserChange，想跟着身份变化更新 UI 的地方监听它 */
 export function setCommentUser(user: CommentUser): void {
 	const next: CommentUser = {
 		name: user.name.trim().slice(0, COMMENT_NAME_MAX),

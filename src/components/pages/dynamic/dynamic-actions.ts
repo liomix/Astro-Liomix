@@ -75,7 +75,10 @@ function paintLikeCount(button: HTMLElement, liked: boolean): void {
 	node.textContent = formatCompactNumber(base + (liked ? 1 : 0));
 }
 
-/** 评论数：评论系统接上后才会有真实数字，现在按 data-comment-base 预置（默认 0） */
+/**
+ * 评论数：由数据源（或后端批量计数）写进 `data-comment-base`，这里只负责画出来。
+ * 刚发的评论还在待审核，不会立刻加进这个数字 —— 它与抽屉里看到的条数一致。
+ */
 function paintCommentCount(button: HTMLElement): void {
 	const node = button.querySelector<HTMLElement>(
 		"[data-dynamic-comment-count]",

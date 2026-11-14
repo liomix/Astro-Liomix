@@ -11,6 +11,8 @@ import {
 	closeCommentDrawer,
 	openCommentDrawer,
 } from "@/components/pages/dynamic/dynamic-comment-drawer";
+import { commentApiConfig } from "@/config/commentApiConfig";
+import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { fetchMemos } from "@/utils/memos-adapter";
@@ -70,6 +72,8 @@ const {
 
 let entries = $state<DynamicData[]>([]);
 let filtered = $state<DynamicData[]>([]);
+/** 后端回报的真实评论数：id → 条数。缺的条目沿用数据源里的基数 */
+let commentCounts = $state<Record<string, number>>({});
 let currentPage = $state(1);
 let loading = $state(true);
 let failed = $state(false);
@@ -131,8 +135,24 @@ function paintStat(name: StatName, value: number): void {
 }
 
 /**
+ * 一条动态在评论后端里的 slug。
+ *
+ * 必须和抽屉里算出来的那个完全一致（`slugOfPath` 把 `/dynamic/<id>/` 压成
+ * `dynamic-<id>`），否则卡片问的和抽屉拉的是两篇，数字永远对不上。
+ */
+function commentSlugOf(id: string): string {
+	return slugOfPath(`/dynamic/${id}/`);
+}
+
+/** 卡片上该显示的评论数：后端答过的优先，其次才是数据源里的基数 */
+function commentCountOf(entry: DynamicData): number {
+	return commentCounts[entry.id] ?? (Number(entry.comments) || 0);
+}
+
+/**
  * 刷新页头那三格：动态条数 / 获赞 / 评论（都是全站合计，不跟着筛选走）。
- * 数据源没给 likes、comments 时按 0 算；获赞再加上访客自己点过的那些赞。
+ * 数据源没给 likes、comments 时按 0 算；获赞再加上访客自己点过的那些赞；
+ * 评论数以后端为准（pending 不算，所以刚发的评论不会让数字立刻跳一下）。
  */
 function syncHeroStats(): void {
 	const liked = readLikedIds();
@@ -140,7 +160,7 @@ function syncHeroStats(): void {
 	let comments = 0;
 	for (const entry of entries) {
 		likes += Number(entry.likes) || 0;
-		comments += Number(entry.comments) || 0;
+		comments += commentCountOf(entry);
 		if (liked.has(entry.id)) likes += 1;
 	}
 	paintStat("posts", entries.length);
@@ -282,11 +302,11 @@ function createItem(entry: DynamicData) {
 		"[data-dynamic-comment]",
 	);
 	if (commentButton) {
-		commentButton.dataset.commentBase = String(entry.comments ?? 0);
+		commentButton.dataset.commentBase = String(commentCountOf(entry));
 	}
 
-	// 评论地址挂到条目上：底部评论按钮点开的是右侧抽屉，抽屉按这个地址装 iframe
-	// （iframe 里是 Telegram 风格的聊天界面，消息目前为内置示例）。
+	// 评论地址挂到条目上：底部评论按钮点开的是右侧抽屉，抽屉按这个地址装 iframe，
+	// 地址里的 path 会被评论页算成这条动态的评论线程 slug。
 	// embed=1 告诉评论页「你在抽屉里」：据此渲染那颗关闭按钮，仅此而已 ——
 	// 壁纸与顶底栏毛玻璃都在评论页自己的文档里，不依赖父窗口
 	if (showComments) {
@@ -296,6 +316,53 @@ function createItem(entry: DynamicData) {
 	}
 	root.dataset.commentEmpty = commentEmptyText;
 	return fragment;
+}
+
+/**
+ * 把后端回报的评论数写回已经渲染出来的卡片。
+ *
+ * createItem 只能拿到克隆那一刻的数字，而请求回来时卡片通常已经在 DOM 里了。
+ * 不重排整批条目（那会重建所有节点、丢掉锚点与滚动位置），只改按钮上的基数，
+ * 再交给 syncDynamicLikeStates 统一重涂文字。
+ */
+function paintCommentCounts(): void {
+	if (!list) return;
+	for (const root of Array.from(
+		list.querySelectorAll<HTMLElement>("[data-dynamic-entry]"),
+	)) {
+		const id = root.dataset.likeId;
+		if (!id) continue;
+		const count = commentCounts[id];
+		if (count === undefined) continue;
+		const button = root.querySelector<HTMLElement>("[data-dynamic-comment]");
+		if (button) button.dataset.commentBase = String(count);
+	}
+	syncDynamicLikeStates(list);
+}
+
+/**
+ * 问一遍后端：这些动态各有多少条已审核评论。
+ *
+ * 失败就留着数据源里的基数：卡片上写 0 至少是个数字，换成「—」会让整条统计
+ * 看起来坏掉；而且这批数字只是装饰，不值得惊动用户。
+ */
+async function loadCommentCounts(): Promise<void> {
+	if (!showComments || !commentApiConfig.enable || entries.length === 0) return;
+	try {
+		const counts = await fetchCommentCounts(
+			entries.map((entry) => commentSlugOf(entry.id)),
+		);
+		const next: Record<string, number> = {};
+		for (const entry of entries) {
+			const count = counts.get(commentSlugOf(entry.id));
+			if (count !== undefined) next[entry.id] = count;
+		}
+		commentCounts = next;
+		paintCommentCounts();
+		syncHeroStats();
+	} catch (error) {
+		console.warn("Failed to load comment counts", error);
+	}
 }
 
 async function renderItems(items: DynamicData[]) {
@@ -415,6 +482,8 @@ onMount(() => {
 			}
 			// 更新页头统计（动态条数 / 获赞 / 评论）
 			syncHeroStats();
+			// 真实评论数随后端回来再刷一次；拿不到就沿用数据源里的基数
+			void loadCommentCounts();
 			populateYears();
 			currentPage = pageFromUrl();
 			applyFilters(false);

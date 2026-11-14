@@ -5,25 +5,30 @@
  * 菜单贴着指针弹出、超出视口自动翻转，Esc / 点空白 / 滚动都会收起。
  *
  * 三项各自的行为：
- *   - 复制：优先复制消息的 Markdown 原文（发送时存在 data-tg-source 上）；
- *     示例消息没有原文，就从渲染结果里回读纯文本（图片按 alt 取）。
+ *   - 复制：优先复制消息的 Markdown 原文（自己发的、从接口拉回来的都写在
+ *     data-tg-source 上）；没有原文才从渲染结果里回读纯文本（图片按 alt 取）。
  *     如果用户先在消息里选中了一段文字，则只复制选区 —— 右键会抑制浏览器
  *     自带的「复制」，不接管的话选中文字后右键就复制不到了。
  *   - 回复：输入框上方出现一条引用预览（左侧竖线 + 名字 + 摘要），发送后
- *     引用块嵌进新气泡顶部，点它能跳回原消息并闪一下。
+ *     引用块嵌进新气泡顶部，点它能跳回原消息并闪一下。历史评论里的回复也画
+ *     同样的块（TelegramChat 的 loadComments 按 parentId 找父评论后调 decorate）。
  *   - 撤回：等同 Telegram 的删除，只能删自己发出去的消息（data-tg-side="out"），
- *     别人的消息上这一项不出现。气泡淡出后从列表移除，id 记进 localStorage，
- *     刷新后不会再冒出来。现在所有动态共用同一份示例消息，所以不按 path 分桶
- *     —— 等接了真实评论数据再改成按动态存。
+ *     别人的消息上这一项不出现。删除是真的删：创建评论时后端给了一个只够删这
+ *     一条的凭据（存在 comment-own.ts 里），这里拿它去调 DELETE —— 删完刷新也
+ *     不会回来，别人的列表里同时消失。请求失败就把气泡留下并提示，不装作删掉了。
+ *     删除是级联的（后端会连回复一起删），所以先让用户确认一次。
  *
- * 消息 id 由组件在 SSR 阶段写死（msg-1、msg-2…），脚本不按当前顺序现算 ——
- * 否则撤回第 2 条后刷新，原本的第 3 条会顶上来拿到 msg-2，被再删一次。
+ * 消息 id 用后端给的评论 id（data-tg-msg）。刚发出去、响应还没回来时先挂一个
+ * 临时 id，拿到后换成真的 —— 不按 DOM 顺序现算，否则撤回第 2 条后刷新，原本的
+ * 第 3 条会顶上来拿到同一个 id，被再删一次。
  */
 
+import {
+	deleteTokenOf,
+	forgetOwnComment,
+} from "@/components/pages/dynamic/comment-own";
 import { getCommentUser } from "@/components/pages/dynamic/comment-user";
-
-/** 撤回记录的存储键，和 firefly-dynamic-likes 同一套命名 */
-const RETRACTED_KEY = "firefly-tg-retracted";
+import { deleteComment } from "@/utils/comment-client";
 
 /** 引用预览里的摘要长度上限：超过就截断，够看清是哪条消息 */
 const REPLY_SUMMARY_MAX = 90;
@@ -57,30 +62,6 @@ export interface ChatContextPopHandle {
 	relayout(): void;
 	/** 清掉全部 document 级监听（抽屉反复挂载时用） */
 	destroy(): void;
-}
-
-/** 读撤回记录；没存过、解析失败都当成「空」 */
-function readRetracted(): Set<string> {
-	try {
-		const raw = localStorage.getItem(RETRACTED_KEY);
-		if (!raw) return new Set();
-		const parsed: unknown = JSON.parse(raw);
-		return new Set(
-			Array.isArray(parsed)
-				? parsed.filter((id): id is string => typeof id === "string")
-				: [],
-		);
-	} catch {
-		return new Set();
-	}
-}
-
-function writeRetracted(ids: Set<string>): void {
-	try {
-		localStorage.setItem(RETRACTED_KEY, JSON.stringify(Array.from(ids)));
-	} catch {
-		// 隐私模式下写不进去：本次会话里已移除，刷新后会回来，不影响交互
-	}
 }
 
 /** 展开消息里能看到的文字：文本节点原样、<br> 转换行、图片取 alt、代码块整体保留 */
@@ -119,6 +100,32 @@ function truncate(text: string, max: number): string {
 	return chars.length > max ? `${chars.slice(0, max).join("")}…` : text;
 }
 
+/**
+ * 把一段 Markdown 压成引用摘要那种单行纯文本。
+ *
+ * 历史评论拉回来只有原文（渲染结果在气泡里，还没挂上去），而引用块只有一行
+ * 高度，所以先把语法符号去掉：围栏、图片取 alt、链接取文字、列表 / 引用 / 标题
+ * 的行首标记、强调与行内代码的反引号。信息有损，但预览本来就只需要「这是哪条」。
+ *
+ * 尖括号里的东西不动：写在行内代码里的 `<pre>` 是一个标签名（该留着），而真正的
+ * 内联 HTML 去掉标签反而会把文字拼在一起。为一行预览写个 HTML 解析器不值。
+ */
+export function summarizeMarkdown(
+	markdown: string,
+	max = REPLY_SUMMARY_MAX,
+): string {
+	const text = markdown
+		// 围栏本身去掉、内容留着：整段都是代码的回复，摘要不该是空白
+		.replace(/^ {0,3}```.*$/gm, "")
+		.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+		.replace(/^ {0,3}#{1,6}\s+/gm, "")
+		.replace(/^ {0,3}>\s?/gm, "")
+		.replace(/^ {0,3}(?:[-*+]|\d+[.)])\s+/gm, "")
+		.replace(/[*_~`]+/g, "");
+	return truncate(oneLine(text), max);
+}
+
 export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 	const menu = chat.querySelector<HTMLElement>("[data-ctx-pop]");
@@ -132,6 +139,10 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	const labels = {
 		copied: chat.dataset.tgLabelCopied || "Copied",
 		retracted: chat.dataset.tgLabelRetracted || "Deleted",
+		retractFailed: chat.dataset.tgLabelRetractFailed || "Could not delete",
+		retractReplies:
+			chat.dataset.tgLabelRetractReplies ||
+			"This comment has replies. Deleting it removes them too. Continue?",
 		me: chat.dataset.tgLabelMe || "You",
 	};
 	const noopHandle: ChatContextPopHandle = {
@@ -150,10 +161,8 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	let toastTimer = 0;
 	let longPressTimer = 0;
 	let longPressStart = { x: 0, y: 0 };
-	/** 新消息的自增号：SSR 消息占 msg-1…msg-n，新发的接着往后排 */
+	/** 临时 id 的自增号：同一毫秒发两条也不会撞 */
 	let seq = 0;
-
-	const retractedIds = readRetracted();
 
 	const senderName = (): string =>
 		getCommentUser()?.name || chat.dataset.tgDefaultName || labels.me;
@@ -301,27 +310,58 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 
 	/* ---------------- 撤回 ---------------- */
 
-	function rememberRetracted(id: string): void {
-		if (!id) return;
-		retractedIds.add(id);
-		writeRetracted(retractedIds);
-	}
-
-	function retract(row: HTMLElement): void {
+	/**
+	 * 撤回一条自己发的消息：先让后端删掉，成功了才动界面。
+	 *
+	 * 顺序不能反 —— 先淡出再请求的话，请求失败就得把一条已经「消失」的消息
+	 * 再放回去，那比慢半拍难看得多。本地凭据丢了（换了设备、清了缓存）也算
+	 * 失败：这条评论确实删不掉，不能靠隐藏假装删掉了。
+	 */
+	async function retract(row: HTMLElement): Promise<void> {
 		// 菜单里已经不给别人的消息开这一项，这里再兜一次：
 		// 权限判断不能只靠 UI 隐藏，键盘/脚本触发也不能越界
 		if (!isOwn(row)) return;
 		const id = row.dataset.tgMsg ?? "";
-		rememberRetracted(id);
-		row.classList.add("is-retracting");
-		// 动画结束再摘掉；prefers-reduced-motion 下 CSS 没有过渡，这里的延时也无害
-		window.setTimeout(() => {
+
+		// 还没拿到后端 id 的临时消息（发送中 / 发送失败）没有可删的东西，
+		// 从列表里摘掉就等于撤回：它从来没有到过服务端
+		if (!id || id.startsWith("msg-new-")) {
 			row.remove();
-			// 少了一条，分组可能变（同一个人被拆开、或前后合并），重排一次
 			relayout();
-			// 引用它的人还在等这条消息，清掉预览，免得发出去指向一条已经不在的消息
-			if (pending && pending.id === id) clearReply();
-		}, 200);
+			return;
+		}
+
+		// 真评论却没有凭据：换过设备、清过缓存，或者那条根本不是这台机器发的。
+		// 这种情况删不掉，只能如实说 —— 悄悄隐藏等于骗人，刷新它又回来了
+		const token = deleteTokenOf(id);
+		if (!token) {
+			showToast(labels.retractFailed);
+			return;
+		}
+
+		// 后端删父评论会连整棵回复子树一起删。只在确实能看到回复时才问一句：
+		// 每条都弹窗反而会让人闭眼点确定。更早的页面上有回复的情况看不到，
+		// 那种只能靠「已经删掉了」这个结果本身说明问题
+		const hasReplies = Array.from(
+			scroller.querySelectorAll<HTMLElement>(".tg-row"),
+		).some((other) => other !== row && other.dataset.tgParent === id);
+		if (hasReplies && !window.confirm(labels.retractReplies)) return;
+
+		row.classList.add("is-retracting");
+		try {
+			await deleteComment(id, token);
+		} catch {
+			row.classList.remove("is-retracting");
+			showToast(labels.retractFailed);
+			return;
+		}
+
+		forgetOwnComment(id);
+		row.remove();
+		// 少了一条，分组可能变（同一个人被拆开、或前后合并），重排一次
+		relayout();
+		// 引用它的人还在等这条消息，清掉预览，免得发出去指向一条已经不在的消息
+		if (pending && pending.id === id) clearReply();
 		showToast(labels.retracted);
 	}
 
@@ -344,6 +384,9 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		const bubble = row.querySelector<HTMLElement>(".tg-bubble");
 		const body = bubble?.querySelector<HTMLElement>(".tg-text");
 		if (!bubble || !body) return;
+		// 补页之后会对全部行重跑一次，已经有引用块的就跳过 ——
+		// 否则同一条回复会带着两三个一模一样的引用块
+		if (bubble.querySelector(".tg-quote")) return;
 
 		const quote = document.createElement("button");
 		quote.type = "button";
@@ -391,7 +434,7 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		}
 
 		if (action === "retract") {
-			retract(row);
+			void retract(row);
 		}
 	}
 
@@ -505,14 +548,7 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		if (Math.hypot(dx, dy) > LONG_PRESS_SLOP) cancelLongPress();
 	};
 
-	// 已经撤回过的消息：首屏进来就别显示（刷新、重进抽屉都一致）
-	for (const row of Array.from(
-		scroller.querySelectorAll<HTMLElement>(".tg-row"),
-	)) {
-		const id = row.dataset.tgMsg;
-		if (id && retractedIds.has(id)) row.remove();
-	}
-	// 首屏被摘掉几条之后，留下的分组也要按新顺序重算，否则组尾的头像跟着丢了
+	// 首屏的分组按当前顺序算一遍：SSR 渲染的 class 不会知道后面会插进来什么
 	relayout();
 
 	scroller.addEventListener("contextmenu", onContextMenu);

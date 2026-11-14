@@ -13,6 +13,8 @@ import {
 	syncDynamicLikeStates,
 } from "@/components/pages/dynamic/dynamic-actions";
 import SidebarPop from "@/components/widget/SidebarPop.svelte";
+import { commentApiConfig } from "@/config/commentApiConfig";
+import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { fetchWithDedup } from "@/utils/fetch-dedup";
@@ -69,6 +71,8 @@ let allEntries: DynamicEntry[] = $state([]);
 let totalCount = $state(0);
 let loading = $state(true);
 let error = $state(false);
+/** 后端回报的真实评论数：id → 条数。缺的条目沿用数据源里的 comments */
+let commentCounts: Record<string, number> = $state({});
 
 let dialogOpen = $state(false);
 
@@ -93,12 +97,37 @@ onMount(async () => {
 		// 弹窗条目渲染完成后同步已点赞状态
 		await tick();
 		syncDynamicLikeStates();
+		// 评论数取后端：数据源里的 comments 是静态字段，不跟真实讨论走
+		void loadCommentCounts(data);
 	} catch {
 		error = true;
 	} finally {
 		loading = false;
 	}
 });
+
+/**
+ * 问一遍后端：这些动态各有多少条已审核评论。
+ *
+ * 只更新答过的那些 id —— 请求失败时数字留在数据源给的值上，而不是被清成 0。
+ * 侧栏只渲染前几条，但弹窗是全量，所以问的是全部条目。
+ */
+async function loadCommentCounts(data: DynamicEntry[]) {
+	if (!commentApiConfig.enable || data.length === 0) return;
+	try {
+		const counts = await fetchCommentCounts(
+			data.map((entry) => slugOfPath(`/dynamic/${entry.id}/`)),
+		);
+		const next: Record<string, number> = {};
+		for (const entry of data) {
+			const count = counts.get(slugOfPath(`/dynamic/${entry.id}/`));
+			if (count !== undefined) next[entry.id] = count;
+		}
+		commentCounts = next;
+	} catch (error) {
+		console.warn("Failed to load comment counts", error);
+	}
+}
 
 // 从 HTML 中提取纯文本摘要
 function getPlainText(html: string): string {
@@ -315,7 +344,9 @@ function visibleImages(entry: DynamicEntry) {
 							data-animation="comment-chats"
 							style="font-size:1.25rem"></dynamic-lottie-icon>
 						<span class="pop-action-count" data-dynamic-comment-count
-							>{formatCompactNumber(entry.comments ?? 0)}</span
+							>{formatCompactNumber(
+								commentCounts[entry.id] ?? (entry.comments ?? 0),
+							)}</span
 						>
 					</a>
 				</div>

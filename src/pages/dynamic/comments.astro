@@ -8,6 +8,7 @@
  */
 import TelegramChat from "@/components/pages/dynamic/TelegramChat.astro";
 import { dynamicConfig, profileConfig, siteConfig } from "@/config";
+import { commentApiConfig } from "@/config/commentApiConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import CommentLayout from "@/layouts/CommentLayout.astro";
@@ -17,13 +18,19 @@ import "@/styles/pages/telegram-chat.css";
 // 它要覆盖 .tg-head-avatar 的显示规则、给 .tg-composer 补 position: relative
 import "@/styles/pages/comment-info.css";
 
-if (!siteConfig.pages.dynamic || dynamicConfig.showComment === false) {
+// 接口关掉时这一页没有意义：入口（动态卡片上的评论按钮）也随之消失，
+// 留下一个空壳只会被当成故障
+if (
+	!siteConfig.pages.dynamic ||
+	dynamicConfig.showComment === false ||
+	!commentApiConfig.enable
+) {
 	return Astro.redirect("/404/");
 }
 
-// 评论地址（?path=）这里故意不读：消息目前是内置示例，这个值只挂到 root 的
-// data 属性上，等接了真实数据源再用。这一页是预渲染的静态路由，构建期拿不到
-// 查询参数，真正的值由 TelegramChat 的脚本从地址栏补写
+// 评论地址（?path=）这里故意不读：这一页是预渲染的静态路由，构建期拿不到查询
+// 参数，真正的值由 TelegramChat 的脚本从地址栏补写到 [data-tg-chat] 上，再算成
+// 后端认的 slug。挂在这里的默认值只决定「直接打开 /dynamic/comments/ 时聊哪个线程」
 
 // 顶栏现在展示的是「访客的评论身份」，默认值取站点昵称 + Email 链接：
 // 没设置过的访客点开弹窗就是预填好的这两条，改成自己的保存一次才解锁输入框。
@@ -74,12 +81,8 @@ const contact = (
 		}
 
 		// 换了一条动态看评论：抽屉里是同一个预渲染页面，父窗口只把 path 递过来，
-		// 不重载文档（重载等于白屏几百毫秒）。path 目前只作标记，等接真实评论数据才用它查
-		if (event.data?.type === "dynamic-comment-path") {
-			const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
-			if (chat) chat.dataset.tgPath = String(event.data.path || "");
-			return;
-		}
+		// 不重载文档（重载等于白屏几百毫秒）。切换线程的逻辑收在聊天组件自己身上
+		// —— 它要据此重新拉评论，这里再写一遍会变成两份状态
 
 		// 父窗口（设置面板）换了评论区壁纸：壁纸画在本文档里，只能由这边换
 		if (event.data?.type === "dynamic-comment-wallpaper" && event.data.id) {

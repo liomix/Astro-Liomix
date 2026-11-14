@@ -89,6 +89,13 @@ enum I18nKey {
 	guestbookCommentHint = "guestbookCommentHint",
 	// 动态页评论抽屉（Telegram 风格聊天）
 	commentChatToday = "commentChatToday",
+	commentChatLoading = "commentChatLoading",
+	commentChatEmpty = "commentChatEmpty",
+	commentChatDisabled = "commentChatDisabled",
+	commentChatLoadFailed = "commentChatLoadFailed",
+	commentChatLoadMore = "commentChatLoadMore",
+	commentChatSendFailed = "commentChatSendFailed",
+	commentChatPending = "commentChatPending",
 	commentChatPlaceholder = "commentChatPlaceholder",
 	commentChatSend = "commentChatSend",
 	commentChatEmoji = "commentChatEmoji",
@@ -100,6 +107,8 @@ enum I18nKey {
 	commentChatReply = "commentChatReply",
 	commentChatRetract = "commentChatRetract",
 	commentChatRetracted = "commentChatRetracted",
+	commentChatRetractFailed = "commentChatRetractFailed",
+	commentChatRetractReplies = "commentChatRetractReplies",
 	commentChatMe = "commentChatMe",
 	// 评论身份弹窗（顶栏那块点开的 CommentInfoPop）
 	commentInfoTitle = "commentInfoTitle",

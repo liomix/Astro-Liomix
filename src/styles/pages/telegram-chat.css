@@ -305,6 +305,11 @@ html[data-embedded] .tg-head-close {
 	margin: 0.35rem 0 0.5rem;
 }
 
+/* 上面那条 display 会盖掉 UA 的 [hidden]，得自己声明回来 */
+.tg-day[hidden] {
+	display: none;
+}
+
 .tg-day span {
 	padding: 0.15rem 0.6rem;
 	border-radius: 9999px;
@@ -318,6 +323,86 @@ html[data-embedded] .tg-head-close {
 :root.dark .tg-day span {
 	background: color-mix(in srgb, #000 42%, transparent);
 	color: #dfe6ec;
+}
+
+/* 「加载更早」：贴着消息区顶部的一颗小胶囊。
+   和日期分隔线一样居中，但可点，所以要有一层底色把自己从壁纸上拎出来 */
+.tg-more {
+	display: flex;
+	justify-content: center;
+	padding: 0.4rem 0 0.2rem;
+}
+
+.tg-more[hidden] {
+	display: none;
+}
+
+.tg-more-btn {
+	padding: 0.22rem 0.8rem;
+	border: none;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-text) 18%, transparent);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.5;
+	cursor: pointer;
+	transition: background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.tg-more-btn:hover {
+	background: color-mix(in srgb, var(--tg-text) 32%, transparent);
+}
+
+.tg-more-btn:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+:root.dark .tg-more-btn {
+	background: color-mix(in srgb, #000 40%, transparent);
+	color: #dfe6ec;
+}
+
+:root.dark .tg-more-btn:hover {
+	background: color-mix(in srgb, #000 56%, transparent);
+}
+
+/* 评论接口被关掉时（commentApiConfig.enable = false）：只剩壁纸和顶栏。
+   输入栏收起来而不是置灰 —— 一个永远点不动的输入框更像故障 */
+.tg-chat[data-tg-disabled="true"] .tg-bottom {
+	display: none;
+}
+
+/* 消息区的状态占位：加载中 / 还没有评论 / 加载失败。
+   上下留 auto 让它在空列表里站到中间，不至于顶在分隔线下面 */
+.tg-state {
+	display: flex;
+	justify-content: center;
+	margin: auto 0;
+	padding: 1.2rem 0.75rem;
+	color: var(--tg-meta);
+	font-size: 0.78rem;
+	line-height: 1.5;
+	text-align: center;
+}
+
+.tg-state[data-tg-state="failed"] {
+	color: #d9534f;
+}
+
+/* 时间旁边那一小截：待审核 / 发送失败。
+   宽度不固定，但白名单里的字号要小到不跟时间抢视线 */
+.tg-pending {
+	margin-left: 0.25rem;
+	color: var(--tg-meta);
+	font-size: 0.65rem;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.tg-row.is-failed .tg-pending {
+	color: #d9534f;
 }
 
 /* 一行消息：靠左 / 靠右。头像与气泡底边对齐（Telegram 头像贴在本条消息底部） */
@@ -363,7 +448,7 @@ html[data-embedded] .tg-head-close {
 }
 
 /* 对方没有头像时的首字母彩圆：Telegram 默认按用户分配一组渐变，
-   这里给 4 种色调，示例消息按人固定一种 */
+   这里给 4 种色调，按昵称哈希固定一种（同一个名字永远同一种，不会随顺序变） */
 .tg-avatar {
 	display: inline-flex;
 	width: 1.75rem;
