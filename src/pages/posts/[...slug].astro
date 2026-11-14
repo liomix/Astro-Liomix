@@ -35,6 +35,7 @@ import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
+import { siteStatsConfig } from "@/config/siteStatsConfig";
 import { sponsorConfig } from "@/config/sponsorConfig";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
@@ -307,6 +308,9 @@ const seriesData = await getSeriesPosts(entry);
                 category={entry.data.category || undefined}
                 tags={entry.data.tags}
                 id={entry.id}
+                showViews={siteStatsConfig.enable && siteStatsConfig.articleViews}
+                viewsId={entry.id}
+                countView={siteStatsConfig.enable && siteStatsConfig.articleViews}
               />
             </div>
           </div>

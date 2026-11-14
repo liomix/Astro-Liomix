@@ -504,6 +504,7 @@ export const ko: Translation = {
 	[Key.siteStatsCategoryCount]: "카테고리",
 	[Key.siteStatsTagCount]: "태그",
 	[Key.siteStatsTotalWords]: "총 단어 수",
+	[Key.siteStatsViews]: "조회수",
 	[Key.siteStatsVisitors]: "방문자",
 	[Key.siteStatsRunningDays]: "운영 일수",
 	[Key.siteStatsLastUpdate]: "최근 활동",

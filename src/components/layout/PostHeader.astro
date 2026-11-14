@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { commentConfig } from "@/config";
+import { commentConfig, siteStatsConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import { formatDateToYYYYMMDD, formatRelativeTime } from "@/utils/date-utils";
@@ -39,12 +39,16 @@ type MetaNode =
 
 const visibleTags = tags?.filter((tag) => tag.trim().length > 0) ?? [];
 const path = id ? `/posts/${id}` : "";
-// 阅读量：与 PostMeta 一致，仅在启用带访问量统计的评论系统时显示
-const showViews =
+// 阅读量来源：本项目统计（siteStatsConfig）优先，未启用时才回退到评论系统自带的访问量
+const showSiteViews =
+	!!id && siteStatsConfig.enable && siteStatsConfig.articleViews;
+const showCommentViews =
 	!!id &&
+	!showSiteViews &&
 	((commentConfig.type === "twikoo" && commentConfig.twikoo?.visitorCount) ||
 		(commentConfig.type === "waline" && commentConfig.waline?.visitorCount) ||
 		(commentConfig.type === "artalk" && commentConfig.artalk?.visitorCount));
+const showViews = showSiteViews || showCommentViews;
 
 // 时间只显示一条：优先「更新于 相对时间」，与 PostCard 用同一套工具
 // formatRelativeTime 超过 6 年返回 null，此时回退成「更新于 YYYY-MM-DD」
@@ -127,18 +131,23 @@ if (statsRow.length > 0) {
               )}
               {node.kind === "views" && (
                 <>
-                  <span>{i18n(I18nKey.pageViews)}</span>
-                  {commentConfig.type === "twikoo" && (
+                  <span>{i18n(I18nKey.pageViews)}:</span>
+                  {showSiteViews && (
+                    <span data-post-views={id} data-post-view-trigger={id}>
+                      —
+                    </span>
+                  )}
+                  {!showSiteViews && commentConfig.type === "twikoo" && (
                     <span class="waline-pageview-count-text" id="twikoo_visitors">
                       {i18n(I18nKey.pageViewsLoading)}
                     </span>
                   )}
-                  {commentConfig.type === "waline" && (
+                  {!showSiteViews && commentConfig.type === "waline" && (
                     <span class="waline-pageview-count" data-path={path}>
                       {i18n(I18nKey.pageViewsLoading)}
                     </span>
                   )}
-                  {commentConfig.type === "artalk" && (
+                  {!showSiteViews && commentConfig.type === "artalk" && (
                     <span class="artalk-pv-count" data-path={path}>
                       {i18n(I18nKey.pageViewsLoading)}
                     </span>

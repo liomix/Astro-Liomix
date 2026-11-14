@@ -33,6 +33,10 @@ declare global {
 		__settingsTogglePanels?: () => void;
 		/** 设置面板初始化守卫，确保监听器只注册一次 */
 		__settingsPanelsInit?: boolean;
+		/** 站点访问统计初始化守卫（analytics/SiteVisitCounter.astro），确保 Swup 监听器只注册一次 */
+		__siteStatsInit?: boolean;
+		/** 文章阅读量初始化守卫（analytics/PostViewCounter.astro），确保 Swup 监听器只注册一次 */
+		__postViewsInit?: boolean;
 		__fireflyMusic?: {
 			init: () => Promise<void>;
 			getState: () => {

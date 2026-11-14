@@ -2,6 +2,8 @@
 import GoogleAnalytics from "@components/analytics/GoogleAnalytics.astro";
 import La51Analytics from "@components/analytics/La51Analytics.astro";
 import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
+import PostViewCounter from "@components/analytics/PostViewCounter.astro";
+import SiteVisitCounter from "@components/analytics/SiteVisitCounter.astro";
 import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import CodeGroupManager from "@components/features/CodeGroupManager.astro";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
@@ -24,6 +26,7 @@ import {
 	navbarMode,
 	profileConfig,
 	siteConfig,
+	siteStatsConfig,
 } from "@/config";
 import {
 	BANNER_HEIGHT,
@@ -182,6 +185,9 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
             screenRecord={analyticsConfig.la51Analytics?.screenRecord}
             />
     )}
+
+    {siteStatsConfig?.enable && <SiteVisitCounter />}
+    {siteStatsConfig?.enable && siteStatsConfig.articleViews && <PostViewCounter />}
 
     <title>{pageTitle}</title>
     <meta

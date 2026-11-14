@@ -28,6 +28,12 @@ export interface Props {
 	publishedIcon?: string;
 	/** 覆盖分类前的图标 */
 	categoryIcon?: string;
+	/** 文章 slug；有值时渲染「阅读量」一栏，数值由 analytics/PostViewCounter.astro 回填 */
+	viewsId?: string;
+	/** 是否显示本项目的阅读量；为 true 时不再渲染评论系统自带的访问量 */
+	showViews?: boolean;
+	/** 是否在渲染时上报一次浏览，只有文章详情页该为 true */
+	countView?: boolean;
 	password?: boolean;
 	words?: number;
 	minutes?: number;
@@ -55,6 +61,9 @@ const {
 	publishedText,
 	publishedIcon = "material-symbols:calendar-today-outline-rounded",
 	categoryIcon = "material-symbols:book-2-outline-rounded",
+	viewsId,
+	showViews = false,
+	countView = false,
 	words,
 	minutes,
 	showWords = false,
@@ -131,6 +140,29 @@ const visibleTags =
   }
 
   {
+    showViews && viewsId && (
+      <div class="flex items-center">
+        <div class="meta-icon">
+          <Icon
+            name="material-symbols:visibility-outline-rounded"
+            class="text-xl"
+          />
+        </div>
+        <span class="text-50 text-sm font-medium mr-1">
+          {i18n(I18nKey.pageViews)}:
+        </span>
+        <span
+          class="text-50 text-sm font-medium"
+          data-post-views={viewsId}
+          data-post-view-trigger={countView ? viewsId : undefined}
+        >
+          —
+        </span>
+      </div>
+    )
+  }
+
+  {
     showTags && (
       <div
         class:list={[
@@ -176,6 +208,7 @@ const visibleTags =
 
   {
     !isHome &&
+      !showViews &&
       commentConfig.type === "twikoo" &&
       commentConfig.twikoo?.visitorCount &&
       id && (
@@ -198,6 +231,7 @@ const visibleTags =
 
   {
     !isHome &&
+      !showViews &&
       commentConfig.type === "waline" &&
       commentConfig.waline?.visitorCount &&
       id && (
@@ -223,6 +257,7 @@ const visibleTags =
 
   {
     !isHome &&
+      !showViews &&
       commentConfig.type === "artalk" &&
       commentConfig.artalk?.visitorCount &&
       id && (

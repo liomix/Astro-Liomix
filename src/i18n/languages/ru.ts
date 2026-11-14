@@ -508,6 +508,7 @@ export const ru: Translation = {
 	[Key.siteStatsCategoryCount]: "Категории",
 	[Key.siteStatsTagCount]: "Теги",
 	[Key.siteStatsTotalWords]: "Всего слов",
+	[Key.siteStatsViews]: "Просмотры",
 	[Key.siteStatsVisitors]: "Посетители",
 	[Key.siteStatsRunningDays]: "Дней работы",
 	[Key.siteStatsLastUpdate]: "Последняя активность",
@@ -636,10 +637,12 @@ export const ru: Translation = {
 	[Key.playerSpeed]: "Скорость",
 	[Key.playerGlass]: "Стекло плеера",
 	[Key.playerPersistent]: "Оставлять плеер",
-	[Key.playerPersistentHint]: "Карточка остаётся в углу после паузы или остановки",
+	[Key.playerPersistentHint]:
+		"Карточка остаётся в углу после паузы или остановки",
 	[Key.playerAutoPlay]: "Автовоспроизведение при входе",
 	[Key.playerAutoPlayHint]:
 		"Начинать воспроизведение при загрузке (со следующего визита); браузер может блокировать до первого клика",
-	[Key.playerTapForSound]: "Играет без звука — щёлкните по странице, чтобы включить",
+	[Key.playerTapForSound]:
+		"Играет без звука — щёлкните по странице, чтобы включить",
 	[Key.playerPlaylist]: "Плейлист",
 };

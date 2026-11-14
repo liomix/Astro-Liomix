@@ -5,7 +5,7 @@ import { Icon } from "astro-icon/components";
 import CoverImage from "@/components/common/CoverImage.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
 import PostStats from "@/components/layout/PostStats.astro";
-import { siteConfig } from "@/config";
+import { siteConfig, siteStatsConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import {
@@ -79,7 +79,9 @@ const dateLabel = relativeTime
 
 // PostMeta 配置
 const metaConfig = siteConfig.postListLayout.meta ?? {};
-const showCategory = metaConfig.showCategory ?? true;
+// 卡片元信息里「分类」的位置改放「阅读量」：站点统计启用且开启文章阅读量时生效
+const metaShowViews = siteStatsConfig.enable && siteStatsConfig.articleViews;
+const showCategory = (metaConfig.showCategory ?? true) && !metaShowViews;
 const metaShowTags = metaConfig.showTags ?? true;
 const metaTagCount =
 	metaConfig.tagCount !== undefined
@@ -167,6 +169,8 @@ const minutes = remarkPluginFrontmatter.minutes;
       tags={tags}
       showPublished={metaShowPublished}
       showCategory={showCategory}
+      showViews={metaShowViews}
+      viewsId={metaShowViews ? entry.id : undefined}
       showTags={showTagsInMeta}
       maxTags={metaTagCount > 0 ? metaTagCount : undefined}
       showNoTags={true}

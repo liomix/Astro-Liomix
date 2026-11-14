@@ -402,7 +402,7 @@ export const zh_CN: Translation = {
 	[Key.second]: "秒",
 
 	// 访问量统计
-	[Key.pageViews]: "浏览量",
+	[Key.pageViews]: "阅读量",
 	[Key.pageViewsLoading]: "加载中...",
 	[Key.pageViewsError]: "统计不可用",
 
@@ -496,6 +496,7 @@ export const zh_CN: Translation = {
 	[Key.siteStatsCategoryCount]: "分类",
 	[Key.siteStatsTagCount]: "标签",
 	[Key.siteStatsTotalWords]: "总字数",
+	[Key.siteStatsViews]: "访问量",
 	[Key.siteStatsVisitors]: "访客数",
 	[Key.siteStatsRunningDays]: "已运行",
 	[Key.siteStatsLastUpdate]: "最后活动",
@@ -624,7 +625,8 @@ export const zh_CN: Translation = {
 	[Key.playerPersistent]: "播放器常驻",
 	[Key.playerPersistentHint]: "暂停或停止后，卡片继续留在左下角",
 	[Key.playerAutoPlay]: "进入站点自动播放",
-	[Key.playerAutoPlayHint]: "打开页面就自动播放（下次进站生效）；浏览器可能拦截，需先点击页面",
+	[Key.playerAutoPlayHint]:
+		"打开页面就自动播放（下次进站生效）；浏览器可能拦截，需先点击页面",
 	[Key.playerTapForSound]: "已静音播放，点击页面开启声音",
 	[Key.playerPlaylist]: "播放列表",
 };

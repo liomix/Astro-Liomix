@@ -404,7 +404,7 @@ export const zh_TW: Translation = {
 	[Key.second]: "秒",
 
 	// 訪問量統計
-	[Key.pageViews]: "瀏覽量",
+	[Key.pageViews]: "閱讀量",
 	[Key.pageViewsLoading]: "載入中...",
 	[Key.pageViewsError]: "統計不可用",
 
@@ -498,6 +498,7 @@ export const zh_TW: Translation = {
 	[Key.siteStatsCategoryCount]: "分類",
 	[Key.siteStatsTagCount]: "標籤",
 	[Key.siteStatsTotalWords]: "總字數",
+	[Key.siteStatsViews]: "訪問量",
 	[Key.siteStatsVisitors]: "訪客數",
 	[Key.siteStatsRunningDays]: "已運行",
 	[Key.siteStatsLastUpdate]: "最後活動",
@@ -626,7 +627,8 @@ export const zh_TW: Translation = {
 	[Key.playerPersistent]: "播放器常駐",
 	[Key.playerPersistentHint]: "暫停或停止後，卡片繼續留在左下角",
 	[Key.playerAutoPlay]: "進入站點自動播放",
-	[Key.playerAutoPlayHint]: "開啟頁面就自動播放（下次進站生效）；瀏覽器可能攔截，需先點擊頁面",
+	[Key.playerAutoPlayHint]:
+		"開啟頁面就自動播放（下次進站生效）；瀏覽器可能攔截，需先點擊頁面",
 	[Key.playerTapForSound]: "已靜音播放，點擊頁面開啟聲音",
 	[Key.playerPlaylist]: "播放列表",
 };

@@ -16,6 +16,10 @@ export function resolveNavbarMode(navbar: {
 /** 当前导航栏模式（已按 navbarMode / 旧 stickyNavbar 解析），供各消费方统一读取 */
 export const navbarMode: NavbarMode = resolveNavbarMode(siteConfig.navbar);
 
+export type {
+	CommentWallpaperConfig,
+	CommentWallpaperItem,
+} from "../types/commentWallpaperConfig"; // 评论区壁纸类型
 // 类型导出
 export type {
 	AdConfig,
@@ -48,15 +52,12 @@ export type {
 	WidgetSpecificConfig,
 } from "../types/config";
 export type {
-	CommentWallpaperConfig,
-	CommentWallpaperItem,
-} from "../types/commentWallpaperConfig"; // 评论区壁纸类型
-export type {
 	BuiltinFontProvider,
 	CustomFontProvider,
 	FontDefinition,
 	FontSelectionConfig,
 } from "../types/fontConfig"; // 字体类型定义
+export type { SiteStatsConfig } from "../types/siteStatsConfig"; // 站点访问量统计类型
 export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
 // 样式配置
@@ -89,5 +90,6 @@ export { profileConfig } from "./profileConfig"; // 用户资料配置
 export { sidebarLayoutConfig } from "./sidebarConfig"; // 侧边栏布局配置
 // 核心配置
 export { siteConfig } from "./siteConfig"; // 站点基础配置
+export { siteStatsConfig } from "./siteStatsConfig"; // 站点访问量统计配置
 export { sponsorConfig } from "./sponsorConfig"; // 打赏配置
 export { welcomeConfig } from "./welcomeConfig"; // 访客欢迎信息配置

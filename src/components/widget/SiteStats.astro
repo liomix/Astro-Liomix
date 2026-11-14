@@ -51,17 +51,33 @@ const runningDays = (() => {
 	return Math.ceil(diff / (1000 * 60 * 60 * 24));
 })();
 
-const stats = [
+// 统计卡片：数值一列在服务端算好，访问量与访客数由 analytics/SiteVisitCounter.astro
+// 在客户端回填（占位「—」），避免静态构建时把 0 写死进页面。
+interface StatTile {
+	id: string;
+	label: string;
+	value: string;
+	/** 对应后端计数字段；有值时由站点访问统计脚本回填 */
+	statKey?: "views" | "visitors";
+}
+
+const stats: StatTile[] = [
 	{
 		id: "total-words",
 		label: i18n(I18nKey.siteStatsTotalWords),
 		value: formatCompactNumber(totalWords),
 	},
 	{
-		// 静态站暂无访客统计来源，先用占位，接入第三方计数后可替换此值
+		id: "views",
+		label: i18n(I18nKey.siteStatsViews),
+		value: "—",
+		statKey: "views",
+	},
+	{
 		id: "visitors",
 		label: i18n(I18nKey.siteStatsVisitors),
 		value: "—",
+		statKey: "visitors",
 	},
 	{
 		id: "running-days",
@@ -75,7 +91,7 @@ const stats = [
   <div class="stats-tiles">
     {stats.map((stat) => (
       <div class="stats-tile">
-        <span class="stats-tile-value" data-stat-id={stat.id}>
+        <span class="stats-tile-value" data-stat-id={stat.id} data-site-stat={stat.statKey}>
           {stat.value}
         </span>
         <span class="stats-tile-label text-50">{stat.label}</span>
@@ -89,13 +105,13 @@ const stats = [
 
 <style>
   .stats-tiles {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
     width: 100%;
   }
 
   .stats-tile {
-    flex: 1 1 0;
     min-width: 0;
     display: flex;
     flex-direction: column;

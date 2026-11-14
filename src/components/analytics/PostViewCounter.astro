@@ -1,0 +1,120 @@
+---
+/**
+ * 文章阅读量客户端：在文章页上报一次浏览，并把计数回填到页面上的占位符。
+ *
+ * 区分两种元素，避免「刷首页把所有文章都算一遍」：
+ *
+ * - `data-post-views="slug"`     只负责显示，列表卡片用这个
+ * - `data-post-view-trigger="slug"` 显示 + 上报，只有文章详情页加
+ *
+ * 列表页一次批量询问所有卡片（`GET /api/v1/count/posts?slugs=…`），
+ * 文章页只上报当前这一篇，POST 的返回体就是最新值，不再多发一次读取。
+ */
+---
+
+<script>
+	import { siteStatsConfig } from "@/config/siteStatsConfig";
+	import { formatCompactNumber } from "@/utils/number-utils";
+	import { fetchPostViews, reportPostView } from "@/utils/site-stats-client";
+
+	/** slug → 阅读量。跨 Swup 切页保留，切回来先显示旧值再刷新，避免闪「—」 */
+	const cached = new Map<string, number>();
+
+	/**
+	 * 已上报过浏览的路径。一次导航可能派发多个 swup 事件（content:replace /
+	 * page:view / contentReplaced），按路径去重，避免同一篇文章被 +2、+3。
+	 * 整页刷新会重置它，所以刷新仍然算一次新浏览。
+	 */
+	let reportedPath = "";
+
+	function currentPath(): string {
+		return window.location.pathname + window.location.search;
+	}
+
+	function slugsOf(
+		selector: string,
+		attribute: "postViews" | "postViewTrigger",
+	): string[] {
+		const slugs = new Set<string>();
+		document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+			const slug = element.dataset[attribute];
+			if (slug) slugs.add(slug);
+		});
+		return [...slugs];
+	}
+
+	function paint(): void {
+		document
+			.querySelectorAll<HTMLElement>("[data-post-views]")
+			.forEach((element) => {
+				const slug = element.dataset.postViews;
+				if (!slug) return;
+				const views = cached.get(slug);
+				if (views === undefined) return;
+				element.textContent = formatCompactNumber(views);
+			});
+	}
+
+	async function collect(): Promise<void> {
+		const displayed = slugsOf("[data-post-views]", "postViews");
+		if (displayed.length === 0) return;
+
+		// 先回填缓存，卡片上的数字不会因为切页而短暂消失
+		paint();
+
+		// 文章详情页才会带 trigger：给它 +1，返回体同时就是最新值
+		const counted = new Set<string>();
+		const path = currentPath();
+		if (path !== reportedPath) {
+			reportedPath = path;
+			for (const slug of slugsOf(
+				"[data-post-view-trigger]",
+				"postViewTrigger",
+			)) {
+				try {
+					const counts = await reportPostView(slug);
+					cached.set(counts.slug, counts.views);
+					counted.add(counts.slug);
+				} catch (error) {
+					console.warn("[post-views] 上报阅读量失败", error);
+				}
+			}
+		}
+
+		// 剩下的（列表页的全部卡片）一次批量读取；刚上报过的不用再问一遍
+		const pending = displayed.filter((slug) => !counted.has(slug));
+		if (pending.length > 0) {
+			try {
+				for (const counts of await fetchPostViews(pending)) {
+					cached.set(counts.slug, counts.views);
+				}
+			} catch (error) {
+				console.warn("[post-views] 读取阅读量失败", error);
+			}
+		}
+
+		paint();
+	}
+
+	function init(): void {
+		if (!siteStatsConfig.enable || !siteStatsConfig.articleViews) return;
+
+		void collect();
+
+		// Swup 切页后 DOM 被替换；监听器只注册一次。
+		// 三个事件名都要绑：Swup 4 走 content:replace / page:view，
+		// contentReplaced 是旧名，只在部分场景（如首次进入）派发，
+		// 只绑它会导致「返回上一页」时数字停在「—」。
+		if (window.__postViewsInit) return;
+		window.__postViewsInit = true;
+		for (const event of [
+			"swup:content:replace",
+			"swup:contentReplaced",
+			"swup:page:view",
+		]) {
+			document.addEventListener(event, () => void collect());
+		}
+	}
+
+	init();
+</script>

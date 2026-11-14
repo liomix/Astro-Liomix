@@ -1,0 +1,87 @@
+---
+/**
+ * 站点访问量统计客户端：上报一次访问，并把最新计数回填到统计卡片。
+ *
+ * - 首屏加载后上报一次；Swup 切页时按 `countOnSwap` 再上报一次（PV 语义）
+ * - 计数与访客去重都在后端，前端只提供一个稳定的 visitorId
+ * - 失败一律静默：统计不该影响阅读，卡片保持服务端渲染的「—」
+ *
+ * 回填目标是任意带 `data-site-stat="views|visitors"` 的元素，
+ * 桌面侧栏与移动端底部各渲染一份站点统计卡片，这里一次性都更新。
+ */
+---
+
+<script>
+	import { siteStatsConfig } from "@/config/siteStatsConfig";
+	import { formatCompactNumber } from "@/utils/number-utils";
+	import type { SiteStats } from "@/utils/site-stats-client";
+	import { fetchSiteStats, reportSiteVisit } from "@/utils/site-stats-client";
+
+	/** 上一次成功读取的计数，切页后先回填它，避免数字短暂闪回「—」 */
+	let cached: SiteStats | null = null;
+
+	/**
+	 * 已上报过访问的路径。一次导航可能派发多个 swup 事件，按路径去重，
+	 * 否则同一个页面会被计成两三次访问。整页刷新会重置它。
+	 */
+	let reportedPath = "";
+
+	function currentPath(): string {
+		return window.location.pathname + window.location.search;
+	}
+
+	function paint(stats: SiteStats | null): void {
+		if (!stats) return;
+		const values: Record<string, number> = {
+			views: stats.views,
+			visitors: stats.visitors,
+		};
+		document
+			.querySelectorAll<HTMLElement>("[data-site-stat]")
+			.forEach((element) => {
+				const key = element.dataset.siteStat;
+				if (!key || !(key in values)) return;
+				element.textContent = formatCompactNumber(values[key]);
+			});
+	}
+
+	async function refresh(): Promise<void> {
+		paint(cached);
+		const path = currentPath();
+		const report = siteStatsConfig.reportVisit && path !== reportedPath;
+		if (report) reportedPath = path;
+		try {
+			const stats = report ? await reportSiteVisit() : await fetchSiteStats();
+			cached = stats;
+			paint(stats);
+		} catch (error) {
+			// 后端未启动、跨域被拒、离线：保持占位符，读者无感。
+			console.warn("[site-stats] 读取站点计数失败", error);
+		}
+	}
+
+	function init(): void {
+		if (!siteStatsConfig.enable) return;
+
+		void refresh();
+
+		// Swup 切页后 DOM 被替换，需要在事件里重新回填；监听器只注册一次。
+		// 三个事件名都要绑：Swup 4 走 content:replace / page:view，
+		// contentReplaced 是旧名，只绑它会在「返回上一页」时漏掉回填。
+		if (window.__siteStatsInit) return;
+		window.__siteStatsInit = true;
+		const onNavigate = (): void => {
+			if (siteStatsConfig.countOnSwap) void refresh();
+			else paint(cached);
+		};
+		for (const event of [
+			"swup:content:replace",
+			"swup:contentReplaced",
+			"swup:page:view",
+		]) {
+			document.addEventListener(event, onNavigate);
+		}
+	}
+
+	init();
+</script>
