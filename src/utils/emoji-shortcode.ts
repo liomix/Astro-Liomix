@@ -95,6 +95,46 @@ export function emojiTokensToText(text: string): string {
 	});
 }
 
+/**
+ * 短码 → `<img>`，给「要看见表情、但只有一行高度」的地方用。
+ *
+ * 引用块和回复条都属于这种：把 `[摸头]` 这样的文字塞进去，读的人得自己脑补；
+ * 直接给图，但**小一号**（尺寸由 CSS 的 `.tg-quote-text img` 控制）。
+ *
+ * 与 marked 扩展的区别：那个只作用在正文的文本 token 上，代码块天然碰不到；
+ * 这里是纯字符串替换，调用方必须保证入参来自评论正文而不是代码片段。
+ * 文本部分一律转义 —— 这段 HTML 会被 innerHTML 直接塞进 DOM。
+ */
+export function emojiTokensToHtml(
+	text: string,
+	className = "tg-emoji-inline",
+): string {
+	// 没有冒号就没有短码，整段按纯文本转义即可，省掉一次正则
+	if (!text.includes(":")) return escapeHtml(text);
+
+	let result = "";
+	let last = 0;
+	for (const match of text.matchAll(emojiTokenPattern())) {
+		const index = match.index ?? 0;
+		const emoji = resolveEmojiToken(match[0]);
+		if (!emoji) continue;
+		result += escapeHtml(text.slice(last, index));
+		result += `<img class="${escapeAttr(className)}" src="${escapeAttr(emoji.src)}" alt="${escapeAttr(emoji.alt)}" title="${escapeAttr(emoji.alt)}" loading="lazy" decoding="async">`;
+		last = index + match[0].length;
+	}
+	result += escapeHtml(text.slice(last));
+	return result;
+}
+
+/** 纯文本转义：短码替换出来的是 HTML，文字部分必须先转义 */
+function escapeHtml(value: string): string {
+	return value
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
+
 /** 属性值转义：渲染器产出的 HTML 不设例外，配置里多一个引号也不能变成注入 */
 function escapeAttr(value: string): string {
 	return value

@@ -28,7 +28,7 @@ import {
 	forgetOwnComment,
 } from "@/components/common/comment/comment-own";
 import { getCommentUser } from "@/components/common/comment/comment-user";
-import { emojiTokensToText } from "@/utils/emoji-shortcode";
+import { emojiTokensToHtml, emojiTokensToText } from "@/utils/emoji-shortcode";
 import { apiErrorMessage } from "@/utils/api-error-message";
 import { ApiError } from "@/utils/api-client";
 import { copyText } from "@/utils/clipboard";
@@ -51,8 +51,13 @@ interface PendingReply {
 	id: string;
 	/** 被引用者的显示名 */
 	name: string;
-	/** 引用摘要（已压成单行并截断） */
+	/** 引用摘要的纯文本（已压成单行并截断），给 aria-label 之类只要文字的地方 */
 	text: string;
+	/**
+	 * 同一段摘要的 HTML 版本：表情渲染成小一号的 `<img>` 而不是 `[摸头]`。
+	 * 由 summarizeMarkdownHtml 产出，内容已转义，可以直接 innerHTML。
+	 */
+	html: string;
 }
 
 interface ChatContextPopHandle {
@@ -114,11 +119,8 @@ function truncate(text: string, max: number): string {
  * 尖括号里的东西不动：写在行内代码里的 `<pre>` 是一个标签名（该留着），而真正的
  * 内联 HTML 去掉标签反而会把文字拼在一起。为一行预览写个 HTML 解析器不值。
  */
-export function summarizeMarkdown(
-	markdown: string,
-	max = REPLY_SUMMARY_MAX,
-): string {
-	const text = emojiTokensToText(markdown)
+function condense(markdown: string, max: number): string {
+	const text = markdown
 		// 围栏本身去掉、内容留着：整段都是代码的回复，摘要不该是空白
 		.replace(/^ {0,3}```.*$/gm, "")
 		.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
@@ -127,18 +129,55 @@ export function summarizeMarkdown(
 		.replace(/^ {0,3}>\s?/gm, "")
 		.replace(/^ {0,3}(?:[-*+]|\d+[.)])\s+/gm, "")
 		.replace(/[*_~`]+/g, "");
-	return truncate(oneLine(text), max);
+	const summary = truncate(oneLine(text), max);
+	// 截断可能正好切在短码中间（`:huoying/hy-`），半截短码会原样露给人看。
+	// 只在「最后一个冒号到结尾像半个短码」时切掉它；完整短码必须留着。
+	const colon = summary.lastIndexOf(":");
+	const tail = summary.slice(colon);
+	if (
+		colon >= 0 &&
+		/^:[a-z0-9]/i.test(tail) &&
+		!/^:[a-z0-9][\w-]*\/[\w.-]*:$/i.test(tail)
+	) {
+		return summary.slice(0, colon);
+	}
+	return summary;
+}
+
+/** 引用摘要的纯文本版：短码翻成 `[摸头]` 这样的名字 */
+export function summarizeMarkdown(
+	markdown: string,
+	max = REPLY_SUMMARY_MAX,
+): string {
+	return emojiTokensToText(condense(markdown, max));
+}
+
+/** 引用摘要的 HTML 版：短码翻成小一号的 `<img>`（引用块、回复条用这个） */
+export function summarizeMarkdownHtml(
+	markdown: string,
+	max = REPLY_SUMMARY_MAX,
+): string {
+	return emojiTokensToHtml(condense(markdown, max));
 }
 
 export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
-	const menu = chat.querySelector<HTMLElement>("[data-ctx-pop]");
+	// 菜单可能已经被上一次 init 挪到 body 上了（见下面的注释），所以补一次全文查找：
+	// 一个文档里只有一台聊天，不会认错
+	const menu =
+		chat.querySelector<HTMLElement>("[data-ctx-pop]") ??
+		document.querySelector<HTMLElement>("[data-ctx-pop]");
 	const ownOnly = chat.querySelector<HTMLElement>("[data-ctx-own-only]");
 	const replyBar = chat.querySelector<HTMLElement>("[data-tg-reply]");
 	const replyName = chat.querySelector<HTMLElement>("[data-tg-reply-name]");
 	const replyText = chat.querySelector<HTMLElement>("[data-tg-reply-text]");
 	const toast = chat.querySelector<HTMLElement>("[data-tg-toast]");
 	const composer = chat.querySelector<HTMLElement>("[data-tg-input]");
+
+	// 菜单用 position:fixed + 视口坐标，但文章页的评论区嵌在带 backdrop-filter /
+	// overflow:hidden 的容器里 —— 那样的祖先会成为 fixed 的包含块，坐标就从容器
+	// 算起，菜单于是跑偏（甚至被裁掉）。挂到 body 上，坐标永远是视口坐标。
+	if (menu && menu.parentElement !== document.body) document.body.append(menu);
 
 	const labels = {
 		copied: chat.dataset.tgLabelCopied || "Copied",
@@ -288,13 +327,18 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	}
 
 	function startReply(row: HTMLElement): void {
+		// 摘要用原文（data-tg-source）算：渲染后的气泡里表情是 <img>，
+		// 它的 textContent 是空的 —— 从 DOM 取文字会把表情整段丢掉
+		const source = row.querySelector<HTMLElement>(".tg-text")?.dataset.tgSource;
+		const raw = source?.trim() ? source : textOf(row);
 		pending = {
 			id: row.dataset.tgMsg || "",
 			name: nameOf(row),
-			text: truncate(oneLine(textOf(row)), REPLY_SUMMARY_MAX),
+			text: summarizeMarkdown(raw),
+			html: summarizeMarkdownHtml(raw),
 		};
 		if (replyName) replyName.textContent = pending.name;
-		if (replyText) replyText.textContent = pending.text || "…";
+		if (replyText) replyText.innerHTML = pending.html || "…";
 		if (replyBar) replyBar.hidden = false;
 		// 让聊天页把表情面板收起来：回复条和面板都贴在输入框上，同时出现会打架
 		chat.dispatchEvent(new CustomEvent("tg-reply-start"));
@@ -381,6 +425,14 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		window.setTimeout(() => target.classList.remove("is-flash"), 900);
 	}
 
+	/** 只有 text 没有 html 时（老调用方）把纯文本转义后塞进去 */
+	function escapeForQuote(text: string): string {
+		return text
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;");
+	}
+
 	function decorate(row: HTMLElement, reply: PendingReply): void {
 		const bubble = row.querySelector<HTMLElement>(".tg-bubble");
 		const body = bubble?.querySelector<HTMLElement>(".tg-text");
@@ -400,7 +452,8 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 
 		const quoteText = document.createElement("span");
 		quoteText.className = "tg-quote-text";
-		quoteText.textContent = reply.text;
+		// 引用块里的表情要看得见：HTML 版把短码换成了小一号的 <img>
+		quoteText.innerHTML = reply.html || escapeForQuote(reply.text);
 
 		quote.append(quoteName, quoteText);
 		bubble.insertBefore(quote, body);

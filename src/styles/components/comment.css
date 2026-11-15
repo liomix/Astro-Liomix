@@ -1338,6 +1338,17 @@ html[data-embedded] .tg-head-close {
 	white-space: nowrap;
 }
 
+/* 引用里的表情：跟着引用自己的字号走（0.78rem），比正文那 24px 小一号，
+   并且不参与行高 —— 用 em 而不是 px，抽屉和文章页两种字号下都是「小一号」 */
+.tg-quote-text img.tg-emoji-inline,
+.tg-reply-text img.tg-emoji-inline {
+	display: inline-block;
+	width: 1.15em;
+	height: 1.15em;
+	margin: 0 0.04rem;
+	vertical-align: -0.2em;
+}
+
 /* 引用块被点中后，原消息闪一下（高亮画在气泡上，不是整行矩形） */
 .tg-row.is-flash .tg-bubble {
 	animation: tg-quote-flash 0.9s ease;

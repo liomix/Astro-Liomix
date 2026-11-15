@@ -602,6 +602,7 @@ const showTabs = packs.length > 1;
 	import {
 		initChatContextPop,
 		summarizeMarkdown,
+		summarizeMarkdownHtml,
 	} from "@/components/common/comment/chat-context-pop";
 	import { initCommentInfo } from "@/components/common/comment/comment-info";
 	import {
@@ -1324,6 +1325,7 @@ const showTabs = packs.length > 1;
 					id: parent.id,
 					name: parent.author.name || "?",
 					text: summarizeMarkdown(parent.body),
+					html: summarizeMarkdownHtml(parent.body),
 				});
 			}
 		};
