@@ -28,6 +28,7 @@ import {
 	forgetOwnComment,
 } from "@/components/pages/dynamic/comment-own";
 import { getCommentUser } from "@/components/pages/dynamic/comment-user";
+import { emojiTokensToText } from "@/utils/emoji-shortcode";
 import { apiErrorMessage } from "@/utils/api-error-message";
 import { ApiError } from "@/utils/api-client";
 import { deleteComment } from "@/utils/comment-client";
@@ -116,7 +117,7 @@ export function summarizeMarkdown(
 	markdown: string,
 	max = REPLY_SUMMARY_MAX,
 ): string {
-	const text = markdown
+	const text = emojiTokensToText(markdown)
 		// 围栏本身去掉、内容留着：整段都是代码的回复，摘要不该是空白
 		.replace(/^ {0,3}```.*$/gm, "")
 		.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
@@ -190,7 +191,9 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 	const copyOf = (row: HTMLElement): string => {
 		const body = row.querySelector<HTMLElement>(".tg-text");
 		const source = body?.dataset.tgSource;
-		return source?.trim() ? source : textOf(row);
+		// 原文里的表情是短码（`:huoying/hy-1:`），复制时换成名字：剪贴板是给人看的，
+		// 短码只在「存」和「渲染」这两端有意义
+		return source?.trim() ? emojiTokensToText(source) : textOf(row);
 	};
 
 	/** 复制文本：优先 Clipboard API，拿不到权限（老浏览器 / 非安全上下文）就退回 execCommand */

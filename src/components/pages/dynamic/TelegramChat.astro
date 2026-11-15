@@ -572,6 +572,10 @@ const showTabs = packs.length > 1;
 		postComment,
 		slugOfPath,
 	} from "@/utils/comment-client";
+	import {
+		emojiShortcodeExtension,
+		emojiTokenOfSrc,
+	} from "@/utils/emoji-shortcode";
 	import { Marked } from "marked";
 
 	const pad = (value: number) => String(value).padStart(2, "0");
@@ -623,6 +627,10 @@ const showTabs = packs.length > 1;
 
 	/** 只建一次实例：GFM（表格 / 删除线 / 自动链接）+ 单换行也算换行 */
 	const md = new Marked({ gfm: true, breaks: true });
+
+	// 行内表情：正文里存的是短码（`:huoying/hy-1:`），渲染时才翻译成图片。
+	// 做成扩展而不是先替换再解析，是为了让代码块和行内代码里的短码原样留着。
+	md.use({ extensions: [emojiShortcodeExtension] });
 
 	/** 语言标识 → 顶栏显示名；表里没有的原样显示，没写语言的用「代码」兜底 */
 	const LANG_NAMES: Record<string, string> = {
@@ -1344,9 +1352,12 @@ const showTabs = packs.length > 1;
 		};
 
 		/**
-		 * 把编辑器内容读回 Markdown：文字原样、<br> 转换行、表情转成一段行内 <img>。
-		 * 表情直接写成 HTML 交给 marked —— 它会原样透传，随后 sanitizeHtml 只放行
-		 * img[src|alt|title] 和 class 里的 tg-emoji-inline，等于是在白名单里走了一圈。
+		 * 把编辑器内容读回 Markdown 源：文字原样、`<br>` 转换行、表情转成短码。
+		 *
+		 * 发出去的是**源**，不是渲染结果：表情写成 `:huoying/hy-1:`，由渲染端翻译回
+		 * 图片。正文里一旦出现 `<img src=…>`，那条评论就把当时的资源地址焊死了，
+		 * 换目录、换 CDN 都会变成破图，而且字数上限会按标签长度扣
+		 * （一个标签 77 字符，一个短码 15）。详见 utils/emoji-shortcode.ts。
 		 */
 		const readComposer = (): string => {
 			let out = "";
@@ -1361,10 +1372,15 @@ const showTabs = packs.length > 1;
 						continue;
 					}
 					if (child instanceof HTMLImageElement) {
-						const src = child.dataset.tgEmojiSrc ?? child.getAttribute("src");
-						if (!src) continue;
-						const alt = (child.alt || "").replace(/"/g, "&quot;");
-						out += `<img class="tg-emoji-inline" src="${src}" alt="${alt}">`;
+						// 插入时就记了短码；没有的话按地址反查一次（老节点、外部脚本插的图）
+						const token =
+							child.dataset.tgEmojiToken ??
+							emojiTokenOfSrc(
+								child.dataset.tgEmojiSrc ?? child.getAttribute("src") ?? "",
+							);
+						// 认不出来的图片不进正文：输入框里只该有表情图，
+						// 一张来路不明的图没有对应的文字表达，写进去就是坏数据
+						if (token) out += token;
 						continue;
 					}
 					walk(child);
@@ -1462,12 +1478,17 @@ const showTabs = packs.length > 1;
 			item.addEventListener("click", () => {
 				const src = item.dataset.tgEmojiSrc;
 				if (!src) return;
+				// 短码是写进正文的东西，解析不出来就不插：插进去的图读不回短码，
+				// 发出去会变成一条内容缺失的评论
+				const token = emojiTokenOfSrc(src);
+				if (!token) return;
 				const img = document.createElement("img");
 				img.className = "tg-emoji-inline";
 				img.src = src;
 				img.alt = item.dataset.tgEmojiName ?? "";
-				// 读回内容时按这个取地址：src 会被浏览器补成绝对路径
+				// 读回内容时用这两个：src 会被浏览器补成绝对路径，短码不会
 				img.dataset.tgEmojiSrc = src;
+				img.dataset.tgEmojiToken = token;
 				insertAtCaret(img);
 			});
 		});
