@@ -124,6 +124,13 @@ export const ja: Translation = {
 	[Key.commentChatRetractFailed]: "削除できませんでした",
 	[Key.commentChatRetractReplies]: "このコメントには返信があります。削除すると返信も一緒に消えます。よろしいですか？",
 	[Key.commentChatMe]: "あなた",
+	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
+	[Key.dynamicLoadFailed]: "更新の読み込みに失敗しました。再読み込みしてください。",
+	[Key.commentChatSendUnconfirmed]: "結果を確認できませんでした。再読み込みしてから送信し直してください",
+	[Key.apiErrorNetwork]: "ネットワークに問題が発生しているようです。しばらくしてから再度お試しください。",
+	[Key.apiErrorRequest]: "入力内容が受け付けられませんでした。修正してもう一度お試しください。",
+	[Key.apiErrorServer]: "サービスが一時的に利用できません。しばらくしてから再度お試しください。",
+	[Key.apiErrorUnknown]: "問題が発生しました。しばらくしてから再度お試しください。",
 	[Key.commentInfoTitle]: "コメント情報",
 	[Key.commentInfoOpen]: "コメント情報を編集",
 	[Key.commentInfoName]: "名前",

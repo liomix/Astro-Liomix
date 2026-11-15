@@ -95,6 +95,11 @@ const showTabs = packs.length > 1;
 	data-tg-label-empty={i18n(I18nKey.commentChatEmpty)}
 	data-tg-label-load-failed={i18n(I18nKey.commentChatLoadFailed)}
 	data-tg-label-send-failed={i18n(I18nKey.commentChatSendFailed)}
+	data-tg-label-send-unconfirmed={i18n(I18nKey.commentChatSendUnconfirmed)}
+	data-tg-api-network={i18n(I18nKey.apiErrorNetwork)}
+	data-tg-api-request={i18n(I18nKey.apiErrorRequest)}
+	data-tg-api-server={i18n(I18nKey.apiErrorServer)}
+	data-tg-api-unknown={i18n(I18nKey.apiErrorUnknown)}
 	data-tg-default-name={name}
 	data-tg-default-email={contact}
 	data-tg-ci-sub-empty={i18n(I18nKey.commentInfoSubEmpty)}
@@ -554,6 +559,12 @@ const showTabs = packs.length > 1;
 	} from "@/components/pages/dynamic/comment-user";
 	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
 	import {
+		apiErrorMessage,
+		isAbortedRequest,
+		type ApiErrorLabels,
+	} from "@/utils/api-error-message";
+	import { ApiError } from "@/utils/api-client";
+	import {
 		type ApiComment,
 		type CommentPage,
 		fetchComments,
@@ -935,7 +946,23 @@ const showTabs = packs.length > 1;
 			empty: chat.dataset.tgLabelEmpty || "No comments yet",
 			loadFailed: chat.dataset.tgLabelLoadFailed || "Failed to load comments",
 			sendFailed: chat.dataset.tgLabelSendFailed || "Failed to send",
+			/**
+			 * 超时 / 连接中断：请求可能已经在服务端执行成功了，只是响应没回来。
+			 * 这时说「发送失败，请重试」会诱导用户再发一条 —— 与「被拒绝」必须分开说。
+			 */
+			sendUnconfirmed:
+				chat.dataset.tgLabelSendUnconfirmed || "Result unconfirmed",
 			disabled: chat.dataset.tgLabelDisabled || "Comments are closed",
+			/**
+			 * 接口失败的兜底文案。后端只给机器可读的 code，用户看到的话由这里决定 ——
+			 * 直接把后端的 "Request validation failed" 弹出来，用户只会以为网站坏了。
+			 */
+			api: {
+				network: chat.dataset.tgApiNetwork || "Network error, please try again",
+				request: chat.dataset.tgApiRequest || "Some input was rejected",
+				server: chat.dataset.tgApiServer || "Service unavailable",
+				unknown: chat.dataset.tgApiUnknown || "Something went wrong",
+			} satisfies ApiErrorLabels,
 		};
 
 		// 复制按钮用事件委托：消息是后插进来的，不能逐条绑
@@ -983,10 +1010,15 @@ const showTabs = packs.length > 1;
 		 * 回复的父评论可能落在上一页，只按当前这一页找会漏掉引用块。
 		 */
 		let byID = new Map<string, ApiComment>();
-		/** 已经拉到多少条，同时也是下一页的 offset */
-		let loadedCount = 0;
-		/** 后端说还有更早的 */
-		let hasMore = false;
+		/**
+		 * 下一页的游标，null 表示已经到底。
+		 *
+		 * 用游标而不是 offset：翻页期间有人发评论时，offset 会整体错位，
+		 * 下一页要么重复一条、要么跳过一条；游标记的是「上一页最后一条」，插多少都不影响。
+		 */
+		let nextCursor: string | null = null;
+		/** 正在进行的请求，换线程时中止它 —— 旧响应回来也不该覆盖新线程 */
+		let loadAbort: AbortController | null = null;
 		/** 正在补页：防连点，也让按钮有个忙态 */
 		let loadingMore = false;
 
@@ -1012,7 +1044,7 @@ const showTabs = packs.length > 1;
 		/** 「加载更早」的显隐：没有更早的、或者正在拉，就别让它可点 */
 		const syncMore = () => {
 			if (!moreNode || !moreButton) return;
-			moreNode.hidden = !hasMore;
+			moreNode.hidden = nextCursor === null;
 			moreButton.disabled = loadingMore;
 			moreNode.dataset.loading = loadingMore ? "true" : "false";
 		};
@@ -1153,8 +1185,7 @@ const showTabs = packs.length > 1;
 		 */
 		const mergePage = (page: CommentPage, prepend: boolean) => {
 			for (const comment of page.items) byID.set(comment.id, comment);
-			loadedCount += page.items.length;
-			hasMore = page.hasMore;
+			nextCursor = page.nextCursor;
 
 			const rows: HTMLElement[] = [];
 			for (const comment of page.items.slice().reverse()) {
@@ -1181,17 +1212,20 @@ const showTabs = packs.length > 1;
 		/** 拉当前线程最新的一页并重建列表 */
 		const loadComments = async () => {
 			const token = ++loadToken;
+			// 换线程时把上一个请求掐掉：它的响应即使回来也已经没有意义，
+			// 让它继续跑只是白占带宽和服务端资源
+			loadAbort?.abort();
+			loadAbort = new AbortController();
 			clearRows();
 			byID = new Map();
-			loadedCount = 0;
-			hasMore = false;
+			nextCursor = null;
 			loadingMore = false;
 			syncMore();
 			if (dayNode) dayNode.hidden = true;
 			setState("loading");
 
 			try {
-				const page = await fetchComments(slug, 0);
+				const page = await fetchComments(slug, null, loadAbort.signal);
 				if (token !== loadToken) return;
 
 				if (page.items.length === 0) {
@@ -1201,9 +1235,11 @@ const showTabs = packs.length > 1;
 				setState(null);
 				mergePage(page, false);
 				requestAnimationFrame(toBottom);
-			} catch {
+			} catch (error) {
 				if (token !== loadToken) return;
-				setState("failed", textLabels.loadFailed);
+				// 自己取消的不算失败：下一个线程正在加载，这里报错只会闪一下
+				if (isAbortedRequest(error)) return;
+				setState("failed", apiErrorMessage(error, textLabels.api));
 			}
 		};
 
@@ -1215,7 +1251,7 @@ const showTabs = packs.length > 1;
 		 * 不把整个线程打成「加载失败」—— 已经读到的消息仍然有效。
 		 */
 		const loadMore = async () => {
-			if (!hasMore || loadingMore) return;
+			if (nextCursor === null || loadingMore) return;
 			const token = loadToken;
 			loadingMore = true;
 			syncMore();
@@ -1224,14 +1260,15 @@ const showTabs = packs.length > 1;
 			const prevTop = scroller.scrollTop;
 
 			try {
-				const page = await fetchComments(slug, loadedCount);
+				const page = await fetchComments(slug, nextCursor, loadAbort?.signal);
 				if (token !== loadToken) return;
 				mergePage(page, true);
 				scroller.scrollTop = prevTop + (scroller.scrollHeight - prevHeight);
-			} catch {
+			} catch (error) {
 				if (token !== loadToken) return;
+				if (isAbortedRequest(error)) return;
 				if (moreButton) {
-					moreButton.textContent = textLabels.loadFailed;
+					moreButton.textContent = apiErrorMessage(error, textLabels.api);
 					window.setTimeout(() => {
 						moreButton.textContent = moreText;
 					}, 2000);
@@ -1505,6 +1542,18 @@ const showTabs = packs.length > 1;
 
 		// ---------------- 发送消息 ----------------
 
+		/** 发送失败的提示文案：区分「确定失败」与「结果未知」 */
+		const sendFailureText = (error: unknown): string => {
+			if (isAbortedRequest(error)) return textLabels.sendFailed;
+			if (
+				error instanceof ApiError &&
+				(error.kind === "network" || error.kind === "timeout")
+			) {
+				return textLabels.sendUnconfirmed;
+			}
+			return apiErrorMessage(error, textLabels.api);
+		};
+
 		/**
 		 * 把刚追加的气泡换成后端那一条：换 id、记进 ownIds、按返回的状态决定
 		 * 「待审核」怎么显示。失败时不撤回气泡 —— 内容在里面，用户还能右键复制重发。
@@ -1525,9 +1574,11 @@ const showTabs = packs.length > 1;
 				rememberOwnComment(created.id, created.deleteToken);
 				ownIds.add(created.id);
 				setPending(row, created.status === "pending");
-			} catch {
+			} catch (error) {
 				row.classList.add("is-failed");
-				setPending(row, true, textLabels.sendFailed);
+				// 三种失败要分开说：被拒绝（改内容再试）、超时（结果未知，先别重发）、
+				// 自己取消（等于没发生）。混成一句「发送失败」会让用户在不该重发时重发
+				setPending(row, true, sendFailureText(error));
 			} finally {
 				form.dataset.sending = "false";
 			}

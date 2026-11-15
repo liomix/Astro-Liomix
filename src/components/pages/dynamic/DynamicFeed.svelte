@@ -49,6 +49,8 @@ interface Props {
 	source: string;
 	itemsPerPage: number;
 	showComments: boolean;
+	/** 拉取失败时的提示。必须与「空」分开：请求挂了说「暂无动态」等于骗人 */
+	failedText: string;
 	emptyText: string;
 	noResultsText: string;
 	loadingText: string;
@@ -62,6 +64,7 @@ const {
 	source,
 	itemsPerPage,
 	showComments,
+	failedText,
 	emptyText,
 	noResultsText,
 	loadingText,
@@ -539,7 +542,11 @@ onMount(() => {
 		<span class="page-loading-spinner" aria-hidden="true"></span>
 		<p>{loadingText}</p>
 	</div>
-{:else if failed || entries.length === 0}
+{:else if failed}
+	<div class="page-empty card-base" role="alert">
+		<p>{failedText}</p>
+	</div>
+{:else if entries.length === 0}
 	<div class="page-empty card-base">
 		<p>{emptyText}</p>
 	</div>

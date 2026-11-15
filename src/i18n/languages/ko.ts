@@ -124,6 +124,13 @@ export const ko: Translation = {
 	[Key.commentChatRetractFailed]: "삭제하지 못했습니다",
 	[Key.commentChatRetractReplies]: "이 댓글에는 답글이 있습니다. 삭제하면 답글도 함께 사라집니다. 계속할까요?",
 	[Key.commentChatMe]: "나",
+	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
+	[Key.dynamicLoadFailed]: "업데이트를 불러오지 못했습니다. 새로 고친 뒤 다시 시도해 주세요.",
+	[Key.commentChatSendUnconfirmed]: "결과를 확인하지 못했습니다. 새로 고친 뒤 다시 보내 주세요",
+	[Key.apiErrorNetwork]: "네트워크에 문제가 있는 것 같습니다. 잠시 후 다시 시도해 주세요.",
+	[Key.apiErrorRequest]: "입력한 내용이 거부되었습니다. 확인 후 다시 시도해 주세요.",
+	[Key.apiErrorServer]: "서비스를 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+	[Key.apiErrorUnknown]: "문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
 	[Key.commentInfoTitle]: "댓글 정보",
 	[Key.commentInfoOpen]: "댓글 정보 편집",
 	[Key.commentInfoName]: "이름",

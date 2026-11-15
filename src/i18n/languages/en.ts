@@ -124,6 +124,13 @@ export const en: Translation = {
 	[Key.commentChatRetractFailed]: "Couldn't delete, try again",
 	[Key.commentChatRetractReplies]: "This comment has replies. Deleting it removes them too. Continue?",
 	[Key.commentChatMe]: "You",
+	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
+	[Key.dynamicLoadFailed]: "Failed to load updates. Please refresh and try again.",
+	[Key.commentChatSendUnconfirmed]: "Result unconfirmed — refresh before sending again",
+	[Key.apiErrorNetwork]: "The network seems to be having trouble. Please try again.",
+	[Key.apiErrorRequest]: "Some of the information was rejected. Please check it and try again.",
+	[Key.apiErrorServer]: "The service is unavailable right now. Please try again later.",
+	[Key.apiErrorUnknown]: "Something went wrong. Please try again.",
 	[Key.commentInfoTitle]: "Comment profile",
 	[Key.commentInfoOpen]: "Edit comment profile",
 	[Key.commentInfoName]: "Name",

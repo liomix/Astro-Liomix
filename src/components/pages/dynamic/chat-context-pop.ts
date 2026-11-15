@@ -28,6 +28,8 @@ import {
 	forgetOwnComment,
 } from "@/components/pages/dynamic/comment-own";
 import { getCommentUser } from "@/components/pages/dynamic/comment-user";
+import { apiErrorMessage } from "@/utils/api-error-message";
+import { ApiError } from "@/utils/api-client";
 import { deleteComment } from "@/utils/comment-client";
 
 /** 引用预览里的摘要长度上限：超过就截断，够看清是哪条消息 */
@@ -144,6 +146,12 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 			chat.dataset.tgLabelRetractReplies ||
 			"This comment has replies. Deleting it removes them too. Continue?",
 		me: chat.dataset.tgLabelMe || "You",
+		api: {
+			network: chat.dataset.tgApiNetwork || "Network error, please try again",
+			request: chat.dataset.tgApiRequest || "Some input was rejected",
+			server: chat.dataset.tgApiServer || "Service unavailable",
+			unknown: chat.dataset.tgApiUnknown || "Something went wrong",
+		},
 	};
 	const noopHandle: ChatContextPopHandle = {
 		takePendingReply: () => null,
@@ -350,9 +358,15 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		row.classList.add("is-retracting");
 		try {
 			await deleteComment(id, token);
-		} catch {
+		} catch (error) {
 			row.classList.remove("is-retracting");
-			showToast(labels.retractFailed);
+			// 后端明确拒绝了（凭据不对、已被删过）时「无法撤回」是准确的说法；
+			// 网络和服务端故障则说清楚是暂时性问题，别让用户以为是自己的凭据没了
+			showToast(
+				error instanceof ApiError && error.kind !== "client"
+					? apiErrorMessage(error, labels.api)
+					: labels.retractFailed,
+			);
 			return;
 		}
 

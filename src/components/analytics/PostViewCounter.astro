@@ -14,11 +14,34 @@
 
 <script>
 	import { siteStatsConfig } from "@/config/siteStatsConfig";
+	import { ApiError } from "@/utils/api-client";
 	import { formatCompactNumber } from "@/utils/number-utils";
 	import { fetchPostViews, reportPostView } from "@/utils/site-stats-client";
 
-	/** slug → 阅读量。跨 Swup 切页保留，切回来先显示旧值再刷新，避免闪「—」 */
-	const cached = new Map<string, number>();
+	/**
+	 * slug → 阅读量。跨 Swup 切页保留，切回来先显示旧值再刷新，避免闪「—」。
+	 *
+	 * 带时间戳是两件事分开：**显示**不看年龄（旧值也比「—」好），
+	 * **要不要重新问**才看年龄。没有 TTL 的话每次切页都把所有卡片重问一遍。
+	 */
+	const cached = new Map<string, { views: number; at: number }>();
+	/** 缓存有效期；过了就重新问一次，没过就直接用 */
+	const VIEW_TTL_MS = 60_000;
+	/** 条数上限：一个会话里翻过的文章会一直涨，必须封顶 */
+	const VIEW_CACHE_MAX = 500;
+	/** 正在进行的批量读取，切页时中止它 —— 旧页面的数字已经没人看了 */
+	let inflight: AbortController | null = null;
+
+	function rememberViews(slug: string, views: number): void {
+		// 先删再插 ≈ LRU：最久没被写过的排在最前，超限时先淘汰它
+		cached.delete(slug);
+		cached.set(slug, { views, at: Date.now() });
+		while (cached.size > VIEW_CACHE_MAX) {
+			const oldest = cached.keys().next().value;
+			if (oldest === undefined) break;
+			cached.delete(oldest);
+		}
+	}
 
 	/**
 	 * 已上报过浏览的路径。一次导航可能派发多个 swup 事件（content:replace /
@@ -49,9 +72,9 @@
 			.forEach((element) => {
 				const slug = element.dataset.postViews;
 				if (!slug) return;
-				const views = cached.get(slug);
-				if (views === undefined) return;
-				element.textContent = formatCompactNumber(views);
+				const entry = cached.get(slug);
+				if (!entry) return;
+				element.textContent = formatCompactNumber(entry.views);
 			});
 	}
 
@@ -73,7 +96,7 @@
 			)) {
 				try {
 					const counts = await reportPostView(slug);
-					cached.set(counts.slug, counts.views);
+					rememberViews(counts.slug, counts.views);
 					counted.add(counts.slug);
 				} catch (error) {
 					console.warn("[post-views] 上报阅读量失败", error);
@@ -81,15 +104,27 @@
 			}
 		}
 
-		// 剩下的（列表页的全部卡片）一次批量读取；刚上报过的不用再问一遍
-		const pending = displayed.filter((slug) => !counted.has(slug));
+		// 剩下的（列表页的全部卡片）一次批量读取。跳过两种：刚上报过的（返回体就是最新值），
+		// 以及缓存还新鲜的（切页回来没必要重问一遍）
+		const now = Date.now();
+		const pending = displayed.filter((slug) => {
+			if (counted.has(slug)) return false;
+			const entry = cached.get(slug);
+			return !entry || now - entry.at >= VIEW_TTL_MS;
+		});
 		if (pending.length > 0) {
+			// 换页时上一批已经没人看了：中止它，别让旧响应盖住新页面的数字
+			inflight?.abort();
+			inflight = new AbortController();
 			try {
-				for (const counts of await fetchPostViews(pending)) {
-					cached.set(counts.slug, counts.views);
+				for (const counts of await fetchPostViews(pending, inflight.signal)) {
+					rememberViews(counts.slug, counts.views);
 				}
 			} catch (error) {
-				console.warn("[post-views] 读取阅读量失败", error);
+				// 自己取消的不是失败，静默即可；真失败也只是数字停在旧值上
+				if (!(error instanceof ApiError && error.kind === "aborted")) {
+					console.warn("[post-views] 读取阅读量失败", error);
+				}
 			}
 		}
 

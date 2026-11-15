@@ -185,7 +185,11 @@ function visibleImages(entry: DynamicEntry) {
 				<path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
 			</svg>
 		</div>
-	{:else if error || entries.length === 0}
+	{:else if error}
+		<p class="m-0 p-3 text-center text-sm text-neutral-500" role="alert">
+			{i18n(I18nKey.dynamicLoadFailed)}
+		</p>
+	{:else if entries.length === 0}
 		<p class="m-0 p-3 text-center text-sm text-neutral-500">
 			{i18n(I18nKey.dynamicEmpty)}
 		</p>

@@ -2,12 +2,17 @@
  * 站点统计 / 文章阅读量的浏览器端客户端。
  *
  * 两个统计组件（SiteVisitCounter / PostViewCounter）共用它，避免各自复制
- * 一份「visitorId + 超时 + 错误处理」。约定：
+ * 一份「visitorId + 超时 + 错误处理」。
  *
- * - 所有请求都带超时，`credentials: "omit"`（统计端点无鉴权、不碰 Cookie）
- * - 失败直接抛出，由调用方决定是静默还是记日志——展示层不该因为统计挂掉
+ * 请求一律走 `@/utils/api-client`：超时、取消、重试、错误归一化、请求 id 收集都在那里，
+ * 这一层只描述「统计」这个业务域的语义。以前这里自带一份 fetch，并且**给 GET 也设了
+ * `Content-Type: application/json`** —— 那个头会把简单请求升级成需要预检的请求，
+ * 每次读计数都多一个 OPTIONS 往返。统一层只在带 body 时才设它。
+ *
+ * 失败直接抛出 `ApiError`，由调用方决定是静默还是记日志 —— 展示层不该因为统计挂掉。
  */
 import { siteStatsConfig } from "@/config/siteStatsConfig";
+import { createApiClient } from "@/utils/api-client";
 
 export type SiteStats = {
 	views: number;
@@ -20,8 +25,12 @@ export type PostViews = {
 };
 
 const VISITOR_ID_KEY = "firefly:visitor-id";
-const API_BASE_URL = siteStatsConfig.apiBaseUrl.replace(/\/+$/, "");
-const REQUEST_TIMEOUT_MS = siteStatsConfig.requestTimeoutMs;
+
+/** 与评论共用同一套调用层；两个域各自持有实例，只是复用实现 */
+const client = createApiClient({
+	baseUrl: siteStatsConfig.apiBaseUrl,
+	timeoutMs: siteStatsConfig.requestTimeoutMs,
+});
 
 /** localStorage 不可用时的会话内 visitorId */
 let memoryVisitorId = "";
@@ -54,41 +63,29 @@ export function getVisitorId(): string {
 	}
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-	const controller = new AbortController();
-	const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-	try {
-		const response = await fetch(`${API_BASE_URL}${path}`, {
-			...init,
-			credentials: "omit",
-			signal: controller.signal,
-			headers: { "Content-Type": "application/json" },
-		});
-		if (!response.ok) throw new Error(`HTTP ${response.status}`);
-		return (await response.json()) as T;
-	} finally {
-		window.clearTimeout(timer);
-	}
-}
-
-/** 上报一次站点访问，返回写入后的最新计数 */
+/**
+ * 上报一次站点访问，返回写入后的最新计数。
+ *
+ * 不带幂等键：这是「加一次」，重发就是多加一次。api-client 因此不会自动重试
+ * 没有幂等键的 POST —— 这里要的正是这个行为。
+ */
 export function reportSiteVisit(): Promise<SiteStats> {
-	return request<SiteStats>("/api/v1/count/site/visits", {
+	return client.request<SiteStats>("/api/v1/count/site/visits", {
 		method: "POST",
-		body: JSON.stringify({ visitorId: getVisitorId() }),
+		body: { visitorId: getVisitorId() },
 	});
 }
 
 /** 只读取站点计数，不上报 */
-export function fetchSiteStats(): Promise<SiteStats> {
-	return request<SiteStats>("/api/v1/count/site");
+export function fetchSiteStats(signal?: AbortSignal): Promise<SiteStats> {
+	return client.request<SiteStats>("/api/v1/count/site", { signal });
 }
 
-/** 上报一次文章浏览，返回该文的最新阅读量 */
+/** 上报一次文章浏览，返回该文的最新阅读量。同样是「加一次」，不重试。 */
 export function reportPostView(slug: string): Promise<PostViews> {
-	return request<PostViews>("/api/v1/count/posts/views", {
+	return client.request<PostViews>("/api/v1/count/posts/views", {
 		method: "POST",
-		body: JSON.stringify({ slug }),
+		body: { slug },
 	});
 }
 
@@ -96,15 +93,19 @@ export function reportPostView(slug: string): Promise<PostViews> {
 const POST_VIEWS_BATCH_SIZE = 100;
 
 /** 批量读取文章阅读量；未读过的文章返回 0，不会缺项 */
-export async function fetchPostViews(slugs: string[]): Promise<PostViews[]> {
+export async function fetchPostViews(
+	slugs: string[],
+	signal?: AbortSignal,
+): Promise<PostViews[]> {
 	const results: PostViews[] = [];
 	for (let i = 0; i < slugs.length; i += POST_VIEWS_BATCH_SIZE) {
 		const batch = slugs.slice(i, i + POST_VIEWS_BATCH_SIZE);
 		const query = new URLSearchParams({ slugs: batch.join(",") });
-		const body = await request<{ items: PostViews[] }>(
+		const body = await client.request<{ items?: PostViews[] }>(
 			`/api/v1/count/posts?${query.toString()}`,
+			{ signal },
 		);
-		results.push(...body.items);
+		results.push(...(body.items ?? []));
 	}
 	return results;
 }

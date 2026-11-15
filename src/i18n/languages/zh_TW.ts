@@ -124,6 +124,13 @@ export const zh_TW: Translation = {
 	[Key.commentChatRetractFailed]: "撤回失敗，請稍後再試",
 	[Key.commentChatRetractReplies]: "這則留言下還有回覆，撤回會一併刪除，確定嗎？",
 	[Key.commentChatMe]: "我",
+	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
+	[Key.dynamicLoadFailed]: "動態載入失敗，請重新整理",
+	[Key.commentChatSendUnconfirmed]: "結果未確認，重新整理後再決定要不要重送",
+	[Key.apiErrorNetwork]: "網路好像不太順暢，請稍後再試",
+	[Key.apiErrorRequest]: "提交的內容沒有通過檢查，請修改後再試",
+	[Key.apiErrorServer]: "服務暫時無法使用，請稍後再試",
+	[Key.apiErrorUnknown]: "出了點問題，請稍後再試",
 	[Key.commentInfoTitle]: "評論資訊",
 	[Key.commentInfoOpen]: "編輯評論資訊",
 	[Key.commentInfoName]: "暱稱",

@@ -110,6 +110,13 @@ enum I18nKey {
 	commentChatRetractFailed = "commentChatRetractFailed",
 	commentChatRetractReplies = "commentChatRetractReplies",
 	commentChatMe = "commentChatMe",
+	// 接口失败的兜底文案：按后端 code 归类，不直接展示后端 title
+	dynamicLoadFailed = "dynamicLoadFailed",
+	commentChatSendUnconfirmed = "commentChatSendUnconfirmed",
+	apiErrorNetwork = "apiErrorNetwork",
+	apiErrorRequest = "apiErrorRequest",
+	apiErrorServer = "apiErrorServer",
+	apiErrorUnknown = "apiErrorUnknown",
 	// 评论身份弹窗（顶栏那块点开的 CommentInfoPop）
 	commentInfoTitle = "commentInfoTitle",
 	commentInfoOpen = "commentInfoOpen",

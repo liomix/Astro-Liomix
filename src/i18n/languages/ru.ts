@@ -124,6 +124,13 @@ export const ru: Translation = {
 	[Key.commentChatRetractFailed]: "Не удалось удалить",
 	[Key.commentChatRetractReplies]: "У этого комментария есть ответы. Они будут удалены вместе с ним. Продолжить?",
 	[Key.commentChatMe]: "Вы",
+	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
+	[Key.dynamicLoadFailed]: "Не удалось загрузить обновления. Обновите страницу.",
+	[Key.commentChatSendUnconfirmed]: "Результат не подтверждён — обновите страницу, прежде чем отправлять снова",
+	[Key.apiErrorNetwork]: "Похоже, есть проблемы с сетью. Попробуйте позже.",
+	[Key.apiErrorRequest]: "Часть данных не прошла проверку. Исправьте и попробуйте снова.",
+	[Key.apiErrorServer]: "Сервис временно недоступен. Попробуйте позже.",
+	[Key.apiErrorUnknown]: "Что-то пошло не так. Попробуйте позже.",
 	[Key.commentInfoTitle]: "Профиль комментатора",
 	[Key.commentInfoOpen]: "Изменить профиль комментатора",
 	[Key.commentInfoName]: "Имя",
