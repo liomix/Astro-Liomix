@@ -4,6 +4,7 @@ import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { url } from "@/utils/url-utils";
+import EmptyState from "@/components/common/EmptyState.astro";
 ---
 
 <MainGridLayout title={i18n(I18nKey.notFound)} description={i18n(I18nKey.notFoundDescription)}>
@@ -14,10 +15,8 @@ import { url } from "@/utils/url-utils";
                 {i18n(I18nKey.notFound)}
             </div>
             
-            <!-- 404 图标 -->
-            <div class="mb-6">
-                <Icon name="material-symbols:error-outline" class="text-6xl text-(--primary)" />
-            </div>
+            <!-- 404 插画：全站统一的空态动画 -->
+            <EmptyState size="clamp(112px, 20vw, 168px)" />
             
             <!-- 标题 -->
             <div class="text-3xl md:text-4xl font-bold mb-4 text-90">

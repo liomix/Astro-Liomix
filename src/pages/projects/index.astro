@@ -13,6 +13,7 @@ import {
 } from "@/utils/projects-utils";
 import { getFileDirFromPath, removeFileExtension } from "@/utils/url-utils";
 import "@/styles/pages/card-grid.css";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.projects) {
@@ -113,16 +114,15 @@ const statusFilters = PROJECT_STATUS_KEYS.map((key) => {
 				))}
 			</div>
 		) : (
-			<div class="card-base flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
-				<Icon name="material-symbols:rocket-launch" class="text-6xl mb-4 opacity-50" />
-				<p class="text-lg">{i18n(I18nKey.projectEmpty)}</p>
-			</div>
+			<EmptyState class="card-base" title={i18n(I18nKey.projectEmpty)} />
 		)}
 
 		<!-- 筛选无结果空态 -->
-		<div class="projects-empty hidden flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
-			<Icon name="material-symbols:search-off-rounded" class="text-4xl mb-3" />
-			<div class="text-sm">{i18n(I18nKey.searchNoResults)}</div>
+		<div class="projects-empty hidden">
+			<EmptyState
+				size="clamp(72px, 12vw, 104px)"
+				description={i18n(I18nKey.searchNoResults)}
+			/>
 		</div>
 	</section>
 

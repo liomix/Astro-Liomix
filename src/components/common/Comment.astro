@@ -622,6 +622,7 @@ const showTabs = packs.length > 1;
 	} from "@/utils/api-error-message";
 	import { ApiError } from "@/utils/api-client";
 	import { copyText } from "@/utils/clipboard";
+	import { createEmptyLottie, registerEmptyLottie } from "@/utils/empty-lottie";
 	import {
 		type ApiComment,
 		type CommentPage,
@@ -934,9 +935,23 @@ const showTabs = packs.length > 1;
 		decorateCodeBlocks(target, labels);
 	}
 
+	/**
+	 * 空态占位：一张插画 + 一句文案。
+	 * 插画是全站统一的那张（utils/empty-lottie），尺寸由 comment.css 的
+	 * `[data-tg-state="empty"]` 控制 —— 抽屉里窄、文章页里宽，同一个素材两种大小。
+	 */
+	function paintEmptyPlaceholder(node: HTMLElement, text: string): void {
+		const caption = document.createElement("span");
+		caption.textContent = text;
+		node.replaceChildren(createEmptyLottie(), caption);
+	}
+
 	function init() {
 		const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
 		if (!chat) return;
+
+		// 空态插画要在这个页面上可用（文章页与抽屉是两份文档，各注册一次）
+		registerEmptyLottie();
 
 		// 壁纸垫在最底层：顶栏与输入栏的毛玻璃都从它上面采样
 		mountChatWallpaper(chat);
@@ -949,7 +964,7 @@ const showTabs = packs.length > 1;
 			const state = chat.querySelector<HTMLElement>("[data-tg-state]");
 			if (state) {
 				state.dataset.tgState = "empty";
-				state.textContent = chat.dataset.tgLabelDisabled || "";
+				paintEmptyPlaceholder(state, chat.dataset.tgLabelDisabled || "");
 			}
 			return;
 		}
@@ -1133,7 +1148,11 @@ const showTabs = packs.length > 1;
 				return;
 			}
 			stateNode.dataset.tgState = kind;
-			stateNode.textContent = kind === "loading" ? loadingText : (text ?? "");
+			if (kind === "empty") {
+				paintEmptyPlaceholder(stateNode, text ?? "");
+			} else {
+				stateNode.textContent = kind === "loading" ? loadingText : (text ?? "");
+			}
 			// 摘掉过的占位要重新挂回消息区（放在最后，永远是列表末尾那一条）
 			if (!stateNode.isConnected) scroller.append(stateNode);
 		};

@@ -1,4 +1,6 @@
 <script lang="ts">
+import { registerEmptyLottie } from "@/utils/empty-lottie";
+registerEmptyLottie();
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { onMount } from "svelte";
@@ -170,8 +172,13 @@ const handleInput = () => {
                 {/each}
             </div>
         {:else if keyword}
-            <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
-                {i18n(I18nKey.searchNoResults)}
+            <div class="card-base p-10 rounded-(--radius-large)">
+                <empty-lottie
+                    class="search-empty__art"
+                    data-animation="utyan_empty"></empty-lottie>
+                <div class="text-center text-50">
+                    {i18n(I18nKey.searchNoResults)}
+                </div>
             </div>
         {:else}
              <div class="card-base p-10 text-center text-50 rounded-(--radius-large)">
@@ -182,6 +189,14 @@ const handleInput = () => {
 </div>
 
 <style>
+	/* 整页搜索结果空态：跟着页面宽度走 */
+	.search-empty__art {
+		display: block;
+		width: clamp(88px, 14vw, 124px);
+		height: clamp(88px, 14vw, 124px);
+		margin: 0 auto 0.25rem;
+	}
+
     /* 关键字高亮效果 - 主题色 */
     :global(mark) {
         background: transparent;

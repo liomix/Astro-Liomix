@@ -17,6 +17,7 @@ import {
 	fetchVndbUlist,
 	type VndbTab,
 } from "@/utils/vndb-utils";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.vndb) {
@@ -180,17 +181,10 @@ const activeTab = tabs[0]?.id || "all";
                 nsfw={vndbConfig.nsfw}
               />
             ) : (
-              <div class="text-center py-16">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-(--btn-regular-bg) rounded-full mb-6 border border-(--line-divider)">
-                  <Icon name="material-symbols:settings" class="text-[2rem] text-(--btn-content)" />
-                </div>
-                <h2 class="text-xl font-semibold text-black/80 dark:text-white/80 mb-3">
-                  {isUserIdConfigured ? i18n(I18nKey.vndbEmpty) : i18n(I18nKey.vndbNotConfigured)}
-                </h2>
-                <p class="text-black/60 dark:text-white/60 mb-4 max-w-md mx-auto">
-                  {isUserIdConfigured ? i18n(I18nKey.vndbEmptyReason) : i18n(I18nKey.vndbNotConfiguredDesc)}
-                </p>
-              </div>
+              <EmptyState
+                title={isUserIdConfigured ? i18n(I18nKey.vndbEmpty) : i18n(I18nKey.vndbNotConfigured)}
+                description={isUserIdConfigured ? i18n(I18nKey.vndbEmptyReason) : i18n(I18nKey.vndbNotConfiguredDesc)}
+              />
             )}
           </>
         )}

@@ -13,6 +13,7 @@ import type {
 } from "@/types/bangumi";
 import { formatDateI18n } from "@/utils/date-utils";
 import { filterNsfw, isBangumiNsfw } from "@/utils/nsfw-utils";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 //参考：霞葉 https://kasuha.com/posts/fuwari-enhance-ep2/
 
@@ -290,17 +291,10 @@ const activeTab = tabs[0]?.id || "anime";
           <BangumiGrid client:load tabs={tabs} initialActiveTab={activeTab} bangumiData={bangumiData} subjectBaseUrl={bangumiConfig.subjectBaseUrl} nsfw={bangumiConfig.nsfw} />
         </>
       ) : (
-        <div class="text-center py-16">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-(--btn-regular-bg) rounded-full mb-6 border border-(--line-divider)">
-            <Icon name="material-symbols:settings" class="text-[2rem] text-(--btn-content)" />
-          </div>
-          <h2 class="text-xl font-semibold text-black/80 dark:text-white/80 mb-3">
-            {isUserIdConfigured ? i18n(I18nKey.bangumiEmpty) : "未配置 Bangumi 用户ID"}
-          </h2>
-          <p class="text-black/60 dark:text-white/60 mb-4 max-w-md mx-auto">
-            {isUserIdConfigured ? i18n(I18nKey.bangumiEmptyReason) : "请在 src/config/siteConfig.ts 中配置你的 Bangumi 用户ID"}
-          </p>
-        </div>
+        <EmptyState
+          title={isUserIdConfigured ? i18n(I18nKey.bangumiEmpty) : "未配置 Bangumi 用户ID"}
+          description={isUserIdConfigured ? i18n(I18nKey.bangumiEmptyReason) : "请在 src/config/siteConfig.ts 中配置你的 Bangumi 用户ID"}
+        />
       )}
         </>
       )}

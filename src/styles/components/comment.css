@@ -391,6 +391,20 @@ html[data-embedded] .tg-head-close {
 	color: #d9534f;
 }
 
+/* 空态多一张插画：插画在上、文案在下。尺寸跟着面板走 ——
+   抽屉里窄，文章页嵌在正文里宽，所以用 clamp 而不是固定像素 */
+.tg-state[data-tg-state="empty"] {
+	flex-direction: column;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.tg-state[data-tg-state="empty"] empty-lottie {
+	display: block;
+	width: clamp(80px, 14vw, 120px);
+	height: clamp(80px, 14vw, 120px);
+}
+
 /* 时间旁边那一小截：待审核 / 发送失败。
    宽度不固定，但白名单里的字号要小到不跟时间抢视线 */
 .tg-pending {

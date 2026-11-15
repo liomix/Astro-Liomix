@@ -8,6 +8,7 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/friends.css";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.friends) {
@@ -90,10 +91,11 @@ const description =
       <div class="friends-grid my-4">
         {
           items.length === 0 && (
-            <div class="col-span-full flex flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
-              <Icon name="material-symbols:group-off-outline" class="text-4xl mb-3" />
-              <div class="text-sm">{i18n(I18nKey.friendsEmpty)}</div>
-            </div>
+            <EmptyState
+              class="col-span-full"
+              size="clamp(80px, 12vw, 112px)"
+              description={i18n(I18nKey.friendsEmpty)}
+            />
           )
         }
         {
@@ -157,7 +159,11 @@ const description =
       {/* 搜索无结果提示 */}
       <div class="friends-empty hidden flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
         <Icon name="material-symbols:search-off-rounded" class="text-4xl mb-3" />
-        <div class="text-sm">{i18n(I18nKey.searchNoResults)}</div>
+        <EmptyState
+          class="flex-col"
+          size="clamp(72px, 12vw, 104px)"
+          description={i18n(I18nKey.searchNoResults)}
+        />
       </div>
     </div>
   </div>

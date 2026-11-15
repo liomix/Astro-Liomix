@@ -12,6 +12,7 @@ import {
 	resolveBooknavIcon,
 } from "@/utils/booknav-utils";
 import "@/styles/pages/booknav.css";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.booknav) {
@@ -184,16 +185,15 @@ const description =
             </div>
 
             {/* 搜索无结果提示 */}
-            <div class="booknav-empty hidden flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
-              <Icon name="material-symbols:search-off-rounded" class="text-4xl mb-3" />
-              <div class="text-sm">{i18n(I18nKey.searchNoResults)}</div>
+            <div class="booknav-empty hidden">
+              <EmptyState
+                size="clamp(72px, 12vw, 104px)"
+                description={i18n(I18nKey.searchNoResults)}
+              />
             </div>
           </booknav-list>
         ) : (
-          <div class="flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
-            <Icon name="material-symbols:bookmarks" class="text-6xl mb-4 opacity-50" />
-            <p class="text-lg">{i18n(I18nKey.booknavEmpty)}</p>
-          </div>
+          <EmptyState title={i18n(I18nKey.booknavEmpty)} />
         )
       }
     </div>

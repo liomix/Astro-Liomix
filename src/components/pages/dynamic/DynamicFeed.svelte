@@ -17,6 +17,7 @@ import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { likeCountOf } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
+import { registerEmptyLottie } from "@/utils/empty-lottie";
 import { registerDynamicGallery } from "./dynamic-gallery";
 
 type DynamicImage = {
@@ -457,6 +458,7 @@ $effect(() => {
 });
 
 onMount(() => {
+	registerEmptyLottie();
 	registerDynamicGallery();
 	registerDynamicActions();
 	const page = list.closest(".page-shell");
@@ -550,10 +552,14 @@ onMount(() => {
 	</div>
 {:else if entries.length === 0}
 	<div class="page-empty card-base">
+		<empty-lottie class="page-empty__art" data-animation="utyan_empty"
+		></empty-lottie>
 		<p>{emptyText}</p>
 	</div>
 {:else if filtered.length === 0}
 	<div class="page-no-results card-base">
+		<empty-lottie class="page-empty__art" data-animation="utyan_empty"
+		></empty-lottie>
 		<p>{noResultsText}</p>
 	</div>
 {/if}

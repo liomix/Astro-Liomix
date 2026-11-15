@@ -1,4 +1,6 @@
 <script lang="ts">
+import { registerEmptyLottie } from "@/utils/empty-lottie";
+registerEmptyLottie();
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { navigateToPage } from "@utils/navigation-utils";
@@ -284,12 +286,31 @@ $: if (initialized && keyword !== undefined) {
 				</a>
 			{/if}
 		{:else if keyword}
-			<div class="search-hint">{i18n(I18nKey.searchNoResults)}</div>
+			<div class="search-hint search-hint--empty">
+				<empty-lottie
+					class="search-empty__art"
+					data-animation="utyan_empty"></empty-lottie>
+				<span>{i18n(I18nKey.searchNoResults)}</span>
+			</div>
 		{/if}
 	</div>
 </div>
 
 <style>
+	/* 搜索面板里的空态插画：面板小，图也不能大 */
+	.search-hint--empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.search-empty__art {
+		display: block;
+		width: 64px;
+		height: 64px;
+	}
+
 	.search-excerpt {
 		display: flex;
 		align-items: flex-start;

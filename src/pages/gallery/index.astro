@@ -8,6 +8,7 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils";
 import "@/styles/pages/card-grid.css";
+import EmptyState from "@/components/common/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.gallery) {
@@ -101,16 +102,15 @@ const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();
           ))}
         </div>
         {/* 搜索无结果提示 */}
-        <div class="albums-empty hidden flex-col items-center justify-center py-12 text-neutral-400 dark:text-neutral-500">
-          <Icon name="material-symbols:search-off-rounded" class="text-4xl mb-3" />
-          <div class="text-sm">{i18n(I18nKey.searchNoResults)}</div>
+        <div class="albums-empty hidden">
+          <EmptyState
+            size="clamp(72px, 12vw, 104px)"
+            description={i18n(I18nKey.searchNoResults)}
+          />
         </div>
       </>
     ) : (
-      <div class="card-base flex flex-col items-center justify-center py-16 text-neutral-400 dark:text-neutral-500">
-        <Icon name="material-symbols:photo-library" class="text-6xl mb-4 opacity-50" />
-        <p class="text-lg">{i18n(I18nKey.galleryNoAlbums)}</p>
-      </div>
+      <EmptyState class="card-base" title={i18n(I18nKey.galleryNoAlbums)} />
     )}
   </div>
 
