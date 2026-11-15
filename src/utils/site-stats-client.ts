@@ -13,55 +13,25 @@
  */
 import { siteStatsConfig } from "@/config/siteStatsConfig";
 import { createApiClient } from "@/utils/api-client";
+import { getVisitorId } from "@/utils/visitor-id";
 
 export type SiteStats = {
 	views: number;
 	visitors: number;
 };
 
+export { getVisitorId };
+
 export type PostViews = {
 	slug: string;
 	views: number;
 };
 
-const VISITOR_ID_KEY = "firefly:visitor-id";
-
-/** 与评论共用同一套调用层；两个域各自持有实例，只是复用实现 */
+/** 与评论、点赞共用同一套调用层；两个域各自持有实例，只是复用实现 */
 const client = createApiClient({
 	baseUrl: siteStatsConfig.apiBaseUrl,
 	timeoutMs: siteStatsConfig.requestTimeoutMs,
 });
-
-/** localStorage 不可用时的会话内 visitorId */
-let memoryVisitorId = "";
-
-function mintVisitorId(): string {
-	if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-	if (window.crypto?.getRandomValues) {
-		const bytes = window.crypto.getRandomValues(new Uint8Array(16));
-		return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-	}
-	return `anon-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-/**
- * 稳定的浏览器标识，只用于让后端把同一个读者的多次访问去重成一位访客。
- * 访问量统计不依赖它，所以拿不到也能正常工作。
- */
-export function getVisitorId(): string {
-	try {
-		const stored = window.localStorage.getItem(VISITOR_ID_KEY);
-		if (stored) return stored;
-		const minted = mintVisitorId();
-		window.localStorage.setItem(VISITOR_ID_KEY, minted);
-		return minted;
-	} catch {
-		// Safari 隐私模式等场景下 localStorage 会抛异常。退化为会话内固定 ID，
-		// 至少同一次浏览不会把自己重复算成新访客。
-		if (!memoryVisitorId) memoryVisitorId = mintVisitorId();
-		return memoryVisitorId;
-	}
-}
 
 /**
  * 上报一次站点访问，返回写入后的最新计数。

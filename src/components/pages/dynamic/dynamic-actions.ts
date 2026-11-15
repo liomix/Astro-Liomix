@@ -1,7 +1,7 @@
 /**
  * 动态卡片底部操作条：点赞 / 评论
  * 用 document 级事件委托统一处理，动态页（模板克隆）与侧栏弹窗（Svelte）共用
- * - 点赞：纯本地记录（localStorage），静态站无后端
+ * - 点赞：行为在 utils/likes.ts（服务端 /api/v1/posts/{slug}/likes），这里只负责把数字画出来
  * - 评论：从右侧抽出评论抽屉（CommentDrawer），见 dynamic-comment-drawer.ts
  */
 
@@ -12,7 +12,7 @@ import {
 	scheduleDrawerWarm,
 } from "@/components/pages/dynamic/dynamic-comment-drawer";
 import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
-import { syncLikeStates } from "@/utils/likes";
+import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
 import { formatCompactNumber } from "@/utils/number-utils";
 
 /**
@@ -101,6 +101,9 @@ export function registerDynamicActions(): void {
 	scope[BOUND_KEY] = true;
 
 	registerDynamicLottieIcons();
+	// 点赞的点击委托也在这里注册：侧栏弹窗里的点赞按钮所在的页面（首页、归档……）
+	// 不一定有 LikeButton 组件，光靠组件的脚本会让那颗按钮点了没反应。
+	bindLikeButtons();
 	document.addEventListener("click", onClick, true);
 	syncDynamicLikeStates();
 }

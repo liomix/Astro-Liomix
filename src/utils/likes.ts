@@ -1,98 +1,57 @@
 /**
- * 点赞：一个按钮、一份本地记录，文章和动态共用。
+ * 点赞：服务端权威的一枚按钮，文章和动态共用
  * ---------------------------------------------------------------------------
- * 静态站没有点赞接口，所以「后端」目前就是这份 localStorage：键是通用的
- * `firefly-likes`，值是「点过赞的对象 id 集合」。文章用 slug，动态用
- * `dynamic-<id>`，两者不会撞。
+ * 记录在后端（`/api/v1/posts/{slug}/likes`），键是 post slug：文章用自己的 slug，
+ * 动态用 `dynamic-<id>`。所以「同一篇文章在不同设备上看到同一个数字」成立，
+ * 不再像以前那样只存在本机 localStorage 里 —— 那种「点赞」换台设备就没了，
+ * 别人也永远看不到。
  *
- * 旧键 `firefly-dynamic-likes` 只在动态拥有点赞时使用过，读的时候并进来，
- * 之后只写新键 —— 换键不能让用户已点的赞消失。
+ * 这里只做三件事：
+ *   1. 批量读一次快照，把数字画到按钮上（整页的 `[data-like]` 合并成一次请求）；
+ *   2. 点击时先乐观画上（点赞是典型的「失败可判定、可回滚」场景），再用服务端
+ *      返回的权威值覆盖；失败就回滚到点击前的样子，不留一个假的赞；
+ *   3. 把变化以 `like:change` 事件广播出去，让页头统计之类的地方跟着重算。
  *
- * 这里是点赞行为的唯一实现：LikeButton 组件只负责长什么样，DynamicActions
- * 只负责把抽屉的评论按钮接上。加新的点赞场景时，不要再写第二份。
+ * 长什么样不在这里：LikeButton 组件只管外观。加新的点赞场景时不要再写第二份。
  */
+import {
+	fetchLikeTallies,
+	isLikeApiEnabled,
+	likePost,
+	unlikePost,
+} from "@/utils/like-client";
 import { formatCompactNumber } from "@/utils/number-utils";
 
-/** 当前键 */
-const LIKES_KEY = "firefly-likes";
-/** 旧键，只读，用来做一次性迁移 */
-const LEGACY_KEY = "firefly-dynamic-likes";
+/** like:change 的 detail：哪个对象、点成了什么样、现在几条 */
+export type LikeChangeDetail = { id: string; liked: boolean; count: number };
 
-/** like:change 的 detail：哪个对象、点成了什么样 */
-export type LikeChangeDetail = { id: string; liked: boolean };
+/** 服务端快照：slug → 总数与「我点过没有」 */
+type Tally = { count: number; liked: boolean };
 
-/** 已点赞的 id 集合 */
-export function readLikedIds(): Set<string> {
-	const ids = new Set<string>();
-	for (const key of [LEGACY_KEY, LIKES_KEY]) {
-		try {
-			const raw = localStorage.getItem(key);
-			if (!raw) continue;
-			const parsed: unknown = JSON.parse(raw);
-			if (!Array.isArray(parsed)) continue;
-			for (const id of parsed) {
-				if (typeof id === "string" && id) ids.add(id);
-			}
-		} catch {
-			// 隐私模式读不出来、或者存的是坏 JSON：当成没有记录
-		}
-	}
-	return ids;
+const tallies = new Map<string, Tally>();
+/** 正在批量读的 id，避免同一个 id 短时间内被问两遍 */
+const pending = new Set<string>();
+/** 本次页面已经问过的 id；换页（astro:page-load）时清空，让数字重新对齐后端 */
+const fetched = new Set<string>();
+
+/** 某个对象当前的点赞数；没读到过返回 undefined，调用方自己兜底 */
+export function likeCountOf(id: string): number | undefined {
+	return tallies.get(id)?.count;
 }
 
-function writeLikedIds(ids: Set<string>): void {
-	try {
-		localStorage.setItem(LIKES_KEY, JSON.stringify([...ids]));
-		// 迁移完成后旧键就没用了；删不掉也不影响（读的时候会去重）
-		localStorage.removeItem(LEGACY_KEY);
-	} catch {
-		// 隐私模式写不进去：这次点击仍有反馈，刷新后归位
-	}
-}
-
-/** 翻转一次点赞，返回翻转后的状态 */
-export function toggleLiked(id: string): boolean {
-	const ids = readLikedIds();
-	const liked = !ids.has(id);
-	if (liked) ids.add(id);
-	else ids.delete(id);
-	writeLikedIds(ids);
-
-	document.dispatchEvent(
-		new CustomEvent<LikeChangeDetail>("like:change", { detail: { id, liked } }),
-	);
-	return liked;
-}
-
-/**
- * 按钮对应的 id。
- *
- * 文章页由组件直接给；动态卡片把 id 写在条目上，按钮是它的后代 —— 一条动态
- * 有多个按钮（卡片、侧栏各一份），所以两种来源都要认。
- */
+/** 按钮对应的 id：文章页由组件直接给，动态卡片写在条目上 */
 export function likeIdOf(button: HTMLElement): string | null {
 	if (button.dataset.likeId) return button.dataset.likeId;
 	const host = button.closest<HTMLElement>("[data-like-id]");
 	return host?.dataset.likeId || null;
 }
 
-/** 把一个按钮画成「已赞 / 未赞」，数字 = 基数 + 自己这一票 */
-export function paintLikeButton(button: HTMLElement, liked: boolean): void {
-	button.classList.toggle("is-active", liked);
-	button.setAttribute("aria-pressed", String(liked));
-	const count = button.querySelector<HTMLElement>("[data-like-count]");
-	if (!count) return;
-	const base = Number(button.dataset.likeBase ?? "") || 0;
-	count.textContent = formatCompactNumber(base + (liked ? 1 : 0));
-}
-
-/** 把已点赞状态同步到（可能是新渲染出来的）按钮上 */
-export function syncLikeStates(root: ParentNode = document): void {
-	const ids = readLikedIds();
-	root.querySelectorAll<HTMLElement>("[data-like]").forEach((button) => {
-		const id = likeIdOf(button);
-		paintLikeButton(button, Boolean(id) && ids.has(id as string));
-	});
+/** 把一个按钮画成「已赞 / 未赞」，数字用服务端的权威值 */
+function paintLikeButton(button: HTMLElement, tally: Tally): void {
+	button.classList.toggle("is-active", tally.liked);
+	button.setAttribute("aria-pressed", String(tally.liked));
+	const node = button.querySelector<HTMLElement>("[data-like-count]");
+	if (node) node.textContent = formatCompactNumber(tally.count);
 }
 
 /** 播一次爱心动画：只在「点上」的时候弹，取消不弹 */
@@ -100,6 +59,125 @@ function playIcon(button: HTMLElement): void {
 	button
 		.querySelector<HTMLElement & { play?: () => void }>("dynamic-lottie-icon")
 		?.play?.();
+}
+
+/** 用当前快照把 root 里所有按钮重画一遍 */
+function repaintAll(root: ParentNode = document): void {
+	for (const button of Array.from(
+		root.querySelectorAll<HTMLElement>("[data-like]"),
+	)) {
+		const id = likeIdOf(button);
+		const tally = id ? tallies.get(id) : undefined;
+		if (tally) paintLikeButton(button, tally);
+	}
+}
+
+/**
+ * 批量读快照并刷新按钮。
+ *
+ * 粒度是整页：动态流一屏十几个按钮、文章页一个，都走同一个请求。分页/换页后会
+ * 带着新的一批 id 再来一次，已经问过的跳过。
+ */
+async function loadTallies(ids: string[], signal?: AbortSignal): Promise<void> {
+	const missing = ids.filter((id) => !pending.has(id) && !fetched.has(id));
+	if (missing.length === 0) return;
+
+	for (const id of missing) pending.add(id);
+	try {
+		const items = await fetchLikeTallies(missing, signal);
+		for (const item of items) {
+			tallies.set(item.slug, { count: item.count, liked: item.liked });
+			fetched.add(item.slug);
+		}
+	} catch (error) {
+		// 拿不到就保持按钮原样（显示数据源里的基数）。点赞是次要信息，
+		// 不该因为它把页面搞成错误状态；下一次同步会重试。
+		console.warn("[like] load tallies failed", error);
+		return;
+	} finally {
+		for (const id of missing) pending.delete(id);
+	}
+
+	repaintAll();
+	// 数字可能变了（别人也点过），让页头统计这类汇总重算一次
+	document.dispatchEvent(
+		new CustomEvent<{ ids: string[] }>("like:states", {
+			detail: { ids: missing },
+		}),
+	);
+}
+
+/**
+ * 把服务端状态同步到（可能是新渲染出来的）按钮上。
+ *
+ * 已经知道的 id 立刻画，不知道的合并成一次批量请求 —— 动态流克隆出十几张卡片时
+ * 只发一个请求，而不是每个按钮一个。
+ */
+export function syncLikeStates(root: ParentNode = document): void {
+	if (!isLikeApiEnabled() || typeof document === "undefined") return;
+
+	const unknown = new Set<string>();
+	for (const button of Array.from(
+		root.querySelectorAll<HTMLElement>("[data-like]"),
+	)) {
+		const id = likeIdOf(button);
+		if (!id) continue;
+		const tally = tallies.get(id);
+		if (tally) {
+			paintLikeButton(button, tally);
+			continue;
+		}
+		unknown.add(id);
+	}
+	if (unknown.size > 0) void loadTallies(Array.from(unknown));
+}
+
+/**
+ * 点一下：先乐观画上，再拿服务端结果覆盖，失败回滚。
+ *
+ * 连点保护：请求没回来之前不再接受同一个按钮的第二次点击（16.4）。服务端幂等，
+ * 所以即使真的并发了两枪，结果也还是一条赞。
+ */
+async function toggle(button: HTMLElement, id: string): Promise<void> {
+	if (button.dataset.likeBusy === "true") return;
+
+	const previous: Tally = tallies.get(id) ?? {
+		count: Number(button.dataset.likeBase ?? "") || 0,
+		liked: false,
+	};
+	const optimistic: Tally = {
+		count: Math.max(0, previous.count + (previous.liked ? -1 : 1)),
+		liked: !previous.liked,
+	};
+
+	tallies.set(id, optimistic);
+	paintLikeButton(button, optimistic);
+	if (optimistic.liked) playIcon(button);
+
+	button.dataset.likeBusy = "true";
+	try {
+		const tally = optimistic.liked ? await likePost(id) : await unlikePost(id);
+		// 服务端的值优先：别人可能同时点过，本地那个 +1 只是预估
+		const authoritative: Tally = { count: tally.count, liked: tally.liked };
+		tallies.set(id, authoritative);
+		fetched.add(id);
+		paintLikeButton(button, authoritative);
+		document.dispatchEvent(
+			new CustomEvent<LikeChangeDetail>("like:change", {
+				detail: {
+					id,
+					liked: authoritative.liked,
+					count: authoritative.count,
+				},
+			}),
+		);
+	} catch (error) {
+		tallies.set(id, previous);
+		paintLikeButton(button, previous);
+		console.error("[like] toggle failed", id, error);
+	} finally {
+		delete button.dataset.likeBusy;
+	}
 }
 
 const BOUND_KEY = "__fireflyLikesBound";
@@ -123,6 +201,7 @@ export function bindLikeButtons(): void {
 		"click",
 		(event) => {
 			if (event.button !== 0) return;
+			if (!isLikeApiEnabled()) return;
 			const target = event.target;
 			if (!(target instanceof Element)) return;
 			const button = target.closest<HTMLElement>("[data-like]");
@@ -130,16 +209,20 @@ export function bindLikeButtons(): void {
 			const id = likeIdOf(button);
 			if (!id) return;
 
+			// 卡片是整块链接，按钮在它里面：不拦住就会顺带跳转
 			event.preventDefault();
 			event.stopPropagation();
 
-			const liked = toggleLiked(id);
-			paintLikeButton(button, liked);
-			if (liked) playIcon(button);
+			void toggle(button, id);
 		},
 		true,
 	);
 
 	syncLikeStates();
-	document.addEventListener("astro:page-load", () => syncLikeStates());
+
+	document.addEventListener("astro:page-load", () => {
+		// 换页之后数字可能已经变了（别处点的赞），把「问过」清掉重新对齐
+		fetched.clear();
+		syncLikeStates();
+	});
 }

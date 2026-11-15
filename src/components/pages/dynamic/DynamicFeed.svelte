@@ -14,7 +14,7 @@ import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { dynamicAnchor } from "@/utils/dynamic-utils";
 // 点赞状态与事件类型都在通用模块里（文章页、动态页共用一份记录）
-import { type LikeChangeDetail, readLikedIds } from "@/utils/likes";
+import { likeCountOf } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
 import { registerDynamicGallery } from "./dynamic-gallery";
@@ -154,17 +154,15 @@ function commentCountOf(entry: DynamicData): number {
 
 /**
  * 刷新页头那三格：动态条数 / 获赞 / 评论（都是全站合计，不跟着筛选走）。
- * 数据源没给 likes、comments 时按 0 算；获赞再加上访客自己点过的那些赞；
- * 评论数以后端为准（pending 不算，所以刚发的评论不会让数字立刻跳一下）。
+ * 点赞数以后端快照为准（`likeCountOf`，读不到才退回数据源里的基数），
+ * 评论数同理（pending 不算，所以刚发的评论不会让数字立刻跳一下）。
  */
 function syncHeroStats(): void {
-	const liked = readLikedIds();
 	let likes = 0;
 	let comments = 0;
 	for (const entry of entries) {
-		likes += Number(entry.likes) || 0;
+		likes += likeCountOf(entry.id) ?? (Number(entry.likes) || 0);
 		comments += commentCountOf(entry);
-		if (liked.has(entry.id)) likes += 1;
 	}
 	paintStat("posts", entries.length);
 	paintStat("likes", likes);
@@ -520,11 +518,14 @@ onMount(() => {
 
 	// 点赞（卡片上或侧栏弹窗里）会派发这个事件，横幅的「获赞」跟着重算
 	const onLikeChange = (event: Event) => {
-		const detail = (event as CustomEvent<LikeChangeDetail>).detail;
-		if (!detail) return;
+		// like:change（自己点的）与 like:states（批量快照回来了）都只是「重算一下」
+		// 的信号，detail 的形状不重要
+		if (!(event as CustomEvent).detail) return;
 		syncHeroStats();
 	};
 	document.addEventListener("like:change", onLikeChange);
+	// 批量读完点赞快照也会派发一次：别人点过的赞同样要让「获赞」动起来
+	document.addEventListener("like:states", onLikeChange);
 
 	return () => {
 		searchInput?.removeEventListener("input", filter);
@@ -533,6 +534,7 @@ onMount(() => {
 		window.removeEventListener("popstate", onLocationChange);
 		document.removeEventListener("swup:page:view", onLocationChange);
 		document.removeEventListener("like:change", onLikeChange);
+		document.removeEventListener("like:states", onLikeChange);
 	};
 });
 </script>
