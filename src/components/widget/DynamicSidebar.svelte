@@ -179,11 +179,16 @@ function visibleImages(entry: DynamicEntry) {
 
 <div class="flex flex-col gap-1.5">
 	{#if loading}
-		<div class="flex justify-center p-3">
-			<svg class="size-5 animate-spin text-(--primary)" viewBox="0 0 24 24" fill="none">
-				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
-				<path d="M4 12a8 8 0 018-8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-			</svg>
+		<!-- 侧栏只有几行：两条骨架线就够，别用转圈 -->
+		<div class="flex flex-col gap-2 p-3">
+			<span
+				class="skeleton"
+				style="--skeleton-width:72%;--skeleton-height:.7rem"
+			></span>
+			<span
+				class="skeleton"
+				style="--skeleton-width:52%;--skeleton-height:.7rem"
+			></span>
 		</div>
 	{:else if error}
 		<p class="m-0 p-3 text-center text-sm text-neutral-500" role="alert">

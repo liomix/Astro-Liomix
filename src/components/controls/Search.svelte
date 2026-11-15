@@ -1,4 +1,5 @@
 <script lang="ts">
+import CardSkeleton from "@/components/common/CardSkeleton.svelte";
 import { registerEmptyLottie } from "@/utils/empty-lottie";
 registerEmptyLottie();
 import I18nKey from "@i18n/i18nKey";
@@ -230,7 +231,7 @@ $: if (initialized && keyword !== undefined) {
 
 	<div class="search-dialog-results">
 		{#if isSearching}
-			<div class="search-hint">{i18n(I18nKey.searchLoading)}</div>
+			<CardSkeleton rows={3} variant="compact" label={i18n(I18nKey.searchLoading)} />
 		{:else if result.length > 0}
 			{#each result.slice(0, 5) as item}
 				<a

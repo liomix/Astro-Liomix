@@ -729,7 +729,10 @@ function portal(node: HTMLElement) {
       />
     {:else}
       <div class="poster-loading">
-        <div class="poster-spinner" style="border-top-color: {themeColor}"></div>
+        <span
+          class="skeleton"
+          style="--skeleton-width:min(100%,14rem);--skeleton-height:70%;--skeleton-radius:.75rem"
+        ></span>
         <span>{i18n(I18nKey.generatingPoster)}</span>
       </div>
     {/if}
@@ -924,19 +927,5 @@ function portal(node: HTMLElement) {
     color: var(--deep-text);
     box-shadow: 0 16px 40px -16px rgb(0 0 0 / 0.4);
     font-size: 0.8125rem;
-  }
-
-  .poster-spinner {
-    width: 2rem;
-    height: 2rem;
-    border: 2px solid var(--line-divider);
-    border-radius: 50%;
-    animation: poster-spin 0.9s linear infinite;
-  }
-
-  @keyframes poster-spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 </style>

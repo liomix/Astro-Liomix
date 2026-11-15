@@ -17,6 +17,7 @@ import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { likeCountOf } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
+import CardSkeleton from "@/components/common/CardSkeleton.svelte";
 import { registerEmptyLottie } from "@/utils/empty-lottie";
 import { registerDynamicGallery } from "./dynamic-gallery";
 
@@ -542,10 +543,8 @@ onMount(() => {
 </script>
 
 {#if loading}
-	<div class="page-loading card-base" role="status">
-		<span class="page-loading-spinner" aria-hidden="true"></span>
-		<p>{loadingText}</p>
-	</div>
+	<!-- 加载中：按卡片的形状占位（头像 / 昵称 / 正文 / 动作条），数据回来是替换不是重排 -->
+	<CardSkeleton rows={2} label={loadingText} />
 {:else if failed}
 	<div class="page-empty card-base" role="alert">
 		<p>{failedText}</p>

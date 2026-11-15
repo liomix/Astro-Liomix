@@ -607,41 +607,6 @@ dynamic-feed {
 	margin: 0;
 }
 
-.page-loading {
-	display: grid;
-	min-height: 10rem;
-	margin-top: 0.875rem;
-	place-content: center;
-	justify-items: center;
-	gap: 0.75rem;
-	color: var(--content-meta);
-}
-
-.page-loading-spinner {
-	width: 2rem;
-	height: 2rem;
-	border: 0.2rem solid color-mix(in srgb, var(--primary) 18%, transparent);
-	border-top-color: var(--primary);
-	border-radius: 50%;
-	animation: page-loading-spin 0.75s linear infinite;
-}
-
-.page-loading p {
-	margin: 0;
-}
-
-@keyframes page-loading-spin {
-	to {
-		transform: rotate(360deg);
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.page-loading-spinner {
-		animation-duration: 1.5s;
-	}
-}
-
 .page-no-results {
 	display: grid;
 	min-height: 10rem;

@@ -9,6 +9,7 @@ import {
 } from "@/utils/image-utils";
 import { getLqipProps } from "@/utils/lqip-utils";
 import { url } from "@/utils/url-utils";
+import Skeleton from "@/components/common/Skeleton.astro";
 
 interface Props {
 	id?: string;
@@ -91,10 +92,10 @@ const remoteReferrerPolicy =
 	<!-- LQIP 渐变占位 -->
 	<div class="lqip-placeholder absolute inset-0 pointer-events-none" style={lqipProps.style} aria-hidden="true"></div>
 
-	<!-- 加载动画 -->
+	<!-- 加载占位：整块骨架（没有转圈）。LQIP 渐变在它下面，图一到就一起淡出 -->
 	{showLoading && (
-		<div class="loading-spinner absolute inset-0 flex items-center justify-center z-10" style="background-color: var(--card-bg);">
-			<div class="spinner"></div>
+		<div class="loading-skeleton absolute inset-0 z-10">
+			<Skeleton width="100%" height="100%" radius="0" />
 		</div>
 	)}
 
@@ -151,19 +152,19 @@ const remoteReferrerPolicy =
 		}
 	}
 
-	/* 加载动画容器 */
-	.loading-spinner {
+	/* 加载占位（骨架块） */
+	.loading-skeleton {
 		transition: opacity 0.3s ease-out;
 	}
 
 	/* 加载完成后隐藏 */
-	.cover-image-container[data-loading="false"] .loading-spinner {
+	.cover-image-container[data-loading="false"] .loading-skeleton {
 		opacity: 0;
 		pointer-events: none;
 	}
 
-	/* 错误状态隐藏加载动画 */
-	.cover-image-container[data-error="true"] .loading-spinner {
+	/* 错误状态隐藏占位 */
+	.cover-image-container[data-error="true"] .loading-skeleton {
 		display: none;
 	}
 
@@ -175,22 +176,6 @@ const remoteReferrerPolicy =
 	/* 错误状态隐藏失败的远程图片 */
 	.cover-image-container[data-error="true"] img[data-remote="true"] {
 		display: none;
-	}
-
-	/* 旋转加载动画 */
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid oklch(0.9 0.05 var(--hue));
-		border-top-color: oklch(0.6 0.15 var(--hue));
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
 	}
 
 	/* 图片样式（height 用 !important 覆盖 Astro Picture/Image 注入的 height:auto，

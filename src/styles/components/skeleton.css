@@ -1,0 +1,51 @@
+/* 骨架屏的最小单元：一块会呼吸的灰色占位
+   ---------------------------------------------------------------------------
+   放在全局样式里而不是组件的作用域样式里，因为 Svelte 岛（导航搜索、动态流）
+   也要用 —— 作用域样式带 [data-astro-cid-*]，Svelte 里拼出来的元素匹配不到。
+
+   形状（宽/高/圆角）由 `--skeleton-*` 变量给，见 components/common/Skeleton.astro。 */
+.skeleton {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	flex: none;
+	width: var(--skeleton-width, 100%);
+	height: var(--skeleton-height, 0.85rem);
+	border-radius: var(--skeleton-radius, 0.45rem);
+	/* 文字色掺进面板色：浅色下是浅灰、深色下是深灰，一套值两种主题 */
+	background-color: color-mix(in srgb, var(--tg-text, #1a1a1a) 9%, transparent);
+}
+
+/* 扫光用一层白色渐变横穿过去，而不是「灰上再叠一点灰」：
+   两种主题下都是「提亮」，对比度够看得见，也不用为深色再写一条规则 */
+.skeleton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	transform: translateX(-100%);
+	background: linear-gradient(
+		100deg,
+		transparent 15%,
+		rgb(255 255 255 / 0.5) 45%,
+		rgb(255 255 255 / 0.5) 55%,
+		transparent 85%
+	);
+	animation: skeleton-sweep 1.5s ease-in-out infinite;
+}
+
+.skeleton--circle {
+	border-radius: 50%;
+}
+
+@keyframes skeleton-sweep {
+	to {
+		transform: translateX(100%);
+	}
+}
+
+/* 动效敏感的人看到的是静止灰块，信息一样不少 */
+@media (prefers-reduced-motion: reduce) {
+	.skeleton::after {
+		display: none;
+	}
+}

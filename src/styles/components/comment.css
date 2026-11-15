@@ -391,6 +391,17 @@ html[data-embedded] .tg-head-close {
 	color: #d9534f;
 }
 
+/* 加载态是一块骨架屏：铺满消息区、顶端对齐，不再居中那一行字 */
+.tg-state--skeleton {
+	display: block;
+	margin: 0;
+	padding: 0.9rem 0.75rem 0;
+	color: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	text-align: left;
+}
+
 /* 空态多一张插画：插画在上、文案在下。尺寸跟着面板走 ——
    抽屉里窄，文章页嵌在正文里宽，所以用 clamp 而不是固定像素 */
 .tg-state[data-tg-state="empty"] {

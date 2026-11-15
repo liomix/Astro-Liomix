@@ -46,6 +46,7 @@
  * 图片附件按钮暂不开放：后端还没有上传接口，blob: 地址过不了正文的 URL 白名单，
  * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
  */
+import CommentSkeleton from "@/components/common/CommentSkeleton.astro";
 import { avatarGradientOf, initialOf } from "@/components/common/comment/comment-user";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 import { profileConfig } from "@/config/profileConfig";
@@ -251,9 +252,10 @@ const showTabs = packs.length > 1;
 		</div>
 
 		{/* 消息由脚本按后端评论渲染：这里只留状态占位，避免首屏一片空白。
-		    加载完成且有数据时脚本会把这块整个摘掉；空列表 / 请求失败换成对应文案 */}
-		<div class="tg-state" data-tg-state="loading">
-			{i18n(I18nKey.commentChatLoading)}
+		    加载中是骨架屏（CommentSkeleton，形状跟聊天气泡一致），数据回来后脚本把
+		    这块整个摘掉；空列表 / 请求失败换成对应提示。 */}
+		<div class="tg-state tg-state--skeleton" data-tg-state="loading">
+			<CommentSkeleton rows={4} />
 		</div>
 	</div>
 
@@ -1058,8 +1060,9 @@ const showTabs = packs.length > 1;
 		const dayNode = chat.querySelector<HTMLElement>("[data-tg-day]");
 		const moreNode = chat.querySelector<HTMLElement>("[data-tg-more]");
 		const moreButton = chat.querySelector<HTMLButtonElement>("[data-tg-load-more]");
-		// 占位文案是 SSR 渲染的，切过一次状态后就没了 —— 先留一份
-		const loadingText = stateNode?.textContent?.trim() ?? "";
+		// 加载态是块骨架屏，切过一次状态后 DOM 就被换掉了 —— 先把它的 HTML 留一份，
+		// 下次再进加载态（换筛选、重新拉取）时原样贴回去
+		const loadingHtml = stateNode?.innerHTML ?? "";
 		const moreText = moreButton?.textContent?.trim() ?? "";
 		const ownIds = readOwnComments();
 		/** 每条自己评论发表时用的身份，用来判断「现在还是不是同一个人」 */
@@ -1149,10 +1152,13 @@ const showTabs = packs.length > 1;
 				return;
 			}
 			stateNode.dataset.tgState = kind;
-			if (kind === "empty") {
+			stateNode.classList.toggle("tg-state--skeleton", kind === "loading");
+			if (kind === "loading") {
+				stateNode.innerHTML = loadingHtml;
+			} else if (kind === "empty") {
 				paintEmptyPlaceholder(stateNode, text ?? "");
 			} else {
-				stateNode.textContent = kind === "loading" ? loadingText : (text ?? "");
+				stateNode.textContent = text ?? "";
 			}
 			// 摘掉过的占位要重新挂回消息区（放在最后，永远是列表末尾那一条）
 			if (!stateNode.isConnected) scroller.append(stateNode);

@@ -619,13 +619,21 @@ $effect(() => {
 				</div>
 			</div>
 
-			<!-- 歌词行：只放当前这一句，换句时从下往上淡入（{#key} 重建节点） -->
+			<!-- 歌词行：只放当前这一句，换句时从下往上淡入（{#key} 重建节点）。
+			     还在拉歌词时不写「歌词加载中…」，直接摆一条骨架线 —— 文案会跳，占位不会 -->
 			<div class="np-lyric" aria-hidden={!lyricsOpen}>
-				{#key lyricText}
-					<span class="np-lyric-text" class:is-hint={autoplayMuted}
-						>{lyricText}</span
-					>
-				{/key}
+				{#if lyricStatus === "loading" && lyrics.length === 0}
+					<span
+						class="skeleton np-lyric-skeleton"
+						style="--skeleton-width:62%;--skeleton-height:.7rem"
+					></span>
+				{:else}
+					{#key lyricText}
+						<span class="np-lyric-text" class:is-hint={autoplayMuted}
+							>{lyricText}</span
+						>
+					{/key}
+				{/if}
 			</div>
 
 			<div class="np-line">
@@ -741,6 +749,12 @@ $effect(() => {
 </aside>
 
 <style>
+	/* 歌词占位：高度和一整行文字对齐，免得歌词一到就跳一行 */
+	.np-lyric :global(.np-lyric-skeleton) {
+		margin: 0.15rem 0;
+		opacity: 0.75;
+	}
+
 	/* 紧贴左下角：无外边距、只留右上圆角，向上长出播放列表 */
 	.now-playing {
 		/* 宽度用一条尾段更平缓的曲线：起步快、收尾软，比标准 ease 更跟手 */
