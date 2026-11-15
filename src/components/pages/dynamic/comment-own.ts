@@ -20,6 +20,16 @@ const OWN_IDS_KEY = "firefly-dynamic-own-comments";
 /** id → 撤回凭据 */
 const OWN_TOKENS_KEY = "firefly-dynamic-own-tokens";
 
+/**
+ * id → 发表时用的身份（邮箱优先，没有邮箱就用昵称）
+ *
+ * 光有 id 只能回答「这台设备发过这条」，回答不了「现在还是同一个人吗」：
+ * 把资料从 A 改成 B 之后，A 那些气泡仍会因为 id 在集合里而被画到右侧。
+ * 记下身份，渲染时和当前身份比一次，A 的气泡自然回到左边。
+ * 老记录没有这个键，按「就是当前身份」处理，不影响已有数据。
+ */
+const OWN_IDENTITY_KEY = "firefly-dynamic-own-identities";
+
 /** 两个键各只记最近这么多条，避免 localStorage 无限增长 */
 const MAX_ENTRIES = 300;
 
@@ -52,6 +62,34 @@ export function readOwnComments(): Set<string> {
 	);
 }
 
+/**
+ * 身份指纹：昵称 + 邮箱。
+ *
+ * 不能只用邮箱：改资料时很多人只改昵称，邮箱不动 —— 那样指纹不变，
+ * 换身份后旧气泡就不会重新排。任何一个字段变了，就是另一个人。
+ */
+export function identityKeyOf(user: { name: string; email: string } | null): string {
+	if (!user) return "";
+	return `${user.name.trim().toLowerCase()}\u0000${user.email.trim().toLowerCase()}`;
+}
+
+/** 读「每条自己评论是用哪个身份发的」 */
+export function readOwnIdentities(): Map<string, string> {
+	const parsed = readJSON(OWN_IDENTITY_KEY);
+	const out = new Map<string, string>();
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return out;
+	for (const [id, identity] of Object.entries(parsed)) {
+		if (typeof identity === "string" && identity !== "") out.set(id, identity);
+	}
+	return out;
+}
+
+function writeIdentities(identities: Map<string, string>): void {
+	// 和 ids 一样只留最近 MAX_ENTRIES 条：Map 保留插入顺序
+	const kept = Array.from(identities.entries()).slice(-MAX_ENTRIES);
+	writeJSON(OWN_IDENTITY_KEY, Object.fromEntries(kept));
+}
+
 function readTokens(): Record<string, string> {
 	const parsed = readJSON(OWN_TOKENS_KEY);
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
@@ -68,12 +106,23 @@ function readTokens(): Record<string, string> {
  * `deleteToken` 只有创建响应里那一次能拿到，漏了就再也补不回来 —— 所以发送
  * 成功的第一时间就要调这里，不能等下次打开评论时才补。
  */
-export function rememberOwnComment(id: string, deleteToken?: string): void {
+export function rememberOwnComment(
+	id: string,
+	deleteToken?: string,
+	identity?: string,
+): void {
 	if (!id) return;
 
 	const ids = Array.from(readOwnComments());
 	ids.push(id);
 	writeJSON(OWN_IDS_KEY, ids.slice(-MAX_ENTRIES));
+
+	if (identity) {
+		const identities = readOwnIdentities();
+		identities.delete(id);
+		identities.set(id, identity);
+		writeIdentities(identities);
+	}
 
 	if (!deleteToken) return;
 	const tokens = readTokens();
@@ -98,4 +147,7 @@ export function forgetOwnComment(id: string): void {
 		delete tokens[id];
 		writeJSON(OWN_TOKENS_KEY, tokens);
 	}
+
+	const identities = readOwnIdentities();
+	if (identities.delete(id)) writeIdentities(identities);
 }

@@ -26,6 +26,11 @@ export interface ApiComment {
 		name: string;
 		/** 空串表示没留网址 */
 		website: string;
+		/**
+		 * 站长本人的评论。后端按 SITE_OWNER_EMAILS 里的地址识别，用来显示标记，
+		 * 不是权限 —— 老后端没有这个字段，所以按可选处理。
+		 */
+		isOwner?: boolean;
 	};
 	body: string;
 	status: string;

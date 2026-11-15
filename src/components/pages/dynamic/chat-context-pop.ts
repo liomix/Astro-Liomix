@@ -353,9 +353,10 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		// 后端删父评论会连整棵回复子树一起删。只在确实能看到回复时才问一句：
 		// 每条都弹窗反而会让人闭眼点确定。更早的页面上有回复的情况看不到，
 		// 那种只能靠「已经删掉了」这个结果本身说明问题
-		const hasReplies = Array.from(
-			scroller.querySelectorAll<HTMLElement>(".tg-row"),
-		).some((other) => other !== row && other.dataset.tgParent === id);
+		const chatRows = scroller?.querySelectorAll<HTMLElement>(".tg-row");
+		const hasReplies = Array.from(chatRows ?? []).some(
+			(other) => other !== row && other.dataset.tgParent === id,
+		);
 		if (hasReplies && !window.confirm(labels.retractReplies)) return;
 
 		row.classList.add("is-retracting");

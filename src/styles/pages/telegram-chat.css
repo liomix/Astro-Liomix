@@ -451,15 +451,15 @@ html[data-embedded] .tg-head-close {
    这里给 4 种色调，按昵称哈希固定一种（同一个名字永远同一种，不会随顺序变） */
 .tg-avatar {
 	display: inline-flex;
-	width: 1.75rem;
-	height: 1.75rem;
-	flex: 0 0 1.75rem;
+	width: 2.25rem;
+	height: 2.25rem;
+	flex: 0 0 2.25rem;
 	align-items: center;
 	justify-content: center;
 	border-radius: 9999px;
 	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
 	color: #fff;
-	font-size: 0.75rem;
+	font-size: 0.82rem;
 	font-weight: 600;
 	line-height: 1;
 	user-select: none;
@@ -491,6 +491,37 @@ html[data-embedded] .tg-head-close {
 	line-height: 1.25;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+/* 站长：用博客头像 + 光环头饰代替文字标记。
+   头饰先入 DOM、头像后入，靠层叠顺序只露出头顶那圈光环，脸不被糊住；
+   头饰是纯装饰，aria-hidden，也不吃指针事件。 */
+.tg-avatar--owner {
+	position: relative;
+	background: none;
+	overflow: visible;
+}
+
+.tg-owner-face {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+	object-fit: cover;
+}
+
+.tg-owner-halo {
+	position: absolute;
+	z-index: 0;
+	/* 负数=往头顶上方提。光环要刚好压在头顶，不是飘在天上，所以只提三分之一头高 */
+	top: -22%;
+	left: 50%;
+	width: 168%;
+	height: auto;
+	transform: translateX(-50%);
+	pointer-events: none;
+	user-select: none;
 }
 
 .tg-author--1 {

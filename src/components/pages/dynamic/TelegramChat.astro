@@ -41,6 +41,12 @@
  */
 import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
+import { profileConfig } from "@/config/profileConfig";
+import {
+	avatarMotionOverride,
+	isVideoAvatar,
+	resolveRawAvatarUrl,
+} from "@/utils/avatar-utils";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 
@@ -72,6 +78,27 @@ const initial = (name.trim().slice(0, 1) || "?").toUpperCase();
  */
 const avatarPaint = avatarGradientOf(contact || name);
 
+/**
+ * 站长的气泡用博客头像，并在头像下面垫一层光环头饰。
+ *
+ * 「下面」是字面意思：头饰先渲染、头像盖在上面，所以只露出头顶那圈光环和翅膀，
+ * 脸不会被糊住。两张图都走 ?url 直出原始文件，不经过图片优化。
+ */
+const ownerAvatarUrl = resolveRawAvatarUrl(
+	profileConfig.avatarPoster || profileConfig.avatar || "",
+);
+const ownerHaloUrl = resolveRawAvatarUrl("assets/images/owner-halo.png");
+
+/**
+ * 站长的头像支持动图/视频：视频走 <video>（静音、循环、自动播放、playsinline，
+ * 否则手机浏览器不自动播），动图走 <img> 本身就动。
+ * avatarMotion: "never" 时仍然只给静帧，和站点头像的开关保持一致。
+ */
+const ownerMotionUrl =
+	avatarMotionOverride() !== false && isVideoAvatar(profileConfig.avatar ?? "")
+		? resolveRawAvatarUrl(profileConfig.avatar ?? "")
+		: "";
+
 /** 表情包：面板里一栏一个系列，只有一个系列时不渲染 tab 栏（见下方 markup） */
 const packs = commentEmojiConfig.packs;
 const showTabs = packs.length > 1;
@@ -95,6 +122,9 @@ const showTabs = packs.length > 1;
 	data-tg-label-empty={i18n(I18nKey.commentChatEmpty)}
 	data-tg-label-load-failed={i18n(I18nKey.commentChatLoadFailed)}
 	data-tg-label-send-failed={i18n(I18nKey.commentChatSendFailed)}
+	data-tg-owner-avatar={ownerAvatarUrl}
+	data-tg-owner-halo={ownerHaloUrl}
+	data-tg-owner-motion={ownerMotionUrl}
 	data-tg-label-send-unconfirmed={i18n(I18nKey.commentChatSendUnconfirmed)}
 	data-tg-api-network={i18n(I18nKey.apiErrorNetwork)}
 	data-tg-api-request={i18n(I18nKey.apiErrorRequest)}
@@ -550,7 +580,9 @@ const showTabs = packs.length > 1;
 	} from "@/components/pages/dynamic/chat-context-pop";
 	import { initCommentInfo } from "@/components/pages/dynamic/comment-info";
 	import {
+		identityKeyOf,
 		readOwnComments,
+		readOwnIdentities,
 		rememberOwnComment,
 	} from "@/components/pages/dynamic/comment-own";
 	import {
@@ -1007,6 +1039,32 @@ const showTabs = packs.length > 1;
 		const loadingText = stateNode?.textContent?.trim() ?? "";
 		const moreText = moreButton?.textContent?.trim() ?? "";
 		const ownIds = readOwnComments();
+		/** 每条自己评论发表时用的身份，用来判断「现在还是不是同一个人」 */
+		const ownIdentities = readOwnIdentities();
+		/** 当前身份：改资料时（commentUserChange）会重新算 */
+		let myIdentity = identityKeyOf(getCommentUser());
+		/** 老记录里没有身份时用昵称兜底 */
+		let myName = (getCommentUser()?.name ?? "").trim();
+		/**
+		 * 这条评论现在算不算「我的」。
+		 *
+		 * id 在集合里只说明这台设备发过它；还要发表时的身份和当前身份一致，
+		 * 否则把资料从 A 换成 B 之后，A 的气泡会一直赖在右边。
+		 * 老记录没存身份，按「就是当前身份」处理，保持原来的行为。
+		 */
+		const isMine = (comment: ApiComment): boolean => {
+			if (!ownIds.has(comment.id)) return false;
+			const posted = ownIdentities.get(comment.id);
+			if (posted) return posted === myIdentity;
+			// 加身份记录之前发的评论：按昵称认。至少改了昵称之后它回到左边，
+			// 而不是永远赖在右边 —— 老数据没法知道当时用的是哪个邮箱。
+			return (comment.author.name || "").trim() === myName;
+		};
+		/** 站长的头像与头饰；任一缺失就退回首字母彩圆，不硬画 */
+		const ownerAvatarSrc = chat.dataset.tgOwnerAvatar || "";
+		const ownerHaloSrc = chat.dataset.tgOwnerHalo || "";
+		/** 有视频就用视频，没有就是静态图 */
+		const ownerMotionSrc = chat.dataset.tgOwnerMotion || "";
 
 		/** 当前线程的 slug：抽屉每换一条动态就递一个新的 path 过来 */
 		let slug = slugOfPath(chat.dataset.tgPath || "/dynamic/");
@@ -1102,8 +1160,44 @@ const showTabs = packs.length > 1;
 			const tone = toneOf(name);
 			const avatar = row.querySelector<HTMLElement>(".tg-avatar");
 			if (avatar) {
-				avatar.className = `tg-avatar tg-avatar--${tone}`;
-				avatar.textContent = initialOf(name);
+				if (comment.author.isOwner && ownerAvatarSrc) {
+					// 头饰先入 DOM、头像后入：靠层叠顺序，只露出头顶那圈光环
+					avatar.className = "tg-avatar tg-avatar--owner";
+					avatar.textContent = "";
+					if (ownerHaloSrc) {
+						const halo = document.createElement("img");
+						halo.className = "tg-owner-halo";
+						halo.src = ownerHaloSrc;
+						halo.alt = "";
+						halo.setAttribute("aria-hidden", "true");
+						avatar.append(halo);
+					}
+					if (ownerMotionSrc) {
+						// 静音是自动播放的前提；loop + playsinline 让它像表情一样常驻，
+						// poster 兜住「视频首帧还没解出来」的那一瞬间
+						const video = document.createElement("video");
+						video.className = "tg-owner-face";
+						video.src = ownerMotionSrc;
+						video.poster = ownerAvatarSrc;
+						video.muted = true;
+						video.loop = true;
+						video.autoplay = true;
+						video.playsInline = true;
+						video.setAttribute("playsinline", "");
+						video.setAttribute("muted", "");
+						video.setAttribute("aria-hidden", "true");
+						avatar.append(video);
+					} else {
+						const face = document.createElement("img");
+						face.className = "tg-owner-face";
+						face.src = ownerAvatarSrc;
+						face.alt = name;
+						avatar.append(face);
+					}
+				} else {
+					avatar.className = `tg-avatar tg-avatar--${tone}`;
+					avatar.textContent = initialOf(name);
+				}
 			}
 			const author = row.querySelector<HTMLElement>(".tg-author");
 			if (author) {
@@ -1197,7 +1291,7 @@ const showTabs = packs.length > 1;
 
 			const rows: HTMLElement[] = [];
 			for (const comment of page.items.slice().reverse()) {
-				const row = ownIds.has(comment.id)
+				const row = isMine(comment)
 					? renderOutgoing(comment)
 					: renderIncoming(comment);
 				if (row) rows.push(row);
@@ -1592,8 +1686,9 @@ const showTabs = packs.length > 1;
 				row.dataset.tgMsg = created.id;
 				row.dataset.tgParent = created.parentId ?? "";
 				// 撤回凭据只有这一次能拿到：连同 id 一起存下来，下次打开还能删
-				rememberOwnComment(created.id, created.deleteToken);
+				rememberOwnComment(created.id, created.deleteToken, myIdentity);
 				ownIds.add(created.id);
+				ownIdentities.set(created.id, myIdentity);
 				setPending(row, created.status === "pending");
 			} catch (error) {
 				row.classList.add("is-failed");
@@ -1604,6 +1699,38 @@ const showTabs = packs.length > 1;
 				form.dataset.sending = "false";
 			}
 		};
+
+		/**
+		 * 换了身份就重画两侧。
+		 *
+		 * 身份决定的是「哪些气泡算我的」：把资料从 A 换成 B 之后，A 发的要挪到
+		 * 左边、B 发的挪到右边。不刷新页面 —— 记录还在，只是左右重新排一次。
+		 */
+		window.addEventListener("commentUserChange", (event) => {
+			const detail = (event as CustomEvent<{ email: string; name: string }>)
+				.detail;
+			const next = identityKeyOf(detail ?? null);
+			if (next === myIdentity) return;
+			myIdentity = next;
+			myName = (detail?.name ?? "").trim();
+
+			for (const row of Array.from(
+				scroller.querySelectorAll<HTMLElement>(".tg-row[data-tg-msg]"),
+			)) {
+				const id = row.dataset.tgMsg;
+				const comment = id ? byID.get(id) : undefined;
+				if (!id || !comment) continue;
+				const wantOut = isMine(comment);
+				if ((row.dataset.tgSide === "out") === wantOut) continue;
+				const replacement = wantOut
+					? renderOutgoing(comment)
+					: renderIncoming(comment);
+				if (replacement) row.replaceWith(replacement);
+			}
+
+			decorateReplies();
+			chatCtx.relayout();
+		});
 
 		form.addEventListener("submit", (event) => {
 			event.preventDefault();
