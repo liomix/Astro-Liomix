@@ -1,5 +1,13 @@
 ---
-import { Icon } from "astro-icon/components";
+/**
+ * 文章底部的版权卡片：标题 / 原文地址 / 作者 · 发布于 · 许可协议。
+ *
+ * 这里刻意不画许可证水印（曾经是右侧一个 15rem 的淡色 CC 图标，比卡片还高、被 overflow 裁成半个）：
+ * 大号半透明图形既读不出信息，又让右侧空出一大块。许可信息本来就由「许可协议」那一列的文字 + 链接承担。
+ *
+ * 结构分两段：上段是「这是什么」（标题 + 原文地址），发丝线隔开，下段是元信息
+ * （dl + 网格：小屏两列、大屏三列，值按列对齐；标签用 11px 大写字距压住层级，值统一 13px）。
+ */
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -23,71 +31,57 @@ const className = Astro.props.class;
 const profileConf = profileConfig;
 const licenseConf = licenseConfig;
 const postUrl = sourceLink || decodeURIComponent(Astro.url.toString());
-
-// 根据许可证名称匹配对应图标
-function getLicenseIcon(name: string): string {
-	const n = name.toLowerCase();
-	if (/cc0|creative commons zero/.test(n)) {
-		return "fa7-brands:creative-commons-zero";
-	}
-	if (/public domain|公共领域/.test(n)) {
-		return "fa7-brands:creative-commons-pd";
-	}
-	if (/^cc($|[\s-])|creative commons|知识共享/.test(n)) {
-		return "fa7-brands:creative-commons";
-	}
-	if (/\b(mit|apache|bsd|isc|mulan|unlicense)\b|gpl|mpl\b/.test(n)) {
-		return "fa7-brands:osi";
-	}
-	return "fa7-regular:copyright";
-}
-
-// 文章单独指定的许可证按名称自动匹配；站点默认许可证优先使用配置中的自定义图标
-const licenseIcon = licenseName
-	? getLicenseIcon(licenseName)
-	: licenseConf.icon || getLicenseIcon(licenseConf.name);
 ---
 
 <div
   class={`relative transition overflow-hidden bg-(--license-block-bg) py-5 px-6 ${className}`}
 >
-  <div class="transition font-bold text-black/75 dark:text-white/75">
+  {/* 上段：标题 + 原文地址。地址降一档字号，只保留主题色做强调 */}
+  <div class="font-semibold text-[0.9375rem] leading-snug text-black/80 dark:text-white/80">
     {title}
   </div>
-  <a href={postUrl} class="link text-(--primary) break-all">
+  <a
+    href={postUrl}
+    class="mt-1 block text-[0.8125rem] leading-snug text-(--primary) break-all transition-colors hover:underline"
+  >
     {postUrl}
   </a>
-  <div class="flex flex-col sm:flex-row gap-3 sm:gap-6 mt-2">
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
+
+  {/* 发丝线：把「标题区」和「元信息区」分成两段，卡片不再是三行文字堆在一起 */}
+  <div class="my-3.5 h-px bg-black/[0.06] dark:bg-white/10"></div>
+
+  {/* 下段：元信息 */}
+  <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+    <div class="min-w-0">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
         {i18n(I18nKey.author)}
-      </div>
-      <div class="transition text-black/75 dark:text-white/75 line-clamp-2">
+      </dt>
+      <dd class="mt-1 truncate text-[0.8125rem] text-black/75 dark:text-white/75">
         {author || profileConf.name}
-      </div>
+      </dd>
     </div>
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
+    <div class="min-w-0">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
         {i18n(I18nKey.publishedAt)}
-      </div>
-      <div class="transition text-black/75 dark:text-white/75 line-clamp-2">
+      </dt>
+      <dd class="mt-1 text-[0.8125rem] tabular-nums text-black/75 dark:text-white/75">
         {formatDateToYYYYMMDD(pubDate)}
-      </div>
+      </dd>
     </div>
-    <div>
-      <div class="transition text-black/30 dark:text-white/30 text-sm">
+    <div class="col-span-2 min-w-0 sm:col-span-1">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
         {i18n(I18nKey.license)}
-      </div>
-      <a
-        href={licenseName ? licenseUrl || undefined : licenseConf.url}
-        target="_blank"
-        class="link text-(--primary) line-clamp-2"
-        >{licenseName || licenseConf.name}</a
-      >
+      </dt>
+      <dd class="mt-1">
+        <a
+          href={licenseName ? licenseUrl || undefined : licenseConf.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-[0.8125rem] text-(--primary) transition-colors hover:underline"
+        >
+          {licenseName || licenseConf.name}
+        </a>
+      </dd>
     </div>
-  </div>
-  <Icon
-    name={licenseIcon}
-    class="transition text-[15rem] absolute pointer-events-none right-6 top-1/2 -translate-y-1/2 text-black/5 dark:text-white/5"
-  />
+  </dl>
 </div>

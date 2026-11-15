@@ -1,0 +1,83 @@
+/* 一排动作按钮：动态卡片底部那条、文章页四个入口都用它 */
+.atom-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.125rem;
+}
+
+/* 通用动作按钮：点赞 / 评论这类「图标 + 数字」的胶囊，文章页和动态卡片共用。
+   图标本身是 <dynamic-lottie-icon>，尺寸与配色在 styles/lottie-icon.css 里；
+   这里只管按钮的形状、间距和状态。 */
+.atom-action {
+	display: inline-flex;
+	height: 2.25rem;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+	padding-inline: 0.55rem;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--content-meta);
+	text-decoration: none;
+	cursor: pointer;
+	transition: color 0.16s ease, background-color 0.16s ease;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.atom-action:hover {
+	background: var(--btn-regular-bg);
+	color: var(--primary);
+}
+
+.atom-action:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 1px;
+}
+
+/* 激活态：底色 + 主题色文字。Lottie 素材本身是彩色的，不跟色 */
+.atom-action.is-active {
+	background: var(--btn-regular-bg);
+	color: var(--primary);
+}
+
+/* 数字：等宽数字，点一下位数不变时按钮宽度不跳 */
+.atom-action__count {
+	font-size: 0.78rem;
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+/* 图标尺寸写在按钮这边（而不是组件里的内联 style），这样文章页要放大时
+   改一个修饰类就够，不用在模板里写第二份数值。
+   爱心素材只占画布 24%（zoom 3.2 后约 0.77em），所以它的 font-size 天然要比气泡大一号 */
+.atom-action dynamic-lottie-icon[data-animation="like-heart"] {
+	font-size: 1.45rem;
+}
+
+.atom-action dynamic-lottie-icon[data-animation="comment-chats"] {
+	font-size: 1.35rem;
+}
+
+/* 文章页放大版：那一排四个入口，分享圆钮和打赏金币都是 2.375rem 的圆，
+   点赞 / 评论只有 2.25rem 高、图标 17.8px（爱心）和 21.6px（气泡），并排就显小。
+   这里把胶囊拉到 2.5rem、图标放大到 21.5px / 22.4px、数字提到 0.875rem，
+   四个入口的高度和视觉重量就齐了（数字仍比圆钮宽，但不再是「小一号」） */
+.atom-action--lg {
+	height: 2.5rem;
+	gap: 0.4rem;
+	padding-inline: 0.7rem;
+}
+
+.atom-action--lg dynamic-lottie-icon[data-animation="like-heart"] {
+	font-size: 1.75rem;
+}
+
+.atom-action--lg dynamic-lottie-icon[data-animation="comment-chats"] {
+	font-size: 1.4rem;
+}
+
+.atom-action--lg .atom-action__count {
+	font-size: 0.875rem;
+}

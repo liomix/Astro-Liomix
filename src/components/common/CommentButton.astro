@@ -1,0 +1,70 @@
+---
+/**
+ * 通用评论按钮：Lottie 气泡 + 数字。
+ *
+ * 两种形态，因为两处评论的打开方式不同：
+ *   - link：文章页，锚到页面内嵌的评论区（默认）；
+ *   - drawer：动态卡片，交给 dynamic-actions.ts 抽评论抽屉。
+ */
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { formatCompactNumber } from "@/utils/number-utils";
+import "@/styles/components/atom-action.css";
+
+interface Props {
+	/** 展示的评论数 */
+	count?: number;
+	/** link 形态的跳转目标，默认文章页内嵌评论区 */
+	href?: string;
+	/** true 时渲染成按钮并交给动态页的抽屉逻辑 */
+	drawer?: boolean;
+	class?: string;
+	label?: string;
+}
+
+const {
+	count = 0,
+	href = "#post-comments",
+	drawer = false,
+	class: className,
+	label = i18n(I18nKey.dynamicComment),
+} = Astro.props;
+---
+
+{
+	drawer ? (
+		<button
+			type="button"
+			class:list={["atom-action", className]}
+			data-comment-open
+			data-comment-base={count}
+			aria-expanded="false"
+			aria-label={label}
+			title={label}
+		>
+			<dynamic-lottie-icon data-animation="comment-chats" />
+			<span class="atom-action__count" data-comment-count>
+				{formatCompactNumber(count)}
+			</span>
+		</button>
+	) : (
+		<a
+			href={href}
+			class:list={["atom-action", className]}
+			aria-label={label}
+			title={label}
+		>
+			<dynamic-lottie-icon data-animation="comment-chats" />
+			<span class="atom-action__count" data-comment-count>
+				{formatCompactNumber(count)}
+			</span>
+		</a>
+	)
+}
+
+<script>
+	import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
+
+	// 单独使用评论按钮时（没有点赞按钮同页）也要把气泡图标注册出来
+	registerDynamicLottieIcons();
+</script>

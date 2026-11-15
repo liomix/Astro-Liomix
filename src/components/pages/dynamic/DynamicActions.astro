@@ -1,6 +1,6 @@
 ---
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import CommentButton from "@/components/common/CommentButton.astro";
+import LikeButton from "@/components/common/LikeButton.astro";
 
 /**
  * 动态卡片底部操作条：点赞 / 评论
@@ -9,9 +9,6 @@ import { i18n } from "@/i18n/translation";
  * 元素本身在 dynamic-lottie-icon.ts 里注册，页面、模板克隆、侧栏弹窗共用。
  * 数字由 formatCompactNumber 统一格式化（万级缩写成 1.6w）。
  */
-
-const likeLabel = i18n(I18nKey.dynamicLike);
-const commentLabel = i18n(I18nKey.dynamicComment);
 
 interface Props {
 	/** 点赞基数（数据源里带的初始值，访客自己那一票另算） */
@@ -25,82 +22,9 @@ interface Props {
 const { likes = 0, comments = 0 } = Astro.props;
 ---
 
-<div class="dynamic-actions">
-	<button
-		type="button"
-		class="dynamic-action"
-		data-dynamic-like
-		data-like-base={likes}
-		aria-pressed="false"
-		aria-label={likeLabel}
-		title={likeLabel}
-	>
-		<dynamic-lottie-icon data-animation="like-heart" style="font-size:1.45rem"></dynamic-lottie-icon>
-		<span class="dynamic-action-count" data-dynamic-like-count>0</span>
-	</button>
-
-	<button
-		type="button"
-		class="dynamic-action"
-		data-dynamic-comment
-		data-comment-base={comments}
-		aria-expanded="false"
-		aria-label={commentLabel}
-		title={commentLabel}
-	>
-		<dynamic-lottie-icon
-			data-animation="comment-chats"
-			style="font-size:1.35rem"></dynamic-lottie-icon>
-		<span class="dynamic-action-count" data-dynamic-comment-count>0</span>
-	</button>
+<div class="atom-actions">
+	<LikeButton count={likes} />
+	<CommentButton drawer count={comments} />
 </div>
 
-<style>
-	.dynamic-actions {
-		display: flex;
-		flex: 0 0 auto;
-		align-items: center;
-		gap: 0.125rem;
-	}
 
-	.dynamic-action {
-		display: inline-flex;
-		min-width: 2.25rem;
-		height: 2.25rem;
-		align-items: center;
-		justify-content: center;
-		gap: 0.3rem;
-		padding-inline: 0.55rem;
-		border: 0;
-		border-radius: 9999px;
-		background: transparent;
-		color: var(--content-meta);
-		cursor: pointer;
-		transition: color 0.16s ease, background-color 0.16s ease;
-	}
-
-	/* 数字：等宽数字，点一下位数不变时按钮宽度不跳 */
-	.dynamic-action-count {
-		font-size: 0.78rem;
-		font-weight: 600;
-		line-height: 1;
-		font-variant-numeric: tabular-nums;
-	}
-
-	.dynamic-action:hover {
-		background: var(--btn-regular-bg);
-		color: var(--primary);
-	}
-
-	.dynamic-action:focus-visible {
-		outline: 2px solid var(--primary);
-		outline-offset: 1px;
-	}
-
-	/* 激活态：数字跟着 color 变主题色；评论气泡的 fill 也走 currentColor 一起变，
-	   点赞爱心是彩色素材（素材本身的红），只有底色和数字跟随 */
-	.dynamic-action.is-active {
-		background: var(--btn-regular-bg);
-		color: var(--primary);
-	}
-</style>

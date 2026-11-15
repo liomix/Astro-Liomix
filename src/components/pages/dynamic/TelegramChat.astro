@@ -59,6 +59,16 @@ interface Props {
 	contact?: string;
 	/** 关闭按钮的无障碍文案 */
 	closeLabel?: string;
+	/**
+	 * 直接指定评论线程的 slug，跳过「从 path 推算」那一步。
+	 * 文章页内嵌时用文章的 slug：那里没有 /dynamic/<id>/ 这种地址可算。
+	 */
+	slug?: string;
+	/**
+	 * 是否显示顶栏的关闭按钮，默认显示（抽屉里需要）。
+	 * 内嵌在文章页时没有「关闭」这个动作，设成 false。
+	 */
+	closable?: boolean;
 }
 
 const {
@@ -66,6 +76,8 @@ const {
 	name = "",
 	contact = "",
 	closeLabel = "Close",
+	slug = "",
+	closable = true,
 } = Astro.props;
 
 /** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致 */
@@ -109,6 +121,7 @@ const showTabs = packs.length > 1;
 	class="tg-chat"
 	data-tg-chat
 	data-tg-path={path}
+	data-tg-slug={slug}
 	style={`--avatar-from:${avatarPaint.from};--avatar-to:${avatarPaint.to};--tg-emoji-size:${commentEmojiConfig.size}px`}
 	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
 	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
@@ -189,8 +202,9 @@ const showTabs = packs.length > 1;
 		{
 			/* 关闭按钮常驻 DOM，只在「装在抽屉里」时显示：
 			   这一页是预渲染的静态路由，查询参数到不了服务端，
-			   显隐由 CommentLayout 在首屏前打的 html[data-embedded] 标记决定 */
-			<button
+			   显隐由 CommentLayout 在首屏前打的 html[data-embedded] 标记决定。
+			   内嵌在文章页时（closable=false）连 DOM 都不留。 */
+			closable && <button
 				type="button"
 				class="tg-head-close"
 				data-tg-close
@@ -1089,7 +1103,9 @@ const showTabs = packs.length > 1;
 		};
 
 		/** 当前线程的 slug：抽屉每换一条动态就递一个新的 path 过来 */
-		let slug = slugOfPath(chat.dataset.tgPath || "/dynamic/");
+		// 文章页内嵌时 slug 由 SSR 直接给（文章的 slug）；抽屉里才从 path 推算
+		let slug =
+			chat.dataset.tgSlug || slugOfPath(chat.dataset.tgPath || "/dynamic/");
 		/** 并发保护：切动态时上一个请求可能后到，只认最后一次 */
 		let loadToken = 0;
 

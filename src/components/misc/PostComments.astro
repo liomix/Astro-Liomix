@@ -1,0 +1,61 @@
+---
+/**
+ * 文章底部的评论区：直接把「动态」那套聊天式评论嵌进来。
+ *
+ * 同一份 TelegramChat、同一套接口（线程就是文章的 slug），所以表情、Markdown、
+ * 撤回、待审核、站长头像这些行为不需要为文章再写一遍。区别只有两点：
+ *   1. slug 由这里直接给（文章没有 /dynamic/<id>/ 那种地址可推算）；
+ *   2. 没有「关闭」这个动作，顶栏的关闭按钮不渲染。
+ *
+ * 内嵌时需要给一个定高容器：组件自己写的是 height: 100%，它原本装在抽屉里，
+ * 铺满父级是那里的设计。
+ *
+ * 这里不再渲染「评论」小标题：聊天气泡本身就有顶栏，多一行标题只是把评论区往下推。
+ */
+import TelegramChat from "@/components/pages/dynamic/TelegramChat.astro";
+import { commentApiConfig } from "@/config/commentApiConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import "@/styles/pages/telegram-chat.css";
+import "@/styles/pages/comment-info.css";
+
+interface Props {
+	/** 文章的 slug，就是评论线程的 id */
+	slug: string;
+	class?: string;
+}
+
+const { slug, class: className } = Astro.props;
+---
+
+{
+	commentApiConfig.enable && (
+		<section
+			id="post-comments"
+			class:list={["post-comments", className]}
+			aria-label={i18n(I18nKey.dynamicComment)}
+		>
+			<div class="post-comments__frame">
+				<TelegramChat slug={slug} closable={false} />
+			</div>
+		</section>
+	)
+}
+
+<style>
+	.post-comments {
+		margin-top: 2rem;
+		/* 评论按钮（#post-comments 锚点）和悬浮的「回到评论」都是 block:"start"，
+		   默认会把评论区顶到视口最上沿、正好压在固定导航栏下面 —— 观感上就是「滚过头了」。
+		   留出 5.5rem 少滚这一段（与 #main-grid 的 scroll-margin-top 同值）。 */
+		scroll-margin-top: 5.5rem;
+	}
+
+	/* 定高：组件内部是 height: 100%，不定高会塌成 0 */
+	.post-comments__frame {
+		height: min(70vh, 640px);
+		overflow: hidden;
+		border: 1px solid var(--line-divider, rgb(0 0 0 / 0.08));
+		border-radius: 0.75rem;
+	}
+</style>

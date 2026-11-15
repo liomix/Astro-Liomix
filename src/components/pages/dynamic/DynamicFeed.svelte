@@ -524,7 +524,7 @@ onMount(() => {
 		if (!detail) return;
 		syncHeroStats();
 	};
-	document.addEventListener("dynamic:like-change", onLikeChange);
+	document.addEventListener("like:change", onLikeChange);
 
 	return () => {
 		searchInput?.removeEventListener("input", filter);
@@ -532,7 +532,7 @@ onMount(() => {
 		window.removeEventListener("hashchange", onLocationChange);
 		window.removeEventListener("popstate", onLocationChange);
 		document.removeEventListener("swup:page:view", onLocationChange);
-		document.removeEventListener("dynamic:like-change", onLikeChange);
+		document.removeEventListener("like:change", onLikeChange);
 	};
 });
 </script>
