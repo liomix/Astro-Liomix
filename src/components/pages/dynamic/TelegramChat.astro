@@ -1066,6 +1066,28 @@ const showTabs = packs.length > 1;
 		/** 有视频就用视频，没有就是静态图 */
 		const ownerMotionSrc = chat.dataset.tgOwnerMotion || "";
 
+		/**
+		 * 站长令牌：只在站长自己的浏览器里存一次。
+		 *
+		 * 后端拿它和后台配置的值比对，对了才把这条记成站长评论；普通访客用站长邮箱
+		 * 评论会被要求输入令牌，输错了就只当访客 —— 所以这不是权限，是一个口令。
+		 */
+		const OWNER_KEY_STORAGE = "firefly-owner-key";
+		const readOwnerKey = (): string => {
+			try {
+				return localStorage.getItem(OWNER_KEY_STORAGE) ?? "";
+			} catch {
+				return "";
+			}
+		};
+		const writeOwnerKey = (key: string): void => {
+			try {
+				localStorage.setItem(OWNER_KEY_STORAGE, key);
+			} catch {
+				// 隐私模式写不进去：这次能用，刷新后要重新输，不影响发送
+			}
+		};
+
 		/** 当前线程的 slug：抽屉每换一条动态就递一个新的 path 过来 */
 		let slug = slugOfPath(chat.dataset.tgPath || "/dynamic/");
 		/** 并发保护：切动态时上一个请求可能后到，只认最后一次 */
@@ -1673,6 +1695,37 @@ const showTabs = packs.length > 1;
 		 * 把刚追加的气泡换成后端那一条：换 id、记进 ownIds、按返回的状态决定
 		 * 「待审核」怎么显示。失败时不撤回气泡 —— 内容在里面，用户还能右键复制重发。
 		 */
+		/**
+		 * 提交评论；如果后端说「这个邮箱是站长，要令牌」，就问一次再重发。
+		 *
+		 * 只在收到那个字段级错误时才问，所以普通访客永远看不到这个弹窗 ——
+		 * 也就不会知道哪个地址是站长的。
+		 */
+		const postCommentWithOwnerKey = async (
+			author: { name: string; email: string },
+			body: string,
+			parentId?: string,
+		): Promise<ApiComment> => {
+			const attempt = (ownerKey: string) =>
+				postComment(slug, { author, body, parentId, ownerKey });
+
+			try {
+				return await attempt(readOwnerKey());
+			} catch (error) {
+				const needsKey =
+					error instanceof ApiError &&
+					error.fieldErrors.some((field) => field.field === "ownerKey");
+				if (!needsKey) throw error;
+
+				// 站长专用路径，不做事后翻译：看到这个框的人只有站长自己
+				const entered = window.prompt("请输入站长令牌（站长邮箱专用）", "");
+				const key = (entered ?? "").trim();
+				if (!key) throw error;
+				writeOwnerKey(key);
+				return attempt(key);
+			}
+		};
+
 		const submitComment = async (
 			row: HTMLElement,
 			body: string,
@@ -1681,7 +1734,7 @@ const showTabs = packs.length > 1;
 		) => {
 			form.dataset.sending = "true";
 			try {
-				const created = await postComment(slug, { author, body, parentId });
+				const created = await postCommentWithOwnerKey(author, body, parentId);
 				// 换成后端 id：引用跳转、撤回记录都按它来，刷新后才对得上
 				row.dataset.tgMsg = created.id;
 				row.dataset.tgParent = created.parentId ?? "";

@@ -54,6 +54,11 @@ export interface CreateCommentInput {
 	body: string;
 	/** 回复哪一条；为空则是新的顶层评论 */
 	parentId?: string;
+	/**
+	 * 站长令牌。普通访客不填 —— 后端只在作者邮箱属于站长时才看它，
+	 * 对不上就按普通访客处理，所以填错也不影响别人。
+	 */
+	ownerKey?: string;
 }
 
 /** 一页评论。后端按时间倒序给，`nextCursor` 为空表示已经到底 */
