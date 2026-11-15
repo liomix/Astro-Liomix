@@ -137,6 +137,7 @@ const {
                     id="swup-container"
                     class="transition-main"
                     data-current-post-category={postCategory || ""}
+                    data-article-page={isPostPage ? "true" : undefined}
                 >
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{heading || title}</h1>

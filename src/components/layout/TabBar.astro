@@ -85,7 +85,9 @@ const labels = {
     __tabBarInit?: boolean;
   };
 
-  const STORAGE_KEY = "firefly-tabs-v1";
+  // v2：以前非文章页（友链、相册、站点导航…）也会进标签栏，换了键之后从干净的
+  // 一栏开始 —— 只有文章页会被记进来
+  const STORAGE_KEY = "firefly-tabs-v2";
   const CLOSE_SVG =
     '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
 
@@ -445,6 +447,18 @@ const labels = {
     requestAnimationFrame(apply);
   }
 
+  /**
+   * 当前页是不是文章页。
+   *
+   * 标签栏全站都在，但只有文章值得留一个标签：友链、相册、站点导航这些页面
+   * 看完就过去了，留在栏里只是噪音。标记由布局打在 #swup-container 上
+   * （它随 swup 一起换，所以每页都是新的）。
+   */
+  function isArticlePage(): boolean {
+    const container = document.getElementById("swup-container");
+    return container?.getAttribute("data-article-page") === "true";
+  }
+
   function onPageView(): void {
     // 跳转已落地，清掉标记，避免下一条离开路径被误判
     pendingNav = false;
@@ -455,6 +469,14 @@ const labels = {
       save();
       render();
       restoreSnapshot(HOME_KEY);
+      return;
+    }
+
+    // 非文章页：栏还在，但不新增标签、也不点亮任何标签
+    if (!isArticlePage()) {
+      activeKey = "";
+      save();
+      render();
       return;
     }
 

@@ -300,7 +300,10 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 /* 搜索已改成居中弹窗（.search-dialog，固定在视口中央），不再跟随导航栏右缘对齐 */
 
 /* ============================================
- * 小于1280px时隐藏导航栏菜单图标
+ * 小于1280px时隐藏顶栏菜单项图标（省空间）
+ *
+ * 只管「顶栏那一排」：下拉子菜单里的图标用 .nav-child-icon，不受这条影响 ——
+ * 它们只在展开时出现，宽度不紧张，藏掉反而让人认不出条目。
  * ============================================ */
 @media (max-width: 1279px) {
     .navbar-icon {
@@ -453,6 +456,12 @@ body.wallpaper-transparent #navbar-wrapper #navbar[data-full-width="true"] > div
 .nav-item-icon {
     flex: none;
     font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+/* 下拉子菜单条目的图标：尺寸由模板里的 text-[1.25rem] 给，这里只保证不被压扁 */
+.nav-child-icon {
+    flex: none;
     opacity: 0.9;
 }
 
