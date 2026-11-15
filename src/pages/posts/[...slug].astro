@@ -435,6 +435,7 @@ const seriesData = await getSeriesPosts(entry);
                       <CommentButton
                         href="#post-comments"
                         count={0}
+                        slug={removeFileExtension(entry.id)}
                         class="atom-action--lg"
                       />
                     </div>
@@ -526,6 +527,7 @@ const seriesData = await getSeriesPosts(entry);
                       <CommentButton
                         href="#post-comments"
                         count={0}
+                        slug={removeFileExtension(entry.id)}
                         class="atom-action--lg"
                       />
                     </div>

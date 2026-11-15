@@ -360,7 +360,7 @@ function prefetchWallpaper(): void {
  */
 function prewarmDrawer(trigger: HTMLElement): boolean {
 	if (frame?.isConnected) return true;
-	// 地址挂在整条动态上（[data-dynamic-entry]），按钮本身只有 data-dynamic-comment
+	// 地址挂在整条动态上（[data-dynamic-entry]），按钮本身只有 data-comment-open
 	const src = trigger.closest<HTMLElement>("[data-comment-src]")?.dataset
 		.commentSrc;
 	if (!src) return false;
@@ -409,7 +409,7 @@ export function scheduleDrawerWarm(): void {
 		// 页面上没有评论入口（没开动态评论 / 空列表）就不用白建一层。
 		// 取第一条真正带地址的：没接评论服务的那几条只有按钮、没有 data-comment-src
 		const trigger = Array.from(
-			document.querySelectorAll<HTMLElement>("[data-dynamic-comment]"),
+			document.querySelectorAll<HTMLElement>("[data-comment-open]"),
 		).find((button) => button.closest("[data-comment-src]"));
 		if (trigger) prewarmDrawer(trigger);
 	};
@@ -429,7 +429,7 @@ export function scheduleDrawerWarm(): void {
 
 function onIntent(event: Event): void {
 	const target = event.target as Element | null;
-	const trigger = target?.closest<HTMLElement>("[data-dynamic-comment]");
+	const trigger = target?.closest<HTMLElement>("[data-comment-open]");
 	if (!trigger) return;
 	// 预热 iframe 会顺带把壁纸 JSON 取下来（评论页自己去 fetch）；
 	// 只有预热不了（拿不到地址）时才退回到单独的 prefetch 提示

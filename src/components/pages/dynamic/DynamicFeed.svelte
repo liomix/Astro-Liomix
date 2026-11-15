@@ -299,10 +299,10 @@ function createItem(entry: DynamicData) {
 	}
 
 	// 点赞 / 评论基数：数据里带了就写进按钮，卡片上的数字和页头统计用的是同一份
-	const likeButton = root.querySelector<HTMLElement>("[data-dynamic-like]");
+	const likeButton = root.querySelector<HTMLElement>("[data-like]");
 	if (likeButton) likeButton.dataset.likeBase = String(entry.likes ?? 0);
 	const commentButton = root.querySelector<HTMLElement>(
-		"[data-dynamic-comment]",
+		"[data-comment-open]",
 	);
 	if (commentButton) {
 		commentButton.dataset.commentBase = String(commentCountOf(entry));
@@ -337,7 +337,7 @@ function paintCommentCounts(): void {
 		if (!id) continue;
 		const count = commentCounts[id];
 		if (count === undefined) continue;
-		const button = root.querySelector<HTMLElement>("[data-dynamic-comment]");
+		const button = root.querySelector<HTMLElement>("[data-comment-open]");
 		if (button) button.dataset.commentBase = String(count);
 	}
 	syncDynamicLikeStates(list);
@@ -412,7 +412,7 @@ function openCommentsFor(id: string): boolean {
 		list.querySelectorAll<HTMLElement>("[data-dynamic-entry]"),
 	);
 	const root = nodes.find((node) => node.dataset.likeId === id);
-	const button = root?.querySelector<HTMLElement>("[data-dynamic-comment]");
+	const button = root?.querySelector<HTMLElement>("[data-comment-open]");
 	// 没接评论服务时条目上没有 comment-src，只有按钮 —— 这时保持安静，不弹空抽屉
 	if (!root || !button || !root.dataset.commentSrc) return false;
 	// 先把这条滚进视口，用户才知道评论是从哪条动态弹出来的

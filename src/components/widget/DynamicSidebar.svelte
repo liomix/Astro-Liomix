@@ -328,14 +328,14 @@ function visibleImages(entry: DynamicEntry) {
 					<button
 						type="button"
 						class="pop-action"
-						data-dynamic-like
+						data-like
 						data-like-base={entry.likes ?? 0}
 						aria-pressed="false"
 						aria-label={likeLabel}
 						title={likeLabel}
 					>
 						<dynamic-lottie-icon data-animation="like-heart" style="font-size:1.35rem"></dynamic-lottie-icon>
-						<span class="pop-action-count" data-dynamic-like-count>0</span>
+						<span class="pop-action-count" data-like-count>0</span>
 					</button>
 					<a
 						class="pop-action"
