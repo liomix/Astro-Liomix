@@ -11,7 +11,7 @@
  *     自带的「复制」，不接管的话选中文字后右键就复制不到了。
  *   - 回复：输入框上方出现一条引用预览（左侧竖线 + 名字 + 摘要），发送后
  *     引用块嵌进新气泡顶部，点它能跳回原消息并闪一下。历史评论里的回复也画
- *     同样的块（TelegramChat 的 loadComments 按 parentId 找父评论后调 decorate）。
+ *     同样的块（Comment 的 loadComments 按 parentId 找父评论后调 decorate）。
  *   - 撤回：等同 Telegram 的删除，只能删自己发出去的消息（data-tg-side="out"），
  *     别人的消息上这一项不出现。删除是真的删：创建评论时后端给了一个只够删这
  *     一条的凭据（存在 comment-own.ts 里），这里拿它去调 DELETE —— 删完刷新也
@@ -26,11 +26,12 @@
 import {
 	deleteTokenOf,
 	forgetOwnComment,
-} from "@/components/pages/dynamic/comment-own";
-import { getCommentUser } from "@/components/pages/dynamic/comment-user";
+} from "@/components/common/comment/comment-own";
+import { getCommentUser } from "@/components/common/comment/comment-user";
 import { emojiTokensToText } from "@/utils/emoji-shortcode";
 import { apiErrorMessage } from "@/utils/api-error-message";
 import { ApiError } from "@/utils/api-client";
+import { copyText } from "@/utils/clipboard";
 import { deleteComment } from "@/utils/comment-client";
 
 /** 引用预览里的摘要长度上限：超过就截断，够看清是哪条消息 */
@@ -45,7 +46,7 @@ const LONG_PRESS_SLOP = 10;
 /** 菜单离视口边缘至少留这么多，免得贴边贴到点不到 */
 const MENU_MARGIN = 8;
 
-export interface PendingReply {
+interface PendingReply {
 	/** 原消息的行 id（data-tg-msg） */
 	id: string;
 	/** 被引用者的显示名 */
@@ -54,7 +55,7 @@ export interface PendingReply {
 	text: string;
 }
 
-export interface ChatContextPopHandle {
+interface ChatContextPopHandle {
 	/** 取走待发送的引用（取走即清空）；没有回复对象时返回 null */
 	takePendingReply(): PendingReply | null;
 	/** 给刚创建的气泡挂上引用块（在 append 之前调用即可） */
@@ -195,24 +196,6 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 		// 短码只在「存」和「渲染」这两端有意义
 		return source?.trim() ? emojiTokensToText(source) : textOf(row);
 	};
-
-	/** 复制文本：优先 Clipboard API，拿不到权限（老浏览器 / 非安全上下文）就退回 execCommand */
-	async function copyText(text: string): Promise<boolean> {
-		try {
-			await navigator.clipboard.writeText(text);
-			return true;
-		} catch {
-			const area = document.createElement("textarea");
-			area.value = text;
-			area.setAttribute("readonly", "");
-			area.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
-			document.body.append(area);
-			area.select();
-			const ok = document.execCommand("copy");
-			area.remove();
-			return ok;
-		}
-	}
 
 	function showToast(message: string): void {
 		if (!toast) return;

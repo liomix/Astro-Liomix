@@ -20,31 +20,31 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		icon: "material-symbols:person",
 		children: [
 			// 图书（微信读书书架）
-			LinkPresets.Books,
+			linkPresets.Books,
 
 			// 动态
-			LinkPresets.Dynamic,
+			linkPresets.Dynamic,
 
 			// 项目
-			LinkPresets.Projects,
+			linkPresets.Projects,
 
 			// 相册
-			LinkPresets.Gallery,
+			linkPresets.Gallery,
 
 			// 书签导航
-			LinkPresets.Booknav,
+			linkPresets.Booknav,
 
 			// 哔哩哔哩追番
-			LinkPresets.Bilibili,
+			linkPresets.Bilibili,
 
 			// 番组计划
-			LinkPresets.Bangumi,
+			linkPresets.Bangumi,
 
 			// VNDB
-			LinkPresets.VNDB,
+			linkPresets.VNDB,
 
 			// MyAnimeList
-			LinkPresets.MAL,
+			linkPresets.MAL,
 		],
 	});
 
@@ -55,16 +55,16 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		icon: "material-symbols:article",
 		children: [
 			// 归档
-			LinkPresets.Archive,
+			linkPresets.Archive,
 
 			// 分类
-			LinkPresets.Categories,
+			linkPresets.Categories,
 
 			// 标签
-			LinkPresets.Tags,
+			linkPresets.Tags,
 
 			// 系列
-			LinkPresets.Series,
+			linkPresets.Series,
 		],
 	});
 
@@ -75,10 +75,10 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		icon: "material-symbols:group",
 		children: [
 			// 友链
-			LinkPresets.Friends,
+			linkPresets.Friends,
 
 			// 留言
-			LinkPresets.Guestbook,
+			linkPresets.Guestbook,
 		],
 	});
 
@@ -130,7 +130,7 @@ export const navBarSearchConfig: NavBarSearchConfig = {
 // 链接预设 - 可自由自定义导航栏链接的名称、图标和URL
 // Link Presets - Allows free customization of the name, icon, and URL of navigation bar links
 // ============================================================================
-export const LinkPresets: Record<string, NavBarLink> = {
+export const linkPresets: Record<string, NavBarLink> = {
 	Home: {
 		name: "主页",
 		url: "/",

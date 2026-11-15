@@ -493,7 +493,7 @@ dynamic-feed {
    设置面板（1100）；只有移动标签右键菜单（1300）和页面过渡遮罩（9999）在它之上
 
    这里只是外壳：圆角、边框、阴影、滑入滑出。里面的壁纸 / 顶栏 / 消息区 / 输入栏
-   全在 iframe 自己的文档里（见 telegram-chat.css）—— 顶栏与输入栏要对壁纸做高斯模糊，
+   全在 iframe 自己的文档里（见 comment.css）—— 顶栏与输入栏要对壁纸做高斯模糊，
    而 backdrop-filter 只能采样同一个 document，壁纸没法由这一侧代画 */
 .comment-drawer {
 	position: fixed;

@@ -1,4 +1,4 @@
-import { backgroundWallpaper } from "@/config";
+import { backgroundWallpaperConfig } from "@/config";
 import { pathsEqual, url } from "@/utils/url-utils";
 
 // 全屏壁纸模式：首页标题随滚动平滑上移并渐变消失（首屏完整显示，下滑淡出；壁纸保持 fixed）
@@ -124,7 +124,7 @@ export function syncFullscreenBlur(): void {
 
 // 全屏壁纸模式的模糊渐变是否启用：按当前视口设备读取 fullscreen.blurRamp 配置（支持布尔或 { desktop, mobile }，未配置默认开启）
 function isBlurRampEnabled(): boolean {
-	const enable = backgroundWallpaper.fullscreen?.blurRamp?.enable;
+	const enable = backgroundWallpaperConfig.fullscreen?.blurRamp?.enable;
 	if (typeof enable === "boolean") return enable;
 	if (!enable) return true;
 	return window.innerWidth < 1024 ? enable.mobile : enable.desktop;

@@ -95,13 +95,6 @@ export function avatarMotionOverride(): boolean | undefined {
 	return undefined;
 }
 
-/** 站点头像是否按动态资源处理：配置策略优先，auto 时自动嗅探 */
-export function isProfileAvatarDynamic(): boolean {
-	return (
-		avatarMotionOverride() ?? isDynamicAvatar(profileConfig.avatar ?? "")
-	);
-}
-
 /**
  * 动态资源的原始文件 URL：绕过图片优化，保留动画。
  * public 路径补 base，远程原样返回，src 资源走 ?url 导入。

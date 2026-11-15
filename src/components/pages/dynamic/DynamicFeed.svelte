@@ -2,8 +2,6 @@
 import { onMount, tick } from "svelte";
 import ClientPagination from "@/components/common/ClientPagination.svelte";
 import {
-	type LikeChangeDetail,
-	readLikedIds,
 	registerDynamicActions,
 	syncDynamicLikeStates,
 } from "@/components/pages/dynamic/dynamic-actions";
@@ -15,6 +13,8 @@ import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
 import { dynamicAnchor } from "@/utils/dynamic-utils";
+// 点赞状态与事件类型都在通用模块里（文章页、动态页共用一份记录）
+import { type LikeChangeDetail, readLikedIds } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
 import { registerDynamicGallery } from "./dynamic-gallery";

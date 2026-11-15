@@ -23,7 +23,7 @@ import {
 	qqFromEmail,
 	setCommentUser,
 	type CommentUser,
-} from "@/components/pages/dynamic/comment-user";
+} from "@/components/common/comment/comment-user";
 
 /**
  * 把头像画进一个「头像盒」：盒子里固定是
@@ -257,7 +257,7 @@ export function initCommentInfo(chat: HTMLElement): void {
 
 	/**
 	 * Esc 先关弹窗。
-	 * 用捕获阶段并 stopPropagation：TelegramChat 自己也监听 Esc（先收表情面板、
+	 * 用捕获阶段并 stopPropagation：Comment 自己也监听 Esc（先收表情面板、
 	 * 再让父窗口收抽屉），不拦住的话按一下会连抽屉一起关掉。
 	 */
 	document.addEventListener(

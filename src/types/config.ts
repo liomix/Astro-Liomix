@@ -3,7 +3,7 @@ export type { AnnouncementConfig } from "./announcementConfig";
 export type {
 	BackgroundWallpaperConfig,
 	FullscreenWallpaperLayout,
-} from "./backgroundWallpaper";
+} from "./backgroundWallpaperConfig";
 export type {
 	BooknavFaviconConfig,
 	BooknavGroup,
@@ -45,9 +45,9 @@ export type {
 } from "./sidebarConfig";
 export type {
 	Favicon,
-	LIGHT_DARK_MODE,
+	LightDarkMode,
 	SiteConfig,
-	WALLPAPER_MODE,
+	WallpaperMode,
 } from "./siteConfig";
 export type { SponsorConfig } from "./sponsorConfig";
 export type { WelcomeConfig } from "./welcomeConfig";

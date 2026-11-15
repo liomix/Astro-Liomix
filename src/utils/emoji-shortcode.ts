@@ -1,5 +1,4 @@
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
-import type { CommentEmojiItem } from "@/types/commentEmojiConfig";
 
 /**
  * 行内表情的短码
@@ -14,7 +13,7 @@ import type { CommentEmojiItem } from "@/types/commentEmojiConfig";
  *   - 存了标签就等于承诺「这个字段里的 HTML 是可信的」，而它来自用户输入。
  *     渲染端一旦漏一道净化，评论就是存储型 XSS。
  *
- * 短码只在渲染时翻译成 `<img>`（见 TelegramChat 的 marked 扩展），
+ * 短码只在渲染时翻译成 `<img>`（见 Comment 的 marked 扩展），
  * 反向解析（渲染结果 → 短码）只发生在输入框读回时。
  */
 
@@ -65,15 +64,6 @@ for (const pack of commentEmojiConfig.packs) {
 		byToken.set(token, { src: item.src, alt: item.name });
 		tokenBySrc.set(item.src, token);
 	}
-}
-
-/**
- * 配置里的一个表情 → 短码。
- * 用文件名主干而不是 JSON 里的 id：id 只是编辑器里的序号，换一套素材就会错位，
- * 而文件名是地址的一部分，改了地址本来就要重新渲染。
- */
-export function emojiTokenOf(item: CommentEmojiItem): string | null {
-	return tokenBySrc.get(item.src) ?? null;
 }
 
 /** 按图片地址反查短码，输入框里的老图片（没有记短码）走这条路 */

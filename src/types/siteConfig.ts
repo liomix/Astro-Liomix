@@ -11,13 +11,13 @@ import type {
 import type { ImmersiveReadingConfig } from "./immersiveReadingConfig";
 import type { NsfwMode } from "./nsfw";
 
-export type LIGHT_DARK_MODE =
+export type LightDarkMode =
 	| typeof LIGHT_MODE
 	| typeof DARK_MODE
 	| typeof SYSTEM_MODE
 	| typeof SCHEDULED_MODE;
 
-export type WALLPAPER_MODE =
+export type WallpaperMode =
 	| typeof WALLPAPER_BANNER
 	| typeof WALLPAPER_FULLSCREEN
 	| typeof WALLPAPER_OVERLAY
@@ -42,7 +42,7 @@ export type SiteConfig = {
 
 	themeColor: {
 		hue: number;
-		defaultMode?: LIGHT_DARK_MODE; // 默认模式：浅色、深色或跟随系统
+		defaultMode?: LightDarkMode; // 默认模式：浅色、深色或跟随系统
 	};
 
 	// 页面整体宽度（单位：rem）

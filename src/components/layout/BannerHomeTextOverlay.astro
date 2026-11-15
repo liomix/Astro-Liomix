@@ -1,7 +1,7 @@
 ---
 import { Icon } from "astro-icon/components";
 import TypewriterText from "@/components/features/TypewriterText.astro";
-import { backgroundWallpaper } from "@/config";
+import { backgroundWallpaperConfig } from "@/config";
 import { encodeMailto, MAILTO_ONCLICK_SCRIPT } from "@/utils/email-utils";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 }
 
 const { showHomeText, initialRandomSubtitle } = Astro.props;
-const homeText = backgroundWallpaper.common?.homeText;
+const homeText = backgroundWallpaperConfig.common?.homeText;
 const homeTextLinks = homeText?.links;
 const homeTextLinksEnable = homeText?.linksEnable !== false;
 ---

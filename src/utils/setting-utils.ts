@@ -11,11 +11,11 @@ import {
 } from "@constants/constants";
 import type {
 	FullscreenWallpaperLayout,
-	LIGHT_DARK_MODE,
-	WALLPAPER_MODE,
+	LightDarkMode,
+	WallpaperMode,
 } from "@/types/config";
 import {
-	backgroundWallpaper,
+	backgroundWallpaperConfig,
 	COMMENT_WALLPAPER_STORAGE_KEY,
 	commentWallpaperConfig,
 	displaySettingsConfig,
@@ -45,14 +45,14 @@ export function getDefaultHue(): number {
 	return Number.parseInt(configCarrier?.dataset.hue || fallback, 10);
 }
 
-export function getDefaultTheme(): LIGHT_DARK_MODE {
+export function getDefaultTheme(): LightDarkMode {
 	// 如果配置文件中设置了 defaultMode，使用配置的值
 	// 否则使用 DEFAULT_THEME（向后兼容）
 	return siteConfig.themeColor.defaultMode ?? DEFAULT_THEME;
 }
 
 // 获取系统主题
-export function getSystemTheme(): LIGHT_DARK_MODE {
+export function getSystemTheme(): LightDarkMode {
 	if (typeof window === "undefined") {
 		return LIGHT_MODE;
 	}
@@ -149,7 +149,7 @@ export function isDayTime(
 }
 
 // 解析主题（system 取系统主题，scheduled 按时间段取日间/夜间）
-export function resolveTheme(theme: LIGHT_DARK_MODE): LIGHT_DARK_MODE {
+export function resolveTheme(theme: LightDarkMode): LightDarkMode {
 	if (theme === SYSTEM_MODE) {
 		return getSystemTheme();
 	}
@@ -185,7 +185,7 @@ export function setHue(hue: number): void {
 	r.style.setProperty("--hue", String(hue));
 }
 
-export function applyThemeToDocument(theme: LIGHT_DARK_MODE): void {
+export function applyThemeToDocument(theme: LightDarkMode): void {
 	// 检查是否在浏览器环境中
 	if (typeof document === "undefined") {
 		return;
@@ -252,7 +252,7 @@ let systemThemeListener:
 	| null = null;
 
 export function setTheme(
-	theme: LIGHT_DARK_MODE,
+	theme: LightDarkMode,
 	origin?: ThemeTransitionOrigin,
 ): void {
 	// 检查是否在浏览器环境中
@@ -427,7 +427,7 @@ function cleanupScheduledThemeListener(): void {
 	);
 }
 
-export function getStoredTheme(): LIGHT_DARK_MODE {
+export function getStoredTheme(): LightDarkMode {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
@@ -436,7 +436,7 @@ export function getStoredTheme(): LIGHT_DARK_MODE {
 		return getDefaultTheme();
 	}
 	return (
-		(localStorage.getItem("theme") as LIGHT_DARK_MODE) || getDefaultTheme()
+		(localStorage.getItem("theme") as LightDarkMode) || getDefaultTheme()
 	);
 }
 
@@ -483,7 +483,7 @@ export function syncBannerHomeTextVisibility(): void {
 }
 
 export function getDefaultFullscreenLayout(): FullscreenWallpaperLayout {
-	return backgroundWallpaper.fullscreen?.layout ?? "classic";
+	return backgroundWallpaperConfig.fullscreen?.layout ?? "classic";
 }
 
 export function getStoredFullscreenLayout(): FullscreenWallpaperLayout {
@@ -545,7 +545,7 @@ export function setFullscreenLayout(layout: FullscreenWallpaperLayout): void {
 }
 
 export function applyWallpaperModeToDocument(
-	mode: WALLPAPER_MODE,
+	mode: WallpaperMode,
 	animate = true,
 ): void {
 	const html = document.documentElement;
@@ -579,7 +579,7 @@ export function applyWallpaperModeToDocument(
 	);
 }
 
-export function updateNavbarTransparency(mode: WALLPAPER_MODE): void {
+export function updateNavbarTransparency(mode: WallpaperMode): void {
 	const navbar = document.getElementById("navbar");
 	if (!navbar) return;
 
@@ -599,16 +599,16 @@ export function updateNavbarTransparency(mode: WALLPAPER_MODE): void {
 		// 全屏壁纸：首页 + semifull 动态透明，其余半透明玻璃
 		const isHomePage = checkIsHomePage(window.location.pathname);
 		const fsMode =
-			backgroundWallpaper.fullscreen?.navbar?.transparentMode || "semifull";
-		const glassBlur = backgroundWallpaper.fullscreen?.navbar?.blur ?? 20;
+			backgroundWallpaperConfig.fullscreen?.navbar?.transparentMode || "semifull";
+		const glassBlur = backgroundWallpaperConfig.fullscreen?.navbar?.blur ?? 20;
 		transparentMode = fsMode === "semifull" && isHomePage ? "semifull" : "semi";
 		blurAmount = glassBlur;
 	} else {
 		// Banner模式：不再按首页/非首页降级成 semi —— 桌面端非首页也有 45vh 横幅，
 		// 导航栏要一直悬在壁纸上；移动端非首页没有横幅，由 navbar.css 的 [data-is-home] 条件回落到卡底色
 		transparentMode =
-			backgroundWallpaper.banner?.navbar?.transparentMode || "semi";
-		blurAmount = backgroundWallpaper.banner?.navbar?.blur ?? 20;
+			backgroundWallpaperConfig.banner?.navbar?.transparentMode || "semi";
+		blurAmount = backgroundWallpaperConfig.banner?.navbar?.blur ?? 20;
 	}
 
 	// 更新导航栏的透明模式属性
@@ -640,7 +640,7 @@ export function updateNavbarTransparency(mode: WALLPAPER_MODE): void {
 	}
 }
 
-export function setWallpaperMode(mode: WALLPAPER_MODE): void {
+export function setWallpaperMode(mode: WallpaperMode): void {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
@@ -659,24 +659,24 @@ export function initWallpaperMode(): void {
 	applyWallpaperModeToDocument(storedMode, false);
 }
 
-export function getStoredWallpaperMode(): WALLPAPER_MODE {
+export function getStoredWallpaperMode(): WallpaperMode {
 	// 检查是否在浏览器环境中
 	if (
 		typeof localStorage === "undefined" ||
 		typeof localStorage.getItem !== "function"
 	) {
-		return backgroundWallpaper.mode;
+		return backgroundWallpaperConfig.mode;
 	}
 
 	const isSwitchable = displaySettingsConfig.wallpaperModeSwitchable;
 	if (!isSwitchable) {
 		localStorage.removeItem("wallpaperMode");
-		return backgroundWallpaper.mode;
+		return backgroundWallpaperConfig.mode;
 	}
 
 	return (
-		(localStorage.getItem("wallpaperMode") as WALLPAPER_MODE) ||
-		backgroundWallpaper.mode
+		(localStorage.getItem("wallpaperMode") as WallpaperMode) ||
+		backgroundWallpaperConfig.mode
 	);
 }
 
@@ -694,30 +694,30 @@ export function overlayTransparencyToBlur(transparency: number): number {
 }
 
 export function getDefaultOverlayOpacity(): number {
-	return backgroundWallpaper.overlay?.opacity ?? 0.8;
+	return backgroundWallpaperConfig.overlay?.opacity ?? 0.8;
 }
 
 export function getDefaultOverlayTransparency(): number {
 	return clampNumber(
-		backgroundWallpaper.overlay?.transparency ?? 0.5,
+		backgroundWallpaperConfig.overlay?.transparency ?? 0.5,
 		0,
 		1,
 	);
 }
 
 export function getDefaultOverlayCardOpacity(): number {
-	return backgroundWallpaper.overlay?.cardOpacity ?? 0.6;
+	return backgroundWallpaperConfig.overlay?.cardOpacity ?? 0.6;
 }
 
 /** 弹窗（浮动面板）透明度：1 = 完全透明，0 = 完全不透明。
  *  配置里的旧字段 panelOpacity 存的是 alpha（不透明度），换算成 1 - alpha 以保持原有观感 */
 export function getDefaultOverlayPanelTransparency(): number {
-	const legacyOpacity = backgroundWallpaper.overlay?.panelOpacity;
+	const legacyOpacity = backgroundWallpaperConfig.overlay?.panelOpacity;
 	if (typeof legacyOpacity === "number") {
 		return clampNumber(1 - legacyOpacity, 0, 1);
 	}
 	return clampNumber(
-		backgroundWallpaper.overlay?.panelTransparency ??
+		backgroundWallpaperConfig.overlay?.panelTransparency ??
 			(1 - getDefaultOverlayCardOpacity()),
 		0,
 		1,
@@ -926,7 +926,7 @@ export function applyStoredOverlaySettingsToDocument(): void {
 
 // Waves animation functions
 export function getDefaultWavesEnabled(): boolean {
-	const wavesConfig = backgroundWallpaper.common?.waves?.enable;
+	const wavesConfig = backgroundWallpaperConfig.common?.waves?.enable;
 	if (typeof wavesConfig === "object") {
 		// 如果是分设备配置，检查当前设备
 		const isMobile =
@@ -984,7 +984,7 @@ export function applyWavesEnabledToDocument(enabled: boolean): void {
 
 // Gradient transition functions
 export function getDefaultGradientEnabled(): boolean {
-	const gradientConfig = backgroundWallpaper.common?.gradient?.enable;
+	const gradientConfig = backgroundWallpaperConfig.common?.gradient?.enable;
 	if (typeof gradientConfig === "object") {
 		const isMobile =
 			typeof window !== "undefined" ? window.innerWidth < 768 : false;
@@ -1073,11 +1073,11 @@ export function setSakuraEnabled(enabled: boolean): void {
 
 // Banner title functions
 export function getDefaultBannerTitleEnabled(): boolean {
-	return backgroundWallpaper.common?.homeText?.enable ?? true;
+	return backgroundWallpaperConfig.common?.homeText?.enable ?? true;
 }
 
 export function getDefaultBannerCarouselEnabled(): boolean {
-	return backgroundWallpaper.common?.carousel?.enable ?? false;
+	return backgroundWallpaperConfig.common?.carousel?.enable ?? false;
 }
 
 export function getStoredBannerTitleEnabled(): boolean {

@@ -50,10 +50,6 @@ function writeLikedIds(ids: Set<string>): void {
 	}
 }
 
-export function isLiked(id: string): boolean {
-	return readLikedIds().has(id);
-}
-
 /** 翻转一次点赞，返回翻转后的状态 */
 export function toggleLiked(id: string): boolean {
 	const ids = readLikedIds();

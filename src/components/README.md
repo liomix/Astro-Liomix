@@ -6,7 +6,6 @@
 - `pages/dynamic/DynamicFeed.svelte`：负责动态 JSON 加载、搜索、年份筛选和分页。
 - `pages/dynamic/DynamicGallery.astro`：动态图片网格、轮播和灯箱。
 - `pages/dynamic/dynamic-comment-drawer.ts`：右侧评论抽屉（点评论按钮从屏幕右侧抽出，内容用 iframe 装评论页）。
-- `pages/dynamic/TelegramChat.astro`：评论抽屉里的 Telegram 风格聊天界面（气泡 / 时间 / 已读双勾 / 输入栏，消息为内置示例）。
 - `pages/dynamic/DynamicItem.astro`：动态条目的服务端渲染组件。
 - `pages/dynamic/DynamicItemTemplate.astro`：动态条目的客户端渲染模板。
 
@@ -70,6 +69,10 @@ Firefly 项目中所有可复用组件的集中管理。组件按照功能和职
 - `PioMessageBox.astro` - 消息框组件（Live2D/Spine 消息显示）
 - `Timeline.astro` / `TimelineItem.astro` - MDX 时间线组件（左侧竖线节点，条目支持日期/标题/正文 Markdown、节点换色和内置图标）
 - `Steps.astro` / `StepItem.astro` / `Badge.astro`  - MDX 内容组件（编号步骤条、内联徽章）
+
+**评论组件**
+- `Comment.astro` - 评论组件（Telegram 风格气泡 / 时间 / 输入栏 / 表情面板 / 身份弹窗），动态页的评论抽屉与文章页的评论区共用；`closable` 决定抽屉形态还是内嵌形态
+- `comment/` - `Comment.astro` 的内部逻辑：`chat-context-pop`（右键菜单）、`comment-info`（身份弹窗）、`comment-own`（自己的评论凭据）、`comment-user`（昵称/头像色）、`comment-wallpaper`（评论背景）
 
 **分页组件**
 - `ClientPagination.svelte` - 客户端分页（JavaScript 控制）

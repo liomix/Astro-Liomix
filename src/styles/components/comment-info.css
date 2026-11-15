@@ -3,9 +3,9 @@
    顶栏那一块（头像 / 昵称 / 邮箱）现在整个是一个按钮，点开弹窗改昵称、邮箱。
    头像由邮箱算出来：QQ 邮箱取 qlogo 头像，其余用昵称首字。
 
-   样式单独成文件而不是塞进 telegram-chat.css，是因为它管的是「身份」这条线，
+   样式单独成文件而不是塞进 comment.css，是因为它管的是「身份」这条线，
    和聊天气泡、表情面板那些没有关系；在 dynamic/comments.astro 里紧跟
-   telegram-chat.css 之后 import，覆盖顺序也正好。 */
+   comment.css 之后 import，覆盖顺序也正好。 */
 
 /* ---------------- 顶栏身份按钮 ---------------- */
 
@@ -73,7 +73,7 @@
 
 /* 头像盒里固定两层：<img data-avatar-img> + <span data-avatar-initial>。
    图片没到 / 加载失败时露首字彩圆，到了就把首字收起来、底色撤掉。
-   注意 [hidden] 要显式压掉：telegram-chat.css 里 .tg-head-avatar img { display: block }
+   注意 [hidden] 要显式压掉：comment.css 里 .tg-head-avatar img { display: block }
    的优先级高于 UA 的 [hidden]，不写这条，加载失败的破图会一直挂在圆里 */
 [data-avatar-img][hidden] {
 	display: none !important;

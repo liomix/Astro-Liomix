@@ -61,7 +61,7 @@ export type { CommentApiConfig } from "../types/commentApiConfig"; // 评论接�
 export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
 // 样式配置
-export { backgroundWallpaper } from "./backgroundWallpaper"; // 背景壁纸配置
+export { backgroundWallpaperConfig } from "./backgroundWallpaperConfig"; // 背景壁纸配置
 export { booknavConfig, booknavPageConfig } from "./booknavConfig"; // 书签导航配置
 // 功能配置
 export { commentApiConfig } from "./commentApiConfig"; // 评论接口配置

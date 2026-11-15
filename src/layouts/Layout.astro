@@ -19,7 +19,7 @@ import BrowserChrome from "@/components/layout/BrowserChrome.astro";
 
 import {
 	analyticsConfig,
-	backgroundWallpaper,
+	backgroundWallpaperConfig,
 	displaySettingsConfig,
 	expressiveCodeConfig,
 	musicPlayerConfig,
@@ -84,7 +84,7 @@ const isHomePageCheck = isHomePage(Astro.url.pathname);
 const configHue = siteConfig.themeColor.hue;
 
 // 全屏壁纸布局：classic 为文档流旧版，hero 为固定首屏新版
-const fullscreenLayout = backgroundWallpaper.fullscreen?.layout ?? "classic";
+const fullscreenLayout = backgroundWallpaperConfig.fullscreen?.layout ?? "classic";
 
 // 子菜单 / 浮动面板的毛玻璃模糊度：跟随 navbar.blur，但不受壁纸模式影响，
 // 且带一个最小值 —— 导航栏可以用 blur: 0 关掉毛玻璃，面板则始终保留毛玻璃。
@@ -94,7 +94,7 @@ const fullscreenLayout = backgroundWallpaper.fullscreen?.layout ?? "classic";
 // .float-panel（#translate-panel、#mobile-toc-panel）继承到。
 const NAVBAR_PANEL_MIN_BLUR = 2;
 const navbarPanelBlur = Math.max(
-	backgroundWallpaper.banner?.navbar?.blur ?? 20,
+	backgroundWallpaperConfig.banner?.navbar?.blur ?? 20,
 	NAVBAR_PANEL_MIN_BLUR,
 );
 
@@ -153,7 +153,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
 ---
 
 <!doctype html>
-<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" data-wallpaper-mode={backgroundWallpaper.mode} data-fullscreen-layout={fullscreenLayout} data-has-wallpaper={hasWallpaper ? "" : undefined} data-tag-style={siteConfig.tagStyle ?? "pill"} data-category-style={siteConfig.categoryStyle ?? "rectangle"}>
+<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" data-wallpaper-mode={backgroundWallpaperConfig.mode} data-fullscreen-layout={fullscreenLayout} data-has-wallpaper={hasWallpaper ? "" : undefined} data-tag-style={siteConfig.tagStyle ?? "pill"} data-category-style={siteConfig.categoryStyle ?? "rectangle"}>
   <head>
     <meta charset="UTF-8" />
     <style is:inline>
@@ -347,7 +347,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
         PAGE_WIDTH,
         configHue,
         defaultMode: siteConfig.themeColor.defaultMode ?? "light",
-        defaultWallpaperMode: backgroundWallpaper.mode,
+        defaultWallpaperMode: backgroundWallpaperConfig.mode,
         isWallpaperSwitchable:
           displaySettingsConfig.wallpaperModeSwitchable,
         isFullscreenLayoutSwitchable:
@@ -355,7 +355,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
         darkTheme: expressiveCodeConfig.darkTheme,
         lightTheme: expressiveCodeConfig.lightTheme,
         baseUrl: import.meta.env.BASE_URL,
-        cardTransparentOpacity: backgroundWallpaper.overlay?.cardOpacity ?? 0.6,
+        cardTransparentOpacity: backgroundWallpaperConfig.overlay?.cardOpacity ?? 0.6,
         fullscreenLayout,
       }}
     >

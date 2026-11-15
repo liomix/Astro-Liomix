@@ -14,7 +14,7 @@ export const displaySettingsConfig: DisplaySettingsConfig =
 		// 开启后设置面板组件及其依赖（各设置项逻辑、图标等）会打进客户端产物，
 		// 会导致构建体积变大、首屏多一份 JS 影响性能；关闭则完全不渲染面板，体积更小，
 		// 壁纸模式切换开关，这一项是构建体积的大头
-		// 壁纸模式切换开关设为 false 则不显示壁纸模式切换开关，始终使用 backgroundWallpaper 配置的默认壁纸模式
+		// 壁纸模式切换开关设为 false 则不显示壁纸模式切换开关，始终使用 backgroundWallpaperConfig 配置的默认壁纸模式
 		// 壁纸模式切换开关设为 true 时，为了能在运行时切换，构建期必须把各壁纸模式所需的整套内容，导致构建体积大幅增加，大概+33 KB/页，首屏加载时间变长，性能下降
 
 		// 除了改这里，也可以在部署平台（Vercel / Cloudflare 等）配置环境变量开启，

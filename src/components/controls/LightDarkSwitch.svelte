@@ -10,7 +10,7 @@ import {
 	SCHEDULED_MODE,
 	SYSTEM_MODE,
 } from "@/constants/constants";
-import type { LIGHT_DARK_MODE } from "@/types/config.ts";
+import type { LightDarkMode } from "@/types/config.ts";
 import {
 	getStoredTheme,
 	resolveTheme,
@@ -32,9 +32,9 @@ const FRAME_MOON = sunMoonData.ip; // 0
 const FRAME_SUN = sunMoonData.op - 1; // 35
 
 // 存储的模式（可能是 system / scheduled）
-let mode = $state<LIGHT_DARK_MODE>(LIGHT_MODE);
+let mode = $state<LightDarkMode>(LIGHT_MODE);
 // 实际生效的模式，决定停在月帧还是日帧
-let displayedMode = $state<LIGHT_DARK_MODE>(LIGHT_MODE);
+let displayedMode = $state<LightDarkMode>(LIGHT_MODE);
 
 let host = $state<HTMLDivElement>();
 // Lottie 起来之前先显示静态图标占位，避免导航栏短暂缺一块
@@ -56,7 +56,7 @@ function prefersReducedMotion(): boolean {
 }
 
 /** 当前明暗对应的停帧 */
-function frameFor(target: LIGHT_DARK_MODE): number {
+function frameFor(target: LightDarkMode): number {
 	return target === DARK_MODE ? FRAME_SUN : FRAME_MOON;
 }
 

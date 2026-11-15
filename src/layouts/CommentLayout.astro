@@ -63,7 +63,7 @@ const wallpaperDefaultId = commentWallpaperConfig.defaultId;
 				// 「装在评论抽屉里」这件事只能在这里判断：这一页是预渲染的静态路由，
 				// 查询参数到不了服务端（Astro.url.search 在构建产物里是空的），
 				// 所以由浏览器按真实地址打标记，且在首屏绘制前完成 —— 关闭按钮不会闪。
-				// 标记本身只决定那颗按钮显不显示（见 telegram-chat.css 的 .tg-head-close）
+				// 标记本身只决定那颗按钮显不显示（见 comment.css 的 .tg-head-close）
 				var embedded = false;
 				try {
 					embedded = new URLSearchParams(location.search).has("embed");

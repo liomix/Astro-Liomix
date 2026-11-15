@@ -9,7 +9,7 @@ import NavLottieLogo from "@/components/controls/NavLottieLogo.svelte";
 import NavMusicButton from "@/components/controls/NavMusicButton.svelte";
 import Search from "@/components/controls/Search.svelte";
 import {
-	backgroundWallpaper,
+	backgroundWallpaperConfig,
 	displaySettingsConfig,
 	musicPlayerConfig,
 	siteConfig,
@@ -30,12 +30,12 @@ const isHomePageCheck = isHomePage(Astro.url.pathname);
 // banner 模式不再为非首页降级成 semi：桌面端非首页也有 45vh 横幅，导航栏照样悬在壁纸上；
 // 移动端非首页没有横幅（横幅被隐藏），由 navbar.css 的 [data-is-home="true"] 条件回落到卡底色
 const navbarTransparentMode =
-	backgroundWallpaper.mode === "banner"
-		? backgroundWallpaper.banner?.navbar?.transparentMode || "semi"
-		: backgroundWallpaper.mode === "fullscreen"
+	backgroundWallpaperConfig.mode === "banner"
+		? backgroundWallpaperConfig.banner?.navbar?.transparentMode || "semi"
+		: backgroundWallpaperConfig.mode === "fullscreen"
 			? (() => {
 					const fs =
-						backgroundWallpaper.fullscreen?.navbar?.transparentMode ||
+						backgroundWallpaperConfig.fullscreen?.navbar?.transparentMode ||
 						"semifull";
 					return fs === "semifull" && isHomePageCheck ? "semifull" : "semi";
 				})()
@@ -43,8 +43,8 @@ const navbarTransparentMode =
 
 // 获取导航栏模糊度（0 即关闭导航栏毛玻璃）
 const navbarBlur =
-	backgroundWallpaper.mode === "banner"
-		? (backgroundWallpaper.banner?.navbar?.blur ?? 20)
+	backgroundWallpaperConfig.mode === "banner"
+		? (backgroundWallpaperConfig.banner?.navbar?.blur ?? 20)
 		: 0;
 
 // 获取导航栏标题，如果没有设置则使用 siteConfig.title
@@ -121,10 +121,10 @@ const logoVariants = await Promise.all(
 ---
 <div id="navbar" class="z-50" style={`--navbar-glass-blur: ${navbarBlur}px;`} data-transparent-mode={navbarTransparentMode} data-is-home={isHomePageCheck} data-full-width={navbarWidthFull}>
     <script is:inline define:vars={{
-      bannerTMode: backgroundWallpaper.banner?.navbar?.transparentMode || "semi",
-      bannerBlur: backgroundWallpaper.banner?.navbar?.blur ?? 20,
-      fsTMode: backgroundWallpaper.fullscreen?.navbar?.transparentMode || "semifull",
-      fsBlur: backgroundWallpaper.fullscreen?.navbar?.blur ?? 20,
+      bannerTMode: backgroundWallpaperConfig.banner?.navbar?.transparentMode || "semi",
+      bannerBlur: backgroundWallpaperConfig.banner?.navbar?.blur ?? 20,
+      fsTMode: backgroundWallpaperConfig.fullscreen?.navbar?.transparentMode || "semifull",
+      fsBlur: backgroundWallpaperConfig.fullscreen?.navbar?.blur ?? 20,
     }}>
       // 首帧前按运行时壁纸模式修正导航栏透明模式：SSR 的 data-transparent-mode 按 config 设置，
       // 与运行时模式不一致时（如 config fullscreen + 存储 banner）会先按错误模式渲染闪烁，

@@ -1,5 +1,5 @@
 import { expressiveCodeConfig, navbarMode, siteConfig } from "@/config";
-import type { WALLPAPER_MODE } from "@/types/config";
+import type { WallpaperMode } from "@/types/config";
 import { scheduleContentOverflowEnhancements } from "@/utils/content-overflow-utils";
 import { initializeFloatingPanels } from "@/utils/floating-panel-utils";
 import {
@@ -231,7 +231,7 @@ function registerSwupHooks(): void {
 		updateNavbarTransparency(
 			document.documentElement.getAttribute(
 				"data-wallpaper-mode",
-			) as WALLPAPER_MODE,
+			) as WallpaperMode,
 		);
 
 		// 在移动端恢复文章列表容器的过渡动画（在主内容区位置动画完成后）

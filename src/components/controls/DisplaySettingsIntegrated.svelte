@@ -66,7 +66,7 @@ import { originFromElement } from "@utils/light-dark-switch";
 import { onMount } from "svelte";
 import Icon from "@/components/common/Icon.svelte";
 import {
-	backgroundWallpaper,
+	backgroundWallpaperConfig,
 	commentWallpaperConfig,
 	displaySettingsConfig,
 	dynamicConfig,
@@ -74,8 +74,8 @@ import {
 } from "@/config";
 import type {
 	FullscreenWallpaperLayout,
-	LIGHT_DARK_MODE,
-	WALLPAPER_MODE,
+	LightDarkMode,
+	WallpaperMode,
 } from "@/types/config";
 
 type OverlaySliderItem = {
@@ -95,8 +95,8 @@ type TabKey = "appearance" | "wallpaper" | "background";
 
 let hue = $state(getHue());
 const defaultHue = getDefaultHue();
-let wallpaperMode: WALLPAPER_MODE = $state(backgroundWallpaper.mode);
-const defaultWallpaperMode = backgroundWallpaper.mode;
+let wallpaperMode: WallpaperMode = $state(backgroundWallpaperConfig.mode);
+const defaultWallpaperMode = backgroundWallpaperConfig.mode;
 let fullscreenLayout: FullscreenWallpaperLayout = $state(
 	getDefaultFullscreenLayout(),
 );
@@ -154,7 +154,7 @@ const isCommentWallpaperSwitchable =
 let commentWallpaperId = $state(defaultCommentWallpaper);
 
 // 日夜模式：日间 / 夜间 / 跟随系统 / 定时
-let themeMode: LIGHT_DARK_MODE = $state(getDefaultTheme());
+let themeMode: LightDarkMode = $state(getDefaultTheme());
 const defaultThemeMode = getDefaultTheme();
 let scheduleDayStart = $state(DEFAULT_THEME_SCHEDULE.dayStart);
 let scheduleNightStart = $state(DEFAULT_THEME_SCHEDULE.nightStart);
@@ -173,7 +173,7 @@ const isWavesSwitchable = displaySettingsConfig.wavesSwitchable;
 const isGradientSwitchable = displaySettingsConfig.gradientSwitchable;
 // 检查是否启用横幅标题配置（功能开关，非用户切换开关）
 const isBannerTitleEnabled =
-	backgroundWallpaper.common?.homeText?.enable ?? false;
+	backgroundWallpaperConfig.common?.homeText?.enable ?? false;
 const isBannerTitleSwitchable =
 	isBannerTitleEnabled && displaySettingsConfig.bannerTitleSwitchable;
 const isBannerCarouselSwitchable =
@@ -223,7 +223,7 @@ const hasOverlaySettings =
 		isOverlayPanelTransparencySwitchable);
 // 全屏壁纸模式的模糊渐变是否启用（按当前设备读取 fullscreen.blurRamp 配置，未配置默认开启）
 const isFullscreenBlurRampEnabled = $derived.by(() => {
-	const enable = backgroundWallpaper.fullscreen?.blurRamp?.enable;
+	const enable = backgroundWallpaperConfig.fullscreen?.blurRamp?.enable;
 	if (typeof enable === "boolean") return enable;
 	if (!enable) return true;
 	return isMobileViewport ? enable.mobile : enable.desktop;
@@ -276,7 +276,7 @@ const themeModeOptions = $derived([
 		icon: "material-symbols:schedule-rounded",
 		label: i18n(I18nKey.scheduledMode),
 	},
-] as { key: LIGHT_DARK_MODE; icon: string; label: string }[]);
+] as { key: LightDarkMode; icon: string; label: string }[]);
 
 let themeSettingsIsDefault = $derived(
 	themeMode === defaultThemeMode &&
@@ -284,7 +284,7 @@ let themeSettingsIsDefault = $derived(
 		scheduleNightStart === DEFAULT_THEME_SCHEDULE.nightStart,
 );
 
-function selectThemeMode(nextMode: LIGHT_DARK_MODE, event?: MouseEvent) {
+function selectThemeMode(nextMode: LightDarkMode, event?: MouseEvent) {
 	themeMode = nextMode;
 	const target = event?.currentTarget;
 	setTheme(nextMode, originFromElement(target instanceof Element ? target : null));
@@ -607,7 +607,7 @@ function resetCardSettings() {
 	}
 }
 
-function switchWallpaperMode(newMode: WALLPAPER_MODE) {
+function switchWallpaperMode(newMode: WallpaperMode) {
 	wallpaperMode = newMode;
 	setWallpaperMode(newMode);
 	window.scrollTo({ top: 0 });
@@ -788,7 +788,7 @@ onMount(() => {
 
 onMount(() => {
 	const handleWallpaperModeChange = (event: Event) => {
-		const customEvent = event as CustomEvent<{ mode: WALLPAPER_MODE }>;
+		const customEvent = event as CustomEvent<{ mode: WallpaperMode }>;
 		wallpaperMode = customEvent.detail.mode;
 	};
 

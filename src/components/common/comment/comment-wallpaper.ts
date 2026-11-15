@@ -15,7 +15,7 @@
  *   所有图层都是 ip=0 / op=末帧的一次性「涂鸦逐个长出」，首帧基本空白、末帧才铺满。
  *   loop 会在回绕处从满屏跳回空白，看起来就是每圈闪一下。所以这里**只画末帧**，
  *   播完的状态一次到位；之后交给 CSS 的极缓缩放位移维持「活着」的感觉
- *   （telegram-chat.css 的 tg-wallpaper-drift）。
+ *   （comment.css 的 tg-wallpaper-drift）。
  *
  * 为什么不播生长：
  *   抽屉一滑出来，壁纸就该是成品 —— 播生长的话，打开抽屉先看到一片空白、再看着它
@@ -278,7 +278,7 @@ async function paint(chat: HTMLElement, id: string): Promise<void> {
 
 /**
  * 聊天区挂好之后调一次：找（或补）一层壁纸容器并异步加载。
- * 容器由 TelegramChat.astro 服务端渲染，这里是兜底创建，
+ * 容器由 Comment.astro 服务端渲染，这里是兜底创建，
  * 免得哪天忘了写那行 div 就整块没反应。
  */
 export function mountChatWallpaper(chat: HTMLElement, id?: string): void {

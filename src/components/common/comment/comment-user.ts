@@ -154,15 +154,6 @@ export function isValidName(name: string): boolean {
 	return value.length > 0 && value.length <= COMMENT_NAME_MAX;
 }
 
-/** 身份是否已经填完整：两条都有，才算可以参与评论 */
-export function isCommentUserReady(
-	user: CommentUser | null | undefined,
-): boolean {
-	return Boolean(
-		user && isValidName(user.name) && isValidEmail(user.email),
-	);
-}
-
 /** 读本地身份；没存过、解析失败、字段非法都当成「没有」 */
 export function getCommentUser(): CommentUser | null {
 	try {
@@ -195,13 +186,4 @@ export function setCommentUser(user: CommentUser): void {
 	window.dispatchEvent(
 		new CustomEvent<CommentUser>("commentUserChange", { detail: next }),
 	);
-}
-
-/** 清掉本地身份（设置面板或调试用，目前没有入口） */
-export function clearCommentUser(): void {
-	try {
-		localStorage.removeItem(COMMENT_USER_STORAGE_KEY);
-	} catch {
-		// 同上，读不到就当没有
-	}
 }

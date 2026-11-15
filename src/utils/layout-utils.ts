@@ -1,4 +1,4 @@
-import { backgroundWallpaper } from "../config";
+import { backgroundWallpaperConfig } from "../config";
 
 export type BackgroundImages = {
 	desktop: string[];
@@ -16,7 +16,7 @@ const toArray = (src: string | string[] | undefined): string[] => {
 // 背景图片处理工具函数
 // 返回所有配置的图片（用于构建时渲染所有图片）
 export const getBackgroundImages = (): BackgroundImages => {
-	const bgSrc = backgroundWallpaper.src;
+	const bgSrc = backgroundWallpaperConfig.src;
 
 	if (
 		typeof bgSrc === "object" &&

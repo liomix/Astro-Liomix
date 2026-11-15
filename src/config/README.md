@@ -10,7 +10,7 @@ src/config/
 ├── siteConfig.ts             # 站点基础配置
 ├── analyticsConfig.ts        # 统计分析配置（Google Analytics、Umami、51la 等）
 ├── announcementConfig.ts     # 公告配置
-├── backgroundWallpaper.ts    # 背景壁纸配置
+├── backgroundWallpaperConfig.ts    # 背景壁纸配置
 ├── commentConfig.ts          # 评论系统配置
 ├── coverImageConfig.ts       # 封面图配置
 ├── displaySettingsConfig.ts  # 设置面板配置
@@ -22,7 +22,7 @@ src/config/
 ├── galleryConfig.ts          # 相册配置
 ├── licenseConfig.ts          # 许可证配置
 ├── musicConfig.ts            # 音乐播放器配置
-├── navBarConfig.ts           # 导航栏配置（含 LinkPresets 链接预设）
+├── navBarConfig.ts           # 导航栏配置（含 linkPresets 链接预设）
 ├── pioConfig.ts              # 看板娘配置（Spine、Live2D）
 ├── mermaidConfig.ts          # Mermaid 图表配置
 ├── plantumlConfig.ts         # PlantUML 图表配置
@@ -52,7 +52,7 @@ import { profileConfig } from "@/config/profileConfig";
 | `siteConfig.ts` | 站点基础配置（标题、描述、主题色、页面宽度、文章内容页配置等） |
 | `analyticsConfig.ts` | 统计分析配置（Google Analytics、Microsoft Clarity、Umami、51la） |
 | `announcementConfig.ts` | 公告配置（标题、内容、类型、链接等） |
-| `backgroundWallpaper.ts` | 背景壁纸配置（壁纸模式、图片、横幅文字、水波纹等） |
+| `backgroundWallpaperConfig.ts` | 背景壁纸配置（壁纸模式、图片、横幅文字、水波纹等） |
 | `commentConfig.ts` | 评论系统配置（Twikoo、Waline、Artalk、Giscus、Disqus） |
 | `coverImageConfig.ts` | 封面图配置（文章封面图、随机封面图 API） |
 | `displaySettingsConfig.ts` | 视图设置面板配置（面板总开关、各设置项开关） |
@@ -64,7 +64,7 @@ import { profileConfig } from "@/config/profileConfig";
 | `galleryConfig.ts` | 相册配置（相册列表、瀑布流列宽） |
 | `licenseConfig.ts` | 许可证配置（CC 协议等） |
 | `musicConfig.ts` | 音乐播放器配置（Meting API / 本地音乐、导航栏和侧边栏开关） |
-| `navBarConfig.ts` | 导航栏配置（动态链接、LinkPresets 链接预设、搜索配置） |
+| `navBarConfig.ts` | 导航栏配置（动态链接、linkPresets 链接预设、搜索配置） |
 | `pioConfig.ts` | 看板娘配置（Spine 模型、Live2D 模型） |
 | `plantumlConfig.ts` | PlantUML 图表渲染配置 |
 | `profileConfig.ts` | 用户资料配置（头像、姓名、社交链接） |
@@ -76,5 +76,5 @@ import { profileConfig } from "@/config/profileConfig";
 - 所有配置文件均可通过 `index.ts` 统一导入
 - 每个配置文件对应 `types/` 目录下的独立类型定义文件
 - `siteConfig.ts` 只保留站点核心信息，不聚合其他模块配置
-- `navBarConfig.ts` 底部的 `LinkPresets` 可自由自定义导航栏链接的名称、图标和 URL
+- `navBarConfig.ts` 底部的 `linkPresets` 可自由自定义导航栏链接的名称、图标和 URL
 - `displaySettingsConfig.ts` 的视图设置面板默认关闭，除了修改配置里的 `enable`，也可以在部署平台（Vercel / Cloudflare 等）设置环境变量 `PUBLIC_DISPLAY_SETTINGS=true` 开启，无需改动配置文件；环境变量优先级更高，取值 `true/1/on/yes` 开启、`false/0/off/no` 关闭

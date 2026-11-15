@@ -1,4 +1,4 @@
-import { backgroundWallpaper, displaySettingsConfig } from "@/config";
+import { backgroundWallpaperConfig, displaySettingsConfig } from "@/config";
 import { getImageQuality } from "@/utils/image-utils";
 import { getBackgroundImages } from "@/utils/layout-utils";
 
@@ -54,7 +54,7 @@ export interface BannerVisibilityState {
 
 /** 随机选择副标题（当打字机关闭且为数组时）；运行时内联脚本会再选一次，此处为 SSR 初始值 */
 function getRandomSubtitle(): string | undefined {
-	const subtitle = backgroundWallpaper.common?.homeText?.subtitle;
+	const subtitle = backgroundWallpaperConfig.common?.homeText?.subtitle;
 	if (Array.isArray(subtitle)) {
 		const randomIndex = Math.floor(Math.random() * subtitle.length);
 		return subtitle[randomIndex];
@@ -96,16 +96,16 @@ export function getBannerVisibilityState(
 		bannerPostMeta,
 	} = ctx;
 
-	const isBannerMode = backgroundWallpaper.mode === "banner";
-	const isFullscreenMode = backgroundWallpaper.mode === "fullscreen";
+	const isBannerMode = backgroundWallpaperConfig.mode === "banner";
+	const isFullscreenMode = backgroundWallpaperConfig.mode === "fullscreen";
 	const isClassicFullscreenMode =
-		isFullscreenMode && backgroundWallpaper.fullscreen?.layout !== "hero";
-	const isOverlayMode = backgroundWallpaper.mode === "overlay";
+		isFullscreenMode && backgroundWallpaperConfig.fullscreen?.layout !== "hero";
+	const isOverlayMode = backgroundWallpaperConfig.mode === "overlay";
 	const isWallpaperSwitchable = displaySettingsConfig.wallpaperModeSwitchable;
 	const isBackgroundEnabled =
-		backgroundWallpaper.mode !== "none" || isWallpaperSwitchable;
+		backgroundWallpaperConfig.mode !== "none" || isWallpaperSwitchable;
 
-	const wavesConfig = backgroundWallpaper.common?.waves?.enable;
+	const wavesConfig = backgroundWallpaperConfig.common?.waves?.enable;
 	const wavesSwitchable = displaySettingsConfig.wavesSwitchable;
 	const wavesEnabledOnDesktop =
 		typeof wavesConfig === "object" ? wavesConfig.desktop : wavesConfig;
@@ -114,7 +114,7 @@ export function getBannerVisibilityState(
 	const shouldRenderWaves =
 		wavesEnabledOnDesktop || wavesEnabledOnMobile || wavesSwitchable;
 
-	const gradientConfig = backgroundWallpaper.common?.gradient?.enable;
+	const gradientConfig = backgroundWallpaperConfig.common?.gradient?.enable;
 	const gradientSwitchable = displaySettingsConfig.gradientSwitchable;
 	const gradientEnabledOnDesktop =
 		typeof gradientConfig === "object"
@@ -124,15 +124,15 @@ export function getBannerVisibilityState(
 		typeof gradientConfig === "object"
 			? gradientConfig.mobile
 			: (gradientConfig ?? true);
-	const gradientHeight = backgroundWallpaper.common?.gradient?.height ?? "30vh";
+	const gradientHeight = backgroundWallpaperConfig.common?.gradient?.height ?? "30vh";
 	const shouldRenderGradient =
 		gradientEnabledOnDesktop || gradientEnabledOnMobile || gradientSwitchable;
 
-	const homeTextEnable = backgroundWallpaper.common?.homeText?.enable ?? false;
+	const homeTextEnable = backgroundWallpaperConfig.common?.homeText?.enable ?? false;
 	const showHomeText =
 		(isBannerMode || isFullscreenMode) && !!homeTextEnable && isHomePageCheck;
 	const homeTextLinksEnable =
-		backgroundWallpaper.common?.homeText?.linksEnable !== false;
+		backgroundWallpaperConfig.common?.homeText?.linksEnable !== false;
 
 	const showBannerPostMeta =
 		(isBannerMode || isWallpaperSwitchable || isClassicFullscreenMode) &&
@@ -142,7 +142,7 @@ export function getBannerVisibilityState(
 		!!bannerPostMeta;
 
 	const bannerPostInfoMode =
-		backgroundWallpaper.banner?.postInfo?.mode ?? "description";
+		backgroundWallpaperConfig.banner?.postInfo?.mode ?? "description";
 
 	const bannerDescriptionWidth = getBannerDescriptionWidth(
 		bannerPostMeta?.description,
@@ -151,7 +151,7 @@ export function getBannerVisibilityState(
 	const showBannerDim =
 		(isBannerMode || isFullscreenMode || isWallpaperSwitchable) &&
 		isBackgroundEnabled;
-	const dimOpacity = backgroundWallpaper.common?.dimOpacity ?? 0.15;
+	const dimOpacity = backgroundWallpaperConfig.common?.dimOpacity ?? 0.15;
 
 	const showBannerPageTitle =
 		(isBannerMode || isWallpaperSwitchable || isClassicFullscreenMode) &&
@@ -164,15 +164,15 @@ export function getBannerVisibilityState(
 	const configQuality = getImageQuality();
 	const mobileQuality = Math.round(configQuality * 0.9);
 	const bannerCarouselEnabledDefault =
-		backgroundWallpaper.common?.carousel?.enable ?? false;
+		backgroundWallpaperConfig.common?.carousel?.enable ?? false;
 	const bannerCarouselSwitchable =
 		displaySettingsConfig.bannerCarouselSwitchable;
 	const bannerCarouselInterval = Math.max(
-		backgroundWallpaper.common?.carousel?.interval ?? 5000,
+		backgroundWallpaperConfig.common?.carousel?.interval ?? 5000,
 		3000,
 	);
 	const bannerCarouselEffect =
-		backgroundWallpaper.common?.carousel?.transitionEffect ?? "fade";
+		backgroundWallpaperConfig.common?.carousel?.transitionEffect ?? "fade";
 	const hasMultipleImages =
 		backgroundImages.desktop.length > 1 || backgroundImages.mobile.length > 1;
 

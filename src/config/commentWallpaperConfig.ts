@@ -19,7 +19,7 @@ import type {
  *   3. 完事，不用改任何组件。
  *
  * 素材要求：1024×1024、所有图层同起同止（ip=0 / op=末帧）的一次性生长动画。
- * 播放逻辑见 components/pages/dynamic/comment-wallpaper.ts —— 它只播一遍再停末帧，
+ * 播放逻辑见 components/common/comment/comment-wallpaper.ts —— 它只播一遍再停末帧，
  * 循环素材会闪。
  */
 export const commentWallpaperConfig: CommentWallpaperConfig = {

@@ -1,7 +1,14 @@
 ---
 /**
- * Telegram 风格聊天界面（评论抽屉的内容页）
+ * 评论组件（原子组件）：一条评论线程的完整界面 —— 顶栏、消息区、输入栏、表情面板。
  * ---------------------------------------------------------------------------
+ * 两个地方用它，靠 props 区分形态，行为是同一份：
+ *   1. 动态页的动态评论（/dynamic/comments/，装在 iframe 抽屉里，closable 默认 true）；
+ *   2. 文章页的文章评论（PostComments 内嵌在正文下方，closable=false，直接给 slug）。
+ * 线程就是 slug：动态页从 path 推算（dynamic-<id>），文章页由调用方直接传文章 slug。
+ * 样式由组件自己带（styles/components/comment.css + comment-info.css），
+ * 内部逻辑在 components/common/comment/ 下，外面不需要再引任何东西。
+ *
  * 按 Telegram Android 客户端的私聊页复刻：
  *   气泡 17px 圆角 + 靠发送者一侧的 6px 小角（源码 SharedConfig.bubbleRadius = 17，
  *   近侧角 Math.min(6, bubbleRadius)）；对方白/深灰气泡靠左、自己浅绿/蓝气泡靠右；
@@ -39,7 +46,7 @@
  * 图片附件按钮暂不开放：后端还没有上传接口，blob: 地址过不了正文的 URL 白名单，
  * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
  */
-import { avatarGradientOf } from "@/components/pages/dynamic/comment-user";
+import { avatarGradientOf, initialOf } from "@/components/common/comment/comment-user";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 import { profileConfig } from "@/config/profileConfig";
 import {
@@ -49,6 +56,10 @@ import {
 } from "@/utils/avatar-utils";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+// 组件自带样式：气泡/顶栏/输入栏在 comment.css，评论身份弹窗在 comment-info.css。
+// 后者要覆盖前者里的 .tg-head-avatar、给 .tg-composer 补 position，顺序不能反。
+import "@/styles/components/comment.css";
+import "@/styles/components/comment-info.css";
 
 interface Props {
 	/** 消息数据来源，挂到 data 属性上并据此算出评论线程的 slug */
@@ -80,8 +91,8 @@ const {
 	closable = true,
 } = Astro.props;
 
-/** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致 */
-const initial = (name.trim().slice(0, 1) || "?").toUpperCase();
+/** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致（与弹窗共用 initialOf） */
+const initial = initialOf(name);
 
 /**
  * 首屏就先按默认邮箱把渐变色算好：脚本要等模块加载完才跑，
@@ -591,25 +602,26 @@ const showTabs = packs.length > 1;
 	import {
 		initChatContextPop,
 		summarizeMarkdown,
-	} from "@/components/pages/dynamic/chat-context-pop";
-	import { initCommentInfo } from "@/components/pages/dynamic/comment-info";
+	} from "@/components/common/comment/chat-context-pop";
+	import { initCommentInfo } from "@/components/common/comment/comment-info";
 	import {
 		identityKeyOf,
 		readOwnComments,
 		readOwnIdentities,
 		rememberOwnComment,
-	} from "@/components/pages/dynamic/comment-own";
+	} from "@/components/common/comment/comment-own";
 	import {
 		getCommentUser,
 		initialOf,
-	} from "@/components/pages/dynamic/comment-user";
-	import { mountChatWallpaper } from "@/components/pages/dynamic/comment-wallpaper";
+	} from "@/components/common/comment/comment-user";
+	import { mountChatWallpaper } from "@/components/common/comment/comment-wallpaper";
 	import {
 		apiErrorMessage,
 		isAbortedRequest,
 		type ApiErrorLabels,
 	} from "@/utils/api-error-message";
 	import { ApiError } from "@/utils/api-client";
+	import { copyText } from "@/utils/clipboard";
 	import {
 		type ApiComment,
 		type CommentPage,
@@ -626,10 +638,9 @@ const showTabs = packs.length > 1;
 
 	const pad = (value: number) => String(value).padStart(2, "0");
 
-	function stamp(offsetMinutes: number): string {
-		const date = new Date(Date.now() + offsetMinutes * 60_000);
-		return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-	}
+	/** 本地时间 HH:mm：自己刚发的气泡和刷新后拉回来的走同一份格式 */
+	const clockOf = (date: Date): string =>
+		`${pad(date.getHours())}:${pad(date.getMinutes())}`;
 
 	/** 时间戳是不是今天（本地时区）—— 决定时间要不要带日期 */
 	function isToday(iso: string): boolean {
@@ -650,7 +661,7 @@ const showTabs = packs.length > 1;
 	function formatTime(iso: string): string {
 		const date = new Date(iso);
 		if (Number.isNaN(date.getTime())) return "";
-		const clock = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+		const clock = clockOf(date);
 		return isToday(iso)
 			? clock
 			: `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${clock}`;
@@ -921,24 +932,6 @@ const showTabs = packs.length > 1;
 	function setMarkdown(target: HTMLElement, text: string, labels: CodeLabels): void {
 		target.innerHTML = renderMarkdown(text);
 		decorateCodeBlocks(target, labels);
-	}
-
-	/** 复制文本：优先 Clipboard API，拿不到权限（老浏览器 / 非安全上下文）就退回 execCommand */
-	async function copyText(text: string): Promise<boolean> {
-		try {
-			await navigator.clipboard.writeText(text);
-			return true;
-		} catch {
-			const area = document.createElement("textarea");
-			area.value = text;
-			area.setAttribute("readonly", "");
-			area.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
-			document.body.append(area);
-			area.select();
-			const ok = document.execCommand("copy");
-			area.remove();
-			return ok;
-		}
 	}
 
 	function init() {
@@ -1672,7 +1665,7 @@ const showTabs = packs.length > 1;
 				text.replaceWith(photo);
 				bubble.classList.add("tg-bubble--photo");
 			}
-			if (time) time.textContent = stamp(0);
+			if (time) time.textContent = clockOf(new Date());
 
 			chatCtx.registerRow(row);
 			scroller.append(row);
@@ -1819,7 +1812,7 @@ const showTabs = packs.length > 1;
 			// 引用的 target 就是原消息的 data-tg-msg，自己发过的那些已经是后端 id，
 			// 提交时直接当 parentId 用
 			const quote = chatCtx.takePendingReply();
-			const row = buildOutgoing(source, stamp(0), true);
+			const row = buildOutgoing(source, clockOf(new Date()), true);
 			if (!row) return;
 			if (quote) chatCtx.decorate(row, quote);
 

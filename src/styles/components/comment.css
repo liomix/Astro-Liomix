@@ -654,7 +654,7 @@ html[data-embedded] .tg-head-close {
 }
 
 /* 代码块外壳：顶部一条「语言 + 复制」，下面是可横滚的代码。
-   这层 DOM 是脚本在消毒之后拼的（TelegramChat.astro 的 decorateCodeBlocks），
+   这层 DOM 是脚本在消毒之后拼的（Comment.astro 的 decorateCodeBlocks），
    所以白名单不用为 button 开口子 */
 .tg-text--md .tg-code {
 	margin: 0.3rem 0;
