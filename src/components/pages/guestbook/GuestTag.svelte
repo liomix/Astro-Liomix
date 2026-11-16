@@ -302,11 +302,13 @@
 		color: var(--primary);
 	}
 
-	/* 便签里的表情图（emojiTokensToHtml 产出的 <img>）需要 :global 才命中 */
+	/* 便签里的表情图（emojiTokensToHtml 产出的 <img>）需要 :global 才命中。
+	   尺寸固定 24px，和输入框里、评论区气泡里那张一致（commentEmojiConfig.size） */
 	.guest-tag__body :global(.guest-tag__emoji) {
 		display: inline-block;
-		width: 1.15em;
-		height: 1.15em;
-		vertical-align: -0.15em;
+		width: 1.5rem;
+		height: 1.5rem;
+		object-fit: contain;
+		vertical-align: -0.32em;
 	}
 </style>

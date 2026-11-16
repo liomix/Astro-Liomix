@@ -154,6 +154,36 @@ export function isValidName(name: string): boolean {
 	return value.length > 0 && value.length <= COMMENT_NAME_MAX;
 }
 
+/**
+ * 监听「别的文档改了身份」。
+ *
+ * localStorage 是同一个源共享的，但 `setCommentUser` 只在自己所在的文档里派发
+ * `commentUserChange` —— 另一个标签页、或者评论抽屉里那个 iframe 改了身份，
+ * 这边是收不到的。浏览器正好提供了 storage 事件，而且它只在**其它**文档触发，
+ * 语义刚好对上：收到就重读一遍，再在本文档广播一次，顶栏与气泡左右跟着换。
+ *
+ * 幂等：模块可能被多个岛各实例化一份，用 window 上的标记去重。
+ */
+export function watchCommentUserStorage(): void {
+	if (typeof window === "undefined") return;
+	const scope = window as unknown as Record<string, boolean | undefined>;
+	if (scope[WATCH_COMMENT_USER_KEY]) return;
+	scope[WATCH_COMMENT_USER_KEY] = true;
+
+	window.addEventListener("storage", (event) => {
+		if (event.key !== COMMENT_USER_STORAGE_KEY) return;
+		const user = getCommentUser();
+		// 被清空（removeItem / clear）时没有可广播的身份，顶栏保持现状
+		if (!user) return;
+		window.dispatchEvent(
+			new CustomEvent<CommentUser>("commentUserChange", { detail: user }),
+		);
+	});
+}
+
+/** storage 监听的去重标记（模块可能被多个岛各实例化一份） */
+const WATCH_COMMENT_USER_KEY = "__fireflyCommentUserWatching";
+
 /** 读本地身份；没存过、解析失败、字段非法都当成「没有」 */
 export function getCommentUser(): CommentUser | null {
 	try {

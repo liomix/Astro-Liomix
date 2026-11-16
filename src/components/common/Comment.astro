@@ -616,6 +616,7 @@ const showTabs = packs.length > 1;
 	import {
 		getCommentUser,
 		initialOf,
+		watchCommentUserStorage,
 	} from "@/components/common/comment/comment-user";
 	import { mountChatWallpaper } from "@/components/common/comment/comment-wallpaper";
 	import {
@@ -973,7 +974,10 @@ const showTabs = packs.length > 1;
 		}
 
 		// 评论身份（昵称 / 邮箱 / 头像）与弹窗：放在其余初始化之前，
-		// 它会决定输入栏是不是锁着，晚了会先闪一下「可以输入」的状态
+		// 它会决定输入栏是不是锁着，晚了会先闪一下「可以输入」的状态。
+		// 先挂 storage 监听：抽屉（iframe）与主页面是两个文档，身份在另一边改过时
+		// 只能靠 storage 事件传进来，再走同一条 commentUserChange 更新顶栏
+		watchCommentUserStorage();
 		initCommentInfo(chat);
 
 		// 这一页是预渲染的静态路由，构建期拿不到 ?path=，只能在这里按地址栏补一次

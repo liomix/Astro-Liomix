@@ -30,8 +30,10 @@
 		openCommentDrawer,
 	} from "@/components/pages/dynamic/dynamic-comment-drawer";
 	import { commentApiConfig } from "@/config/commentApiConfig";
+	import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 	import I18nKey from "@/i18n/i18nKey";
 	import { i18n } from "@/i18n/translation";
+	import type { CommentEmojiItem } from "@/types/commentEmojiConfig";
 	import { apiErrorMessage } from "@/utils/api-error-message";
 	import {
 		deleteComment,
@@ -40,6 +42,11 @@
 		type ApiComment,
 	} from "@/utils/comment-client";
 	import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+	import {
+		emojiTokenOfSrc,
+		emojiTokenPattern,
+		resolveEmojiToken,
+	} from "@/utils/emoji-shortcode";
 	import { registerEmptyLottie } from "@/utils/empty-lottie";
 	import { isLikeApiEnabled } from "@/utils/like-client";
 	import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
@@ -69,8 +76,21 @@
 	let submitting = $state(false);
 	let formName = $state("");
 	let formEmail = $state("");
-	let formBody = $state("");
 	let formError = $state("");
+	/** 编辑器纯文本长度：挡「表情把 1000 字顶爆」，也用来判断正文是否为空 */
+	let bodyLength = $state(0);
+
+	/* 表情面板：数据与评论区共用 commentEmojiConfig，一份配置两处使用 */
+	const packs = commentEmojiConfig.packs;
+	const bodyMax = 1000;
+	let emojiOpen = $state(false);
+	let activePackId = $state(packs[0]?.id ?? "");
+	let editorEl = $state<HTMLElement | null>(null);
+
+	/** 当前系列；配置为空时是 undefined，面板整块不渲染 */
+	const activePack = $derived(
+		packs.find((pack) => pack.id === activePackId) ?? packs[0],
+	);
 
 	/**
 	 * 当前抽屉里那条留言。
@@ -180,6 +200,210 @@
 		}
 	}
 
+	/**
+	 * 把编辑器内容读回源文本：文字原样、`<br>` 转换行、表情图转短码。
+	 *
+	 * 与 Comment.astro 的 readComposer 同一套规则 —— 两边发出去的都是短码，
+	 * 渲染端只需认一种格式。认不出来的图片直接丢掉：输入框里只该有表情图，
+	 * 一张来路不明的图没有对应的文字表达，写进正文就是坏数据。
+	 */
+	function readComposer(root: HTMLElement): string {
+		let out = "";
+		const walk = (node: Node): void => {
+			for (const child of Array.from(node.childNodes)) {
+				if (child.nodeType === Node.TEXT_NODE) {
+					out += (child.textContent ?? "").replace(/\u00a0/g, " ");
+					continue;
+				}
+				if (child.nodeName === "BR") {
+					out += "\n";
+					continue;
+				}
+				if (child instanceof HTMLImageElement) {
+					const token =
+						child.dataset.tgEmojiToken ??
+						emojiTokenOfSrc(
+							child.dataset.tgEmojiSrc ?? child.getAttribute("src") ?? "",
+						);
+					if (token) out += token;
+					continue;
+				}
+				walk(child);
+			}
+		};
+		walk(root);
+		return out;
+	}
+
+	/**
+	 * 用源文本重建编辑器内容。
+	 *
+	 * 为什么不在光标处直接 insertNode：Chrome 会给 contenteditable 补占位 `<br>`，
+	 * 直接插图之后那个 br 就卡在两张图中间 —— 表情会一张一行地竖着排。
+	 * 改成「读源文本 → 整块重建」，DOM 结构永远只有三样：文本、`<br>`、表情图，
+	 * 不会再有浏览器自己加的节点。
+	 */
+	function renderSource(text: string): void {
+		const root = editorEl;
+		if (!root) return;
+
+		const frag = document.createDocumentFragment();
+		const pattern = emojiTokenPattern();
+		let last = 0;
+
+		const appendText = (chunk: string): void => {
+			chunk.split("\n").forEach((part, index) => {
+				if (index > 0) frag.append(document.createElement("br"));
+				if (part) frag.append(document.createTextNode(part));
+			});
+		};
+
+		for (const match of text.matchAll(pattern)) {
+			const index = match.index ?? 0;
+			appendText(text.slice(last, index));
+			const emoji = resolveEmojiToken(match[0]);
+			if (emoji) {
+				const img = document.createElement("img");
+				img.src = emoji.src;
+				img.alt = emoji.alt;
+				img.className = "composer-input__emoji";
+				img.dataset.tgEmojiToken = match[0];
+				frag.append(img);
+			} else {
+				appendText(match[0]);
+			}
+			last = index + match[0].length;
+		}
+		appendText(text.slice(last));
+
+		root.replaceChildren(frag);
+	}
+
+	/** 光标在源文本里的偏移：把「内容起点到光标」这段复制出来，按 readComposer 量长度 */
+	function caretOffset(): number {
+		const root = editorEl;
+		const selection = window.getSelection();
+		if (!root || !selection || selection.rangeCount === 0) return bodyLength;
+
+		const range = selection.getRangeAt(0);
+		if (!root.contains(range.startContainer)) return bodyLength;
+
+		const before = range.cloneRange();
+		before.selectNodeContents(root);
+		before.setEnd(range.startContainer, range.startOffset);
+
+		const holder = document.createElement("div");
+		holder.append(before.cloneContents());
+		return readComposer(holder).length;
+	}
+
+	/** 把光标放回源文本的某个偏移上（表情图按短码长度算一格） */
+	function setCaretAt(offset: number): void {
+		const root = editorEl;
+		const selection = window.getSelection();
+		if (!root || !selection) return;
+
+		let remain = offset;
+		const range = document.createRange();
+
+		const walk = (parent: Node): boolean => {
+			for (const child of Array.from(parent.childNodes)) {
+				if (child.nodeType === Node.TEXT_NODE) {
+					const text = child.textContent ?? "";
+					if (remain <= text.length) {
+						range.setStart(child, remain);
+						return true;
+					}
+					remain -= text.length;
+					continue;
+				}
+				if (child.nodeName === "BR") {
+					if (remain === 0) {
+						range.setStartBefore(child);
+						return true;
+					}
+					remain -= 1;
+					continue;
+				}
+				if (child instanceof HTMLImageElement) {
+					const length = (child.dataset.tgEmojiToken ?? "").length;
+					if (remain <= length) {
+						// 落在短码范围内：光标放到图后面，接着写就接在这张图之后
+						range.setStartAfter(child);
+						return true;
+					}
+					remain -= length;
+					continue;
+				}
+				if (walk(child)) return true;
+			}
+			return false;
+		};
+
+		if (walk(root)) range.collapse(true);
+		else {
+			// 偏移到底（或结构不认识）：光标放末尾
+			range.selectNodeContents(root);
+			range.collapse(false);
+		}
+		selection.removeAllRanges();
+		selection.addRange(range);
+	}
+
+	/** 在光标处插一段**源文本**（换行、粘贴、表情短码都走这里），然后重建 */
+	function insertTextAtCaret(chunk: string): void {
+		const root = editorEl;
+		if (!root) return;
+		const text = readComposer(root);
+		const at = caretOffset();
+		const next = text.slice(0, at) + chunk + text.slice(at);
+
+		renderSource(next);
+		bodyLength = next.length;
+		if (formError) formError = "";
+		root.focus({ preventScroll: true });
+		setCaretAt(at + chunk.length);
+	}
+
+	function syncBody(): void {
+		if (!editorEl) return;
+		bodyLength = readComposer(editorEl).length;
+		if (formError) formError = "";
+	}
+
+	// contenteditable 默认会把剪贴板里的整段 HTML 塞进来（样式、链接全跟着进来），
+	// 只收纯文本
+	function onPaste(event: ClipboardEvent): void {
+		const text = event.clipboardData?.getData("text/plain");
+		if (text == null) return;
+		event.preventDefault();
+		insertTextAtCaret(text);
+	}
+
+	// Enter 换行、Ctrl/⌘+Enter 发送。默认行为会插 <div> 或 <br>，两种都可能；
+	// 自己走源文本，重建之后只会有一种结构
+	function onKeydown(event: KeyboardEvent): void {
+		if (event.key !== "Enter" || event.isComposing) return;
+		if (event.ctrlKey || event.metaKey) {
+			event.preventDefault();
+			void submit();
+			return;
+		}
+		event.preventDefault();
+		insertTextAtCaret("\n");
+	}
+
+	/**
+	 * 把表情插到光标处：输入框里放的是**图**（短码只是发送时的载体）。
+	 * 尺寸统一取 commentEmojiConfig.size（24px），和评论区气泡里一致。
+	 */
+	function insertEmoji(item: CommentEmojiItem): void {
+		const token = emojiTokenOfSrc(item.src);
+		if (!token) return;
+		if (bodyLength + token.length > bodyMax) return;
+		insertTextAtCaret(token);
+	}
+
 	function openComposer(): void {
 		if (!apiEnabled) {
 			showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
@@ -191,6 +415,7 @@
 			formEmail = user.email;
 		}
 		formError = "";
+		emojiOpen = false;
 		composerOpen = true;
 	}
 
@@ -217,13 +442,14 @@
 	function closeComposer(): void {
 		if (submitting) return;
 		composerOpen = false;
+		emojiOpen = false;
 		formError = "";
 	}
 
 	async function submit(): Promise<void> {
 		const name = formName.trim();
 		const email = formEmail.trim();
-		const body = formBody.trim();
+		const body = (editorEl ? readComposer(editorEl) : "").trim();
 
 		if (!isValidName(name)) {
 			formError = labels.nameRequired;
@@ -272,7 +498,8 @@
 				showMessage(labels.submitted, { type: "info" });
 			}
 
-			formBody = "";
+			if (editorEl) editorEl.innerHTML = "";
+			bodyLength = 0;
 			composerOpen = false;
 		} catch (error) {
 			formError = errorText(error);
@@ -415,6 +642,7 @@
 		<div class="composer-layer">
 			<form
 				class="composer"
+				style={`--composer-emoji-size: ${commentEmojiConfig.size}px`}
 				onsubmit={(event) => {
 					event.preventDefault();
 					void submit();
@@ -465,28 +693,107 @@
 					</label>
 				</div>
 
-				<label class="composer-field composer-field--body">
-					<span class="sr-only">{i18n(I18nKey.guestbookWrite)}</span>
-					<textarea
-						bind:value={formBody}
-						rows="5"
-						maxlength="1000"
-						placeholder={i18n(I18nKey.commentChatPlaceholder)}
-						required
-					></textarea>
-				</label>
+				<div class="composer-field composer-field--body">
+					<!-- contenteditable 而不是 textarea：表情要在这里直接画成图，
+					     文本域只能显示短码。发出去的仍然是短码（readComposer） -->
+					<div
+						class="composer-input"
+						contenteditable="true"
+						role="textbox"
+						aria-multiline="true"
+						tabindex="0"
+						aria-label={i18n(I18nKey.guestbookWrite)}
+						data-placeholder={i18n(I18nKey.commentChatPlaceholder)}
+						bind:this={editorEl}
+						oninput={() => syncBody()}
+						onpaste={onPaste}
+						onkeydown={onKeydown}
+					></div>
+				</div>
+
+				{#if emojiOpen && activePack}
+					<div class="composer-emoji">
+						{#if packs.length > 1}
+							<div class="composer-emoji-tabs" role="tablist">
+								{#each packs as pack (pack.id)}
+									<button
+										type="button"
+										role="tab"
+										class="composer-emoji-tab"
+										class:is-active={pack.id === activePack.id}
+										aria-selected={pack.id === activePack.id}
+										onclick={() => (activePackId = pack.id)}
+									>
+										{pack.label}
+									</button>
+								{/each}
+							</div>
+						{/if}
+						<div class="composer-emoji-grid">
+							{#each activePack.items as item (item.id)}
+								<button
+									type="button"
+									class="composer-emoji-item"
+									title={item.name}
+									aria-label={item.name}
+									onmousedown={(event) => event.preventDefault()}
+									onclick={() => insertEmoji(item)}
+								>
+									<img
+										src={item.src}
+										alt=""
+										loading="lazy"
+										decoding="async"
+									/>
+								</button>
+							{/each}
+						</div>
+					</div>
+				{/if}
 
 				{#if formError}
 					<p class="composer-error" role="alert">{formError}</p>
 				{/if}
 
 				<footer class="composer-foot">
-					<button type="button" class="composer-cancel" onclick={closeComposer}>
-						{i18n(I18nKey.commentInfoCancel)}
+					<button
+						type="button"
+						class="composer-emoji-toggle"
+						class:is-active={emojiOpen}
+						aria-label={i18n(I18nKey.commentChatEmoji)}
+						title={i18n(I18nKey.commentChatEmoji)}
+						aria-expanded={emojiOpen}
+						onclick={() => (emojiOpen = !emojiOpen)}
+					>
+						<svg viewBox="0 0 24 24" aria-hidden="true">
+							<circle
+								cx="12"
+								cy="12"
+								r="9"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.6"
+							/>
+							<path
+								d="M8.5 14.5a4.2 4.2 0 0 0 7 0"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.6"
+								stroke-linecap="round"
+							/>
+							<circle cx="9.2" cy="9.6" r="1.1" fill="currentColor" />
+							<circle cx="14.8" cy="9.6" r="1.1" fill="currentColor" />
+						</svg>
 					</button>
-					<button type="submit" class="composer-send" disabled={submitting}>
-						{i18n(I18nKey.commentChatSend)}
-					</button>
+
+					<div class="composer-actions">
+						<button type="button" class="composer-cancel" onclick={closeComposer}>
+							{i18n(I18nKey.commentInfoCancel)}
+						</button>
+						<button type="submit" class="composer-send" disabled={submitting}>
+							{i18n(I18nKey.commentChatSend)}
+						</button>
+					</div>
 				</footer>
 			</form>
 		</div>
@@ -691,7 +998,7 @@
 	}
 
 	.composer-field input,
-	.composer-field textarea {
+	.composer-field .composer-input {
 		width: 100%;
 		padding: 0.5rem 0.65rem;
 		border: 1px solid var(--line-color);
@@ -705,13 +1012,43 @@
 	}
 
 	.composer-field input:focus,
-	.composer-field textarea:focus {
+	.composer-field .composer-input:focus {
 		border-color: var(--primary);
 	}
 
-	.composer-field textarea {
-		resize: vertical;
-		min-height: 6rem;
+	/* 正文编辑器：多行、自己滚，空的时候显示占位文字 */
+	.composer-input {
+		min-height: 6.5rem;
+		max-height: 12rem;
+		overflow-y: auto;
+		white-space: pre-wrap;
+		word-break: break-word;
+		cursor: text;
+		scrollbar-width: none;
+	}
+
+	.composer-input::-webkit-scrollbar {
+		display: none;
+	}
+
+	.composer-input:empty::before {
+		content: attr(data-placeholder);
+		color: var(--content-meta);
+		opacity: 0.7;
+		pointer-events: none;
+	}
+
+	/* 表情图是脚本创建后插进来的节点，没有作用域类，只能用 :global。
+	   尺寸统一吃 commentEmojiConfig.size（24px），和评论区那张一样大。
+	   display 必须显式写：Tailwind Preflight 把 img 设成了 block，
+	   不覆盖的话每张图会独占一行（竖着排下去） */
+	.composer-input :global(.composer-input__emoji) {
+		display: inline-block;
+		width: var(--composer-emoji-size, 24px);
+		height: var(--composer-emoji-size, 24px);
+		margin: 0 0.06rem;
+		object-fit: contain;
+		vertical-align: -0.28em;
 	}
 
 	.composer-error {
@@ -721,8 +1058,104 @@
 
 	.composer-foot {
 		display: flex;
-		justify-content: flex-end;
+		align-items: center;
+		justify-content: space-between;
 		gap: 0.5rem;
+	}
+
+	.composer-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.composer-emoji-toggle {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		color: var(--content-meta);
+		transition:
+			background-color 0.15s ease-out,
+			color 0.15s ease-out;
+	}
+
+	.composer-emoji-toggle:hover,
+	.composer-emoji-toggle.is-active {
+		background: var(--btn-regular-bg);
+		color: var(--primary);
+	}
+
+	.composer-emoji-toggle svg {
+		width: 1.15rem;
+		height: 1.15rem;
+	}
+
+	/* 表情面板：和评论区同一个数据源、同样的 8 列网格，
+	   但类名自成一套（.composer-emoji-*），不吃 comment.css 里挂在 .tg-chat 上的规则 */
+	.composer-emoji {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0.45rem;
+		border: 1px solid var(--line-color);
+		border-radius: 0.5rem;
+		background: color-mix(in srgb, var(--card-bg) 92%, var(--btn-regular-bg));
+	}
+
+	.composer-emoji-tabs {
+		display: flex;
+		gap: 0.3rem;
+		overflow-x: auto;
+		scrollbar-width: none;
+	}
+
+	.composer-emoji-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.composer-emoji-tab {
+		flex: none;
+		padding: 0.15rem 0.55rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		color: var(--content-meta);
+	}
+
+	.composer-emoji-tab.is-active {
+		background: color-mix(in srgb, var(--primary) 14%, transparent);
+		color: var(--primary);
+	}
+
+	.composer-emoji-grid {
+		display: grid;
+		grid-template-columns: repeat(8, 1fr);
+		gap: 0.15rem;
+		max-height: 8.5rem;
+		overflow-y: auto;
+		scrollbar-width: none;
+	}
+
+	.composer-emoji-grid::-webkit-scrollbar {
+		display: none;
+	}
+
+	.composer-emoji-item {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 1;
+		border-radius: 0.3rem;
+		transition: background-color 0.12s ease-out;
+	}
+
+	.composer-emoji-item:hover {
+		background: var(--btn-regular-bg);
+	}
+
+	.composer-emoji-item img {
+		width: 1.55rem;
+		height: 1.55rem;
+		object-fit: contain;
 	}
 
 	.composer-cancel,

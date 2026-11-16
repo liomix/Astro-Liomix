@@ -274,4 +274,17 @@ export function initCommentInfo(chat: HTMLElement): void {
 	// 初始状态：存过身份就用存的，没存过就把站点默认值摆在顶栏上、输入栏锁住
 	const stored = getCommentUser();
 	applyIdentity(stored ?? defaults, Boolean(stored));
+
+	/**
+	 * 身份在别处被改了（另一个标签页、或者主页面的留言墙）。
+	 *
+	 * 那条路径写的是 localStorage，只会在写入的文档里派发事件；这边靠
+	 * comment-user.ts 的 storage 监听把它转成同一条 commentUserChange 事件。
+	 * 顶栏在这里跟着换，气泡左右由 Comment 自己的监听负责重排。
+	 */
+	window.addEventListener("commentUserChange", (event) => {
+		const detail = (event as CustomEvent<CommentUser | null>).detail;
+		if (!detail) return;
+		applyIdentity(detail, true);
+	});
 }
