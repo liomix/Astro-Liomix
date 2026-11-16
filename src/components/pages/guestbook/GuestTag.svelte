@@ -97,7 +97,7 @@
 				title={i18n(I18nKey.dynamicLike)}
 				disabled={!likeEnabled}
 			>
-				<dynamic-lottie-icon data-animation="like-heart"></dynamic-lottie-icon>
+				<dynamic-lottie-icon data-animation="like"></dynamic-lottie-icon>
 				<span class="atom-action__count" data-like-count>
 					{formatCompactNumber(note.likes)}
 				</span>
@@ -114,7 +114,7 @@
 					if (commentButton) onReply?.(note, commentButton);
 				}}
 			>
-				<dynamic-lottie-icon data-animation="comment-chats"></dynamic-lottie-icon>
+				<dynamic-lottie-icon data-animation="comment"></dynamic-lottie-icon>
 				<span class="atom-action__count" data-comment-count>
 					{formatCompactNumber(note.replies)}
 				</span>

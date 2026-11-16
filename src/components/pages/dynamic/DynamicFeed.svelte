@@ -551,13 +551,13 @@ onMount(() => {
 	</div>
 {:else if entries.length === 0}
 	<div class="page-empty card-base">
-		<empty-lottie class="page-empty__art" data-animation="utyan_empty"
+		<empty-lottie class="page-empty__art" data-animation="empty"
 		></empty-lottie>
 		<p>{emptyText}</p>
 	</div>
 {:else if filtered.length === 0}
 	<div class="page-no-results card-base">
-		<empty-lottie class="page-empty__art" data-animation="utyan_empty"
+		<empty-lottie class="page-empty__art" data-animation="empty"
 		></empty-lottie>
 		<p>{noResultsText}</p>
 	</div>

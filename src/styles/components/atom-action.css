@@ -52,11 +52,11 @@
 /* 图标尺寸写在按钮这边（而不是组件里的内联 style），这样文章页要放大时
    改一个修饰类就够，不用在模板里写第二份数值。
    爱心素材只占画布 24%（zoom 3.2 后约 0.77em），所以它的 font-size 天然要比气泡大一号 */
-.atom-action dynamic-lottie-icon[data-animation="like-heart"] {
+.atom-action dynamic-lottie-icon[data-animation="like"] {
 	font-size: 1.45rem;
 }
 
-.atom-action dynamic-lottie-icon[data-animation="comment-chats"] {
+.atom-action dynamic-lottie-icon[data-animation="comment"] {
 	font-size: 1.35rem;
 }
 
@@ -70,11 +70,11 @@
 	padding-inline: 0.7rem;
 }
 
-.atom-action--lg dynamic-lottie-icon[data-animation="like-heart"] {
+.atom-action--lg dynamic-lottie-icon[data-animation="like"] {
 	font-size: 1.75rem;
 }
 
-.atom-action--lg dynamic-lottie-icon[data-animation="comment-chats"] {
+.atom-action--lg dynamic-lottie-icon[data-animation="comment"] {
 	font-size: 1.4rem;
 }
 

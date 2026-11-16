@@ -6,7 +6,7 @@
  *   pnpm avatar:convert <输入文件> [选项]
  *
  * 常用选项：
- *   --out <路径>       输出文件，默认 src/assets/images/avatar-motion.mp4
+ *   --out <路径>       输出文件，默认 src/assets/images/avatar/avatar-motion.mp4
  *   --size <像素>      输出边长，默认 256（96~112px 头像的 2x 屏够用）
  *   --fps <帧率>       默认 12，动图头像不需要高帧率；mp4 建议 15，循环最顺
  *   --quality <0-100>  画质，默认 62（webp 为编码质量；mp4 会换算成 CRF，数值越高画质越好）
@@ -23,7 +23,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
-const DEFAULT_OUT = "src/assets/images/avatar-motion.mp4";
+const DEFAULT_OUT = "src/assets/images/avatar/avatar-motion.mp4";
 
 function parseArgs(argv) {
 	const args = { input: "", out: "", size: 256, fps: 12, quality: 62, start: 0, duration: null, format: "mp4", square: "center" };

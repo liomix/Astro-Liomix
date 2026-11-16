@@ -36,21 +36,21 @@ dynamic-lottie-icon svg {
    未点赞时和评论气泡保持同一套配色：浅色压成深灰，暗色反白，
    所以用 brightness(0) 压黑后暗色再 invert(1)，而不是 grayscale —— 素材是红心，
    grayscale 出来是浅灰，和气泡的深灰对不上 */
-dynamic-lottie-icon[data-animation="like-heart"] {
+dynamic-lottie-icon[data-animation="like"] {
 	--lottie-zoom: 3.2;
 	filter: brightness(0);
 	opacity: 0.55;
 }
 
-:root.dark dynamic-lottie-icon[data-animation="like-heart"] {
+:root.dark dynamic-lottie-icon[data-animation="like"] {
 	filter: brightness(0) invert(1);
 	opacity: 0.8;
 }
 
 /* 已点赞：放回素材本身的彩色（红心）。暗色规则多了 :root.dark 一级，
    这里必须同样带上，否则会被上面那条压住 */
-.is-active dynamic-lottie-icon[data-animation="like-heart"],
-:root.dark .is-active dynamic-lottie-icon[data-animation="like-heart"] {
+.is-active dynamic-lottie-icon[data-animation="like"],
+:root.dark .is-active dynamic-lottie-icon[data-animation="like"] {
 	filter: none;
 	opacity: 1;
 }
@@ -69,11 +69,11 @@ dynamic-lottie-icon[data-animation="like-heart"] {
  * fill="rgb(255,255,255)" 这个 presentation attribute，它会赢过从 <g> 继承下来的值，
  * 而 presentation attribute 的优先级又低于任何 CSS 规则 —— 所以普通声明就能覆盖；
  * 这里仍加 !important，是防以后 lottie 改成写内联 style（内联只有 !important 能压）。 */
-dynamic-lottie-icon[data-animation="comment-chats"] svg {
+dynamic-lottie-icon[data-animation="comment"] svg {
 	fill: currentColor !important;
 }
 
-dynamic-lottie-icon[data-animation="comment-chats"] svg
+dynamic-lottie-icon[data-animation="comment"] svg
 	:where(path, circle, ellipse, rect, polygon, polyline) {
 	fill: currentColor !important;
 	transition: fill 0.18s ease;

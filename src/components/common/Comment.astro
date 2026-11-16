@@ -103,7 +103,7 @@ const initial = initialOf(name);
 const avatarPaint = avatarGradientOf(contact || name);
 
 /**
- * 站长的气泡用博客头像，并在头像下面垫一层光环头饰。
+ * 站长的气泡用博客头像，并在头像下面垫一层头饰（avatar-pendant.png，224×224）。
  *
  * 「下面」是字面意思：头饰先渲染、头像盖在上面，所以只露出头顶那圈光环和翅膀，
  * 脸不会被糊住。两张图都走 ?url 直出原始文件，不经过图片优化。
@@ -111,7 +111,9 @@ const avatarPaint = avatarGradientOf(contact || name);
 const ownerAvatarUrl = resolveRawAvatarUrl(
 	profileConfig.avatarPoster || profileConfig.avatar || "",
 );
-const ownerHaloUrl = resolveRawAvatarUrl("assets/images/owner-halo.png");
+const ownerHaloUrl = resolveRawAvatarUrl(
+	"assets/images/avatar/avatar-pendant.png",
+);
 
 /**
  * 站长的头像支持动图/视频：视频走 <video>（静音、循环、自动播放、playsinline，

@@ -174,7 +174,7 @@ const handleInput = () => {
             <div class="card-base p-10 rounded-(--radius-large)">
                 <empty-lottie
                     class="search-empty__art"
-                    data-animation="utyan_empty"></empty-lottie>
+                    data-animation="empty"></empty-lottie>
                 <div class="text-center text-50">
                     {i18n(I18nKey.searchNoResults)}
                 </div>

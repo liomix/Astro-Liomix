@@ -339,7 +339,7 @@ function visibleImages(entry: DynamicEntry) {
 						aria-label={likeLabel}
 						title={likeLabel}
 					>
-						<dynamic-lottie-icon data-animation="like-heart" style="font-size:1.35rem"></dynamic-lottie-icon>
+						<dynamic-lottie-icon data-animation="like" style="font-size:1.35rem"></dynamic-lottie-icon>
 						<span class="pop-action-count" data-like-count>0</span>
 					</button>
 					<a
@@ -350,7 +350,7 @@ function visibleImages(entry: DynamicEntry) {
 						onclick={closeModal}
 					>
 						<dynamic-lottie-icon
-							data-animation="comment-chats"
+							data-animation="comment"
 							style="font-size:1.25rem"></dynamic-lottie-icon>
 						<span class="pop-action-count" data-dynamic-comment-count
 							>{formatCompactNumber(

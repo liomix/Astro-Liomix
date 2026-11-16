@@ -12,11 +12,11 @@ export const profileConfig: ProfileConfig = {
 	// - 动图：gif / apng / 动态 webp、avif（自动识别，跳过优化直出原图保留动画）
 	// - 视频：mp4 / webm / mov / m4v（自动识别，渲染为静音循环播放）
 	// 视频或大体积动图建议先转码压缩：
-	//   pnpm avatar:convert <视频> --out src/assets/images/avatar-motion.mp4 --size 256 --fps 15 --format mp4
-	avatar: "assets/images/avatar-motion.mp4",
+	//   pnpm avatar:convert <视频> --out src/assets/images/avatar/avatar-motion.mp4 --size 256 --fps 15 --format mp4
+	avatar: "assets/images/avatar/avatar-motion.mp4",
 	// 视频头像封面（首帧）：首帧渲染与 OG 图使用，静态头像时忽略
-	avatarPoster: "assets/images/avatar-motion-poster.webp",
-	// 静态头像备选：assets/images/avatar.avif
+	avatarPoster: "assets/images/avatar/avatar-motion-poster.webp",
+	// 静态头像备选：assets/images/avatar/avatar.avif
 
 	// 头像形状：rect 圆角矩形（主题默认样式，铺满卡片宽度），circle 正圆（居中显示）
 	avatarShape: "circle",

@@ -1,7 +1,7 @@
 /**
  * 空状态插画：自定义元素 <empty-lottie>
  * ---------------------------------------------------------------------------
- * 全站所有「这里本来该有东西，但现在没有」的位置共用一个素材：`utyan_empty.json`
+ * 全站所有「这里本来该有东西，但现在没有」的位置共用一个素材：`empty.json`
  * （src/assets/lottie 下，跟着 JS 一起打包，不进 public 的运行时目录）。
  *
  * 为什么是自定义元素而不是组件脚本：
@@ -111,7 +111,7 @@ function defineElement(): void {
 			if (this.initializing) return;
 			this.initializing = true;
 
-			const name = this.dataset.animation || "utyan_empty";
+			const name = this.dataset.animation || "empty";
 			const data$ = loadAnimationData(name);
 			if (!data$ || !this.isConnected) {
 				this.initializing = false;
@@ -180,7 +180,7 @@ export function registerEmptyLottie(): void {
  * 给「没有模板可写」的地方（评论区的消息区是脚本拼的 DOM）现造一个实例。
  * 调用方负责 registerEmptyLottie()。
  */
-export function createEmptyLottie(animation = "utyan_empty"): HTMLElement {
+export function createEmptyLottie(animation = "empty"): HTMLElement {
 	const element = document.createElement("empty-lottie");
 	element.dataset.animation = animation;
 	return element;

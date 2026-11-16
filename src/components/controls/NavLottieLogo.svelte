@@ -1,6 +1,6 @@
 <script lang="ts">
 /**
- * 导航栏站点图标：一枚「破壳」Lottie 动画（src/assets/lottie/ya_newborn.json）。
+ * 导航栏站点图标：一枚「破壳」Lottie 动画（src/assets/lottie/logo.json）。
  * 进页面播一次，定格在孵出的小鸡上；鼠标移进品牌区（图标或标题）再重播一次。
  * 素材 512×512、3 秒，由 siteConfig.navbar.logo 的 lottie 类型指定名字。
  */
@@ -11,7 +11,7 @@ interface Props {
 	name?: string;
 }
 
-let { name = "ya_newborn" }: Props = $props();
+let { name = "logo" }: Props = $props();
 
 /** 素材按名字动态加载：导航栏每个页面都要用，做成独立 chunk 由客户端按需取 */
 const animations = import.meta.glob<unknown>("../../assets/lottie/*.json", {

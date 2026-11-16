@@ -587,7 +587,7 @@
 		</div>
 	{:else if notes.length === 0}
 		<div class="wall-state">
-			<empty-lottie data-animation="utyan_empty"></empty-lottie>
+			<empty-lottie data-animation="empty"></empty-lottie>
 			<p>{i18n(I18nKey.guestbookEmpty)}</p>
 			{#if apiEnabled}
 				<button type="button" class="wall-retry" onclick={openComposer}>

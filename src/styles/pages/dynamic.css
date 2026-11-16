@@ -500,7 +500,7 @@ dynamic-feed {
 	font-size: 2.5rem;
 }
 
-/* 空态插画：全站共用 utyan_empty，尺寸跟着卡片宽度走。
+/* 空态插画：全站共用 empty，尺寸跟着卡片宽度走。
    整块空态（没有动态）用大一点，筛选无结果用小一点 */
 .page-empty__art {
 	display: block;

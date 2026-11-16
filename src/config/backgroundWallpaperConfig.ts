@@ -16,22 +16,22 @@ export const backgroundWallpaperConfig: BackgroundWallpaperConfig = {
 	 * 且宽度上限若停在 1920，2 倍屏就只能放大显示。现在最大一档直接给到原图 3240。
 	 *
 	 * 路径支持三种写法：
-	 *   1. src 目录（不以 "/" 开头，走 Astro 图片优化，推荐）："assets/images/DesktopWallpaper/website-bg-1.png"
+	 *   1. src 目录（不以 "/" 开头，走 Astro 图片优化，推荐）："assets/images/websitewallpaper/website-bg-1.png"
 	 *   2. public 目录（以 "/" 开头，原样输出不优化）："/assets/images/banner.avif"
 	 *   3. 远程 URL（不优化，体积要小）："https://t.alcy.cc/pc"
 	 *
 	 * 单张直接用字符串；多张写成数组，每次刷新随机取一张：
 	 * desktop: [
-	 *   "assets/images/DesktopWallpaper/website-bg-1.png",
-	 *   "assets/images/DesktopWallpaper/website-bg-2.png",
+	 *   "assets/images/websitewallpaper/website-bg-1.png",
+	 *   "assets/images/websitewallpaper/website-bg-2.png",
 	 * ],
 	 */
 	src: {
 		// 桌面背景图片（3240×1821 原图，多张时改成数组，每次刷新随机一张）
-		desktop: "assets/images/DesktopWallpaper/website-bg-1.png",
+		desktop: "assets/images/websitewallpaper/website-bg-1.png",
 		// 移动背景图片：暂时共用桌面这张（竖屏下 object-cover 裁成中间一竖条）。
-		// 以后有了竖图：放进 src/assets/images/MobileWallpaper/，把这行指过去即可。
-		mobile: "assets/images/DesktopWallpaper/website-bg-1.png",
+		// 以后有了竖图：放进 src/assets/images/mobilewallpaper/，把这行指过去即可。
+		mobile: "assets/images/websitewallpaper/website-bg-1.png",
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下

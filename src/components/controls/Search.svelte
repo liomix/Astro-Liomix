@@ -290,7 +290,7 @@ $: if (initialized && keyword !== undefined) {
 			<div class="search-hint search-hint--empty">
 				<empty-lottie
 					class="search-empty__art"
-					data-animation="utyan_empty"></empty-lottie>
+					data-animation="empty"></empty-lottie>
 				<span>{i18n(I18nKey.searchNoResults)}</span>
 			</div>
 		{/if}

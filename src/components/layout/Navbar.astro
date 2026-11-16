@@ -166,7 +166,7 @@ const logoVariants = await Promise.all(
                 aria-label={navbarTitle}
             >
                 {logoConfig?.type === "lottie" ? (
-                    <NavLottieLogo client:load name={logoConfig.value || "ya_newborn"} />
+                    <NavLottieLogo client:load name={logoConfig.value || "logo"} />
                 ) : logoConfig?.type === "icon" ? (
                     <Icon name={logoConfig.value || "material-symbols:home-pin-outline"} class="navbar-logo text-[1.8rem]" />
                 ) : logoIsImage && logoVariants.length > 0 ? (

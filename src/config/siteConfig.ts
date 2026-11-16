@@ -104,13 +104,13 @@ export const siteConfig: SiteConfig = {
 		// 2. 本地图片（public目录，不优化）: { type: "image", value: "/assets/images/logo.webp", alt: "Logo" }
 		// 3. 本地图片（src目录，自动优化但会增加构建时间）: { type: "image", value: "assets/images/logo.webp", alt: "Logo" }
 		// 4. 网络图片: { type: "url", value: "https://example.com/logo.png", alt: "Logo" }
-		// 5. Lottie 动画: { type: "lottie", value: "ya_newborn" } —— value 是 src/assets/lottie 下的文件名（不含 .json）
+		// 5. Lottie 动画: { type: "lottie", value: "logo" } —— value 是 src/assets/lottie 下的文件名（不含 .json）
 		// image 和 url 类型可额外设置 valueDark，用于暗色模式下显示另一张图片，不设置则亮暗色共用 value
 		// 例如: { type: "image", value: "assets/images/logo.png", valueDark: "assets/images/logo-dark.png", alt: "Logo" }
 		// 使用 Astro 图标库时不需要设置 valueDark，图标会自动跟随主题亮暗色切换
 		logo: {
 			type: "lottie",
-			value: "ya_newborn",
+			value: "logo",
 			alt: "🍀",
 		},
 		// 导航栏标题
