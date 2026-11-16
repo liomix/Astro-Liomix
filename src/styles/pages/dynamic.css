@@ -605,6 +605,7 @@ dynamic-feed {
 
 .page-empty p {
 	margin: 0;
+	text-align: center;
 }
 
 .page-no-results {
@@ -623,6 +624,11 @@ dynamic-feed {
 
 .page-no-results svg {
 	font-size: 2rem;
+}
+
+.page-no-results p {
+	margin: 0;
+	text-align: center;
 }
 
 .page-no-results p {

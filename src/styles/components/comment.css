@@ -407,7 +407,10 @@ html[data-embedded] .tg-head-close {
 .tg-state[data-tg-state="empty"] {
 	flex-direction: column;
 	align-items: center;
+	/* 插画和文案都居中：横轴靠 align-items，文字靠 text-align，别只居中一个 */
+	justify-content: center;
 	gap: 0.35rem;
+	text-align: center;
 }
 
 .tg-state[data-tg-state="empty"] empty-lottie {

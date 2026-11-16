@@ -2,8 +2,10 @@
 /**
  * 访客欢迎信息
  * 展示：来自 X 的访客，{问候语}，现在是 HH:MM，距站长约 N 公里，IP：x.x.x.x
- * 数据来自客户端请求（ipwho.is 优先，ipapi.is 兜底），无需服务端
+ * 定位走自己的后端（GET /api/v1/location/me，高德 IP 定位 + 数字签名），
+ * Key 与私钥都在服务端环境变量里；失败时整卡隐藏
  */
+import { locationApiConfig } from "@/config/locationApiConfig";
 import { siteConfig } from "@/config/siteConfig";
 import { welcomeConfig } from "@/config/welcomeConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -12,6 +14,9 @@ import { url } from "@/utils/url-utils";
 
 const { enable, siteLocation, showIp, showDistance, cacheHours } =
 	welcomeConfig;
+
+// 定位走自建后端；模板里的 siteLocation 仍作为「服务端没给距离时」的兜底坐标
+const locationApi = locationApiConfig;
 
 const lang = siteConfig.lang || "zh_CN";
 const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
@@ -39,6 +44,9 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
 				data-lng={String(siteLocation.longitude)}
 				data-show-ip={showIp ? "1" : "0"}
 				data-show-distance={showDistance ? "1" : "0"}
+				data-api-enable={locationApi.enable ? "1" : "0"}
+				data-api-base={locationApi.apiBaseUrl}
+				data-api-timeout={String(locationApi.requestTimeoutMs)}
 				data-cache-hours={String(cacheHours)}
 				data-lang={lang}
 			/>
@@ -106,6 +114,14 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
 </style>
 
 <script>
+  // 中文欢迎语的「本地梗」数据（src/data/welcome-cn.json）。下面那段是 is:inline
+  // 脚本，不能 import，所以在模块脚本里挂一次全局；JSON 跟着组件一起打包。
+  import welcomeCn from "@/data/welcome-cn.json";
+
+  (window as unknown as { __welcomeCn?: unknown }).__welcomeCn = welcomeCn;
+  // 内联脚本可能已经先跑起来了，用事件告诉它数据到了
+  window.dispatchEvent(new Event("welcome-cn-ready"));
+
   interface WelcomeAnim {
     destroy(): void;
     totalFrames: number;
@@ -187,14 +203,6 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
 <script is:inline>
   (function () {
     const CACHE_KEY = "firefly-welcome-geo";
-    const LANG_MAP = {
-      zh_CN: "zh-CN",
-      zh_TW: "zh-TW",
-      en: "en",
-      ja: "ja",
-      ko: "ko",
-      ru: "ru",
-    };
     // 这些城市本身带「市」的概念，不再追加
     const CITY_SUFFIX_EXCLUDE = [
       "香港",
@@ -231,39 +239,34 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
       }
     }
 
-    async function fetchGeo(lang) {
-      const gl = LANG_MAP[lang] || "en";
+    /**
+     * 问自己的后端（高德 IP 定位，Key 与签名私钥都在服务端）。
+     * 后端没配 AMAP_KEY 时这条路由不存在：失败是常态，返回 null 让整卡隐藏。
+     */
+    async function fetchGeo(root) {
+      if (root.dataset.apiEnable !== "1") return null;
+      const base = (root.dataset.apiBase || "").replace(/\/+$/, "");
+      if (!base) return null;
+
       try {
-        const res = await fetch("https://ipwho.is/?lang=" + encodeURIComponent(gl));
+        const res = await fetch(base + "/api/v1/location/me", {
+          signal: AbortSignal.timeout(Number(root.dataset.apiTimeout) || 8000),
+        });
+        if (!res.ok) return null;
         const data = await res.json();
-        if (data && data.success !== false && data.ip) {
-          return {
-            ip: data.ip,
-            region: data.region,
-            city: data.city,
-            lat: data.latitude,
-            lon: data.longitude,
-          };
-        }
+        // known=false 是「后端也不知道你在哪」，不是故障：返回 null，卡片隐藏
+        if (!data || !data.known) return null;
+        return {
+          ip: data.ip || "",
+          region: data.province || "",
+          city: data.city || "",
+          lat: data.latitude,
+          lon: data.longitude,
+          distanceKm: data.distanceKm,
+        };
       } catch {
-        /* 换下一个数据源 */
+        return null;
       }
-      try {
-        const res = await fetch("https://api.ipapi.is/");
-        const data = await res.json();
-        if (data && data.ip) {
-          return {
-            ip: data.ip,
-            region: data.region,
-            city: data.city,
-            lat: data.lat,
-            lon: data.lon,
-          };
-        }
-      } catch {
-        /* 全部失败则由调用方兜底 */
-      }
-      return null;
     }
 
     function formatLocation(geo, lang) {
@@ -299,9 +302,34 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
       return root.dataset.greetingEvening;
     }
 
+    /**
+     * 取这个城市的『本地梗』。
+     *
+     * 数据在 src/data/welcome-cn.json，由模块脚本挂到 window 上 —— 但模块脚本是
+     * defer 的，可能比这段内联脚本晚执行，所以这里等一下事件（最多 1.5 秒，
+     * 拿不到就退回普通模板，绝不因为一段欢迎语卡住页面）。
+     */
+    async function loadCnData() {
+      if (window.__welcomeCn) return window.__welcomeCn;
+      return await new Promise(function (resolve) {
+        const done = function () { resolve(window.__welcomeCn || null); };
+        window.addEventListener("welcome-cn-ready", done, { once: true });
+        window.setTimeout(done, 1500);
+      });
+    }
+
+    // 高德有时只给『恩施土家族苗族自治州』这种全名，先精确匹配，再去掉『市』试一次
+    function pickCityEntry(data, city) {
+      const name = (city || "").trim();
+      if (!data || !data.cities || !name) return null;
+      if (data.cities[name]) return data.cities[name];
+      const stripped = name.replace(/市$/, "");
+      return data.cities[stripped] || null;
+    }
+
     // 按模板拼接节点，占位符用主题色强调，其余保持普通文本
     function buildFragment(template, values) {
-      const token = /\{(location|greeting|time|distance|ip)\}/g;
+      const token = /\{(location|greeting|time|distance|ip|intro|outro)\}/g;
       const fragment = document.createDocumentFragment();
       let last = 0;
       let match = token.exec(template);
@@ -373,9 +401,11 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
       const first = roots[0];
       const cacheHours = Number(first.dataset.cacheHours) || 12;
 
+      const cnData = await loadCnData();
+
       let geo = window.__welcomeGeo || readCache(cacheHours);
       if (!geo) {
-        geo = await fetchGeo(first.dataset.lang);
+        geo = await fetchGeo(first);
         if (!geo) {
           hideCards();
           return;
@@ -406,8 +436,16 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
           Number.isFinite(geoLon) &&
           Number.isFinite(lat) &&
           Number.isFinite(lng);
-        const distance =
-          showDistance && hasGeoPoint ? Math.round(distanceKm(lat, lng, geoLat, geoLon)) : null;
+        // 服务端给的距离优先：它和缓存都在服务端一侧，也和后端配置的站长坐标一致；
+        // 没给（例如海外地址拿不到矩形）再退回本地计算
+        const serverDistance = Number(geo.distanceKm);
+        const distance = !showDistance
+          ? null
+          : Number.isFinite(serverDistance)
+            ? Math.round(serverDistance)
+            : hasGeoPoint
+              ? Math.round(distanceKm(lat, lng, geoLat, geoLon))
+              : null;
 
         const withDistance = distance !== null;
         let template = withDistance ? root.dataset.template : root.dataset.templateNoDistance;
@@ -418,6 +456,16 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
           distance: withDistance ? distance : null,
           ip: root.dataset.showIp === "1" && geo.ip ? geo.ip : null,
         };
+
+        // 有本地梗就用它整段替换：模板、开场梗、收尾话都来自 welcome-cn.json
+        const cn = cnData;
+        const entry = pickCityEntry(cn, geo.city);
+        if (entry) {
+          template = withDistance ? cn.template : cn.templateNoDistance;
+          const fallback = cn.fallback || {};
+          values.intro = entry.intro || fallback.intro || "";
+          values.outro = entry.outro || fallback.outro || "";
+        }
 
         if (!values.ip) template = stripIpClause(template);
 

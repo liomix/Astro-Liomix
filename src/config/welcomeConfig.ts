@@ -4,11 +4,13 @@ export const welcomeConfig: WelcomeConfig = {
 	// 是否在公告卡片中显示访客欢迎信息
 	enable: true,
 
-	// 站长所在位置（默认广州），用于计算「你目前距站长约 xx 公里」
+	// 站长所在位置，用于计算「你目前距站长约 xx 公里」。
+	// 用真实位置而不是市中心：距离是拿它当终点算的，差几十公里会让站长自己
+	// 在家里也显示成「距站长约 60 公里」。后端 SITE_LOCATION_LAT/LNG 要保持一致。
 	siteLocation: {
-		label: "广州市",
-		latitude: 23.1291,
-		longitude: 113.2644,
+		label: "桂林市",
+		latitude: 25.465705,
+		longitude: 110.390477,
 	},
 
 	// 是否显示访客 IP（默认不显示）

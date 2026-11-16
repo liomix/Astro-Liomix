@@ -58,8 +58,12 @@ const {
 	.empty-state {
 		display: flex;
 		flex-direction: column;
+		/* 横竖都居中，并且自己占满容器宽度：哪怕被塞进 grid/flex 的某个格子里，
+		   插画和文字也不会贴着左边 */
 		align-items: center;
 		justify-content: center;
+		width: 100%;
+		margin-inline: auto;
 		gap: 0.5rem;
 		padding: 2rem 0;
 		text-align: center;
@@ -71,6 +75,11 @@ const {
 		width: var(--empty-size, 128px);
 		height: var(--empty-size, 128px);
 		flex: none;
+	}
+
+	.empty-state__title,
+	.empty-state__desc {
+		width: 100%;
 	}
 
 	.empty-state__title {

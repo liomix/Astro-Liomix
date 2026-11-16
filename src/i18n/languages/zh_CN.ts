@@ -608,7 +608,7 @@ export const zh_CN: Translation = {
 	// 访客欢迎语（Welcome 组件）
 	[Key.welcomeTitle]: "欢迎信息",
 	[Key.welcomeTemplate]:
-		"来自 {location} 的访客，{greeting}，现在是 {time}，你目前距站长约 {distance} 公里，IP 地址：{ip}",
+		"来自 {location} 的访客，{greeting}，现在是 {time}，你目前距站长约 {distance} km，IP 地址：{ip}",
 	[Key.welcomeTemplateNoDistance]:
 		"来自 {location} 的访客，{greeting}，现在是 {time}，IP 地址：{ip}",
 	[Key.welcomeGreetingLateNight]: "夜深了",
