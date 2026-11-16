@@ -11,7 +11,7 @@ import SidebarTOC from "@/components/widget/SidebarTOC.astro";
 import SiteInfo from "@/components/widget/SiteInfo.astro";
 import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
-import { sidebarLayoutConfig } from "@/config";
+import { navPurityConfig, sidebarLayoutConfig } from "@/config";
 import type {
 	MobileBottomComponentConfig,
 	WidgetComponentConfig,
@@ -137,6 +137,15 @@ const getComponentProps = (
 		if (!isPostPage) {
 			baseProps.class = `${baseProps.class} hidden`;
 		}
+	}
+
+	// 导航页纯净模式：只留 keepWidgets 里的卡片（默认个人资料），其余打标记由
+	// CSS 隐藏。这里不改渲染结构 —— 卡片只是不显示，侧栏列宽照旧占着位置
+	if (
+		navPurityConfig.enable &&
+		!navPurityConfig.keepWidgets.includes(config.type)
+	) {
+		baseProps.class = `${baseProps.class} nav-purity-hide`;
 	}
 
 	// 特殊处理 SidebarTOC 组件

@@ -2,6 +2,7 @@
  * 主网格列布局与侧边栏可见性 / 吸顶间距管理（从 Layout.astro 迁出）。
  */
 
+import { isNavPurityPage } from "@/utils/nav-purity-utils";
 import {
 	computeGridColumns,
 	gridColumnVarsToStyle,
@@ -69,6 +70,32 @@ export function updateMainGridCols(): void {
 	lastAppliedGeometry = serialized;
 	for (const [key, value] of Object.entries(vars)) {
 		varHost.style.setProperty(key, value);
+	}
+}
+
+/**
+ * 导航页纯净模式的显隐开关。
+ *
+ * 初值由 SSR 写在 #content-panel-inner 上；这里按当前路径重算一次，供 swup 切页
+ * 后更新。多标签栏与侧栏都在 swup 容器之外，切页不会重建，所以只能改这个状态
+ * 属性、由 CSS 决定谁不显示 —— 卡片是 display:none，列宽一点没动，正文宽度
+ * 因此保持不变（这正是「纯净模式但页面宽度不变」的实现方式）。
+ */
+export function updateNavPurityMode(): void {
+	const mainGrid = document.getElementById("main-grid");
+	const varHost = document.getElementById("content-panel-inner");
+	if (!mainGrid || !varHost) return;
+
+	const enabled = mainGrid.getAttribute("data-nav-purity-enable") === "true";
+	const paths = (mainGrid.getAttribute("data-nav-purity-paths") ?? "")
+		.split(",")
+		.map((path) => path.trim())
+		.filter(Boolean);
+
+	const active = enabled && isNavPurityPage(window.location.pathname, paths);
+	const next = active ? "true" : "false";
+	if (varHost.getAttribute("data-nav-purity") !== next) {
+		varHost.setAttribute("data-nav-purity", next);
 	}
 }
 

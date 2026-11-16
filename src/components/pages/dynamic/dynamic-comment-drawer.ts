@@ -206,6 +206,13 @@ function createDrawer(): HTMLElement {
 	drawer.setAttribute("aria-modal", "false");
 	drawer.setAttribute("aria-hidden", "true");
 	drawer.setAttribute("inert", "");
+	// 内联藏住，直到第一次真正打开（见 openCommentDrawer）。
+	// .comment-drawer 的「移出右边缘 + visibility:hidden」是 dynamic.css 提供的，而
+	// 页面的样式在 dev 下是随模块注入的、生产下也可能是切页时才到的独立 chunk：
+	// 只要这份样式晚到一帧，刚 append 的 aside 就是 body 末尾一块 300×150 的 iframe
+	// 白块 —— 预热本该完全不可见，不能赌样式先到。
+	// 内联样式优先级最高，任何加载顺序都压得住；首次打开时再摘掉，交还给 CSS。
+	drawer.style.display = "none";
 	// 里面只有 iframe：外壳不承担任何内容，装饰与圆角全在 CSS 里
 	drawer.innerHTML = `<div class="comment-drawer-body" data-comment-drawer-body></div>`;
 	// 建出来就把垫底色定好：等用户点开时 iframe 可能还在路上，先别露卡片底色
@@ -256,6 +263,8 @@ export function openCommentDrawer(
 	const label = trigger.getAttribute("aria-label") || "";
 	if (label) drawer.setAttribute("aria-label", label);
 
+	// 摘掉 createDrawer 写的内联 display:none，可见性从此全交给 CSS 的 data-open
+	drawer.style.removeProperty("display");
 	fitGeometry(drawer);
 	const wasOpen = drawer.dataset.open === "true";
 	activeTrigger?.classList.remove("is-active");

@@ -267,3 +267,15 @@
     opacity 0.35s ease-in-out,
     transform 0.35s ease-in-out;
 }
+
+/* 导航页纯净模式（src/config/navPurityConfig.ts 控制范围）---------------------
+   开关是 #content-panel-inner 上的 data-nav-purity：SSR 写初值，swup 切页后由
+   updateNavPurityMode() 按当前路径更新。
+   这里只做 display:none —— 不碰 #main-grid 的列几何，卡片消失后侧栏列照样占着
+   位置，正文宽度保持不变。.nav-purity-hide 由 SideBar.astro 打在「非 keepWidgets」
+   的卡片上（默认除个人资料外全部）。
+   不放进 @layer：要压过 utilities 层里给卡片加的 .hidden / 显示类。 */
+#content-panel-inner[data-nav-purity="true"] #tab-bar-wrapper,
+#content-panel-inner[data-nav-purity="true"] .nav-purity-hide {
+  display: none;
+}

@@ -9,6 +9,7 @@ import {
 } from "@/utils/fullscreen-wallpaper-utils";
 import {
 	updateMainGridCols,
+	updateNavPurityMode,
 	updateSidebarComponentsVisibility,
 } from "@/utils/grid-layout-utils";
 import { scrollFunction } from "@/utils/scroll-utils";
@@ -215,6 +216,8 @@ function registerSwupHooks(): void {
 	window.swup.hooks.on("page:view", () => {
 		// 更新网格列数和侧边栏组件可见性
 		updateMainGridCols();
+		// 纯净模式先定下来：后面重算 sticky 间距会读 offsetHeight
+		updateNavPurityMode();
 		updateSidebarComponentsVisibility();
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4

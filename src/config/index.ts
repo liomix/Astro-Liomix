@@ -58,6 +58,7 @@ export type {
 } from "../types/fontConfig"; // 字体类型定义
 export type { SiteStatsConfig } from "../types/siteStatsConfig"; // 站点访问量统计类型
 export type { CommentApiConfig } from "../types/commentApiConfig"; // 评论接口类型
+export type { NavPurityConfig } from "../types/navPurityConfig"; // 导航页纯净模式类型
 export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
 // 样式配置
@@ -83,6 +84,7 @@ export { licenseConfig } from "./licenseConfig"; // 许可证配置
 export { mermaidConfig } from "./mermaidConfig"; // Mermaid 图表配置
 export { musicPlayerConfig } from "./musicConfig"; // 音乐播放器配置
 export { navBarConfig, navBarSearchConfig } from "./navBarConfig"; // 导航栏配置与搜索配置
+export { navPurityConfig } from "./navPurityConfig"; // 导航页纯净模式（隐藏多标签栏与侧栏卡片）
 export { live2dWidgetConfig, spineModelConfig } from "./pioConfig"; // 看板娘配置
 export { plantumlConfig } from "./plantumlConfig"; // PlantUML 图表配置
 export { profileConfig } from "./profileConfig"; // 用户资料配置
