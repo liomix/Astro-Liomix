@@ -1,0 +1,281 @@
+---
+/**
+ * 留言评论抽屉的内容页（也支持直接访问）。
+ *
+ * 和 `/dynamic/comments/` 是同一个思路：页面自己就是完整一套（壁纸、顶栏、消息区、
+ * 输入栏），父窗口只用 iframe 摆外壳。区别只在顶部多一条「父留言」——
+ * 这里的评论天生是对某张便签的回复，不把被回复的那条摆在上面，读者就不知道
+ * 自己在评论什么。
+ *
+ * 父留言的内容不写进 URL（正文可能上千字），而是由父窗口在 iframe 就绪后
+ * postMessage 过来；直接打开这一页时没有父留言，只显示评论区。
+ */
+import Comment from "@/components/common/Comment.astro";
+import { profileConfig, siteConfig } from "@/config";
+import { commentApiConfig } from "@/config/commentApiConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import CommentLayout from "@/layouts/CommentLayout.astro";
+// 评论页的 html/body 归零样式与动态评论页共用
+import "@/styles/pages/dynamic-comments.css";
+
+if (!siteConfig.pages.guestbook || !commentApiConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const contact = (
+	profileConfig.links.find((link) => link.name.toLowerCase() === "email")?.url ||
+	""
+).replace(/^mailto:/, "");
+---
+
+<CommentLayout title={i18n(I18nKey.guestbookTitle)}>
+	<main class="page-comment-embed page-guest-thread">
+		<section class="guest-thread-parent" data-guest-parent hidden>
+			<div class="guest-thread-parent__head">
+				<span class="guest-thread-parent__author" data-guest-parent-author></span>
+				<time class="guest-thread-parent__date" data-guest-parent-date></time>
+			</div>
+			<p class="guest-thread-parent__body" data-guest-parent-body></p>
+			<button
+				type="button"
+				class="guest-thread-parent__toggle"
+				data-guest-parent-toggle
+				hidden
+			>
+				{i18n(I18nKey.more)}
+			</button>
+		</section>
+
+		<Comment
+			name={profileConfig.name}
+			contact={contact}
+			closeLabel={i18n(I18nKey.tabClose)}
+		/>
+	</main>
+</CommentLayout>
+
+<script>
+	import {
+		applyWallpaperTint,
+		setChatWallpaper,
+	} from "@/components/common/comment/comment-wallpaper";
+	import I18nKey from "@/i18n/i18nKey";
+	import { i18n } from "@/i18n/translation";
+	import { emojiTokensToHtml } from "@/utils/emoji-shortcode";
+
+	interface GuestParent {
+		author?: string;
+		dateLabel?: string;
+		body?: string;
+	}
+
+	const parentRoot = document.querySelector<HTMLElement>("[data-guest-parent]");
+	const authorNode = document.querySelector<HTMLElement>(
+		"[data-guest-parent-author]",
+	);
+	const dateNode = document.querySelector<HTMLElement>("[data-guest-parent-date]");
+	const bodyNode = document.querySelector<HTMLElement>("[data-guest-parent-body]");
+	const toggleNode = document.querySelector<HTMLButtonElement>(
+		"[data-guest-parent-toggle]",
+	);
+
+	/**
+	 * 「展开」按钮只在正文被截断时出现。
+	 *
+	 * 收起态把正文压成一行（line-clamp），此时 scrollHeight 仍是完整内容的高度，
+	 * 和 clientHeight 一比就知道有没有溢出 —— 不用自己算行数。
+	 */
+	function syncToggle(): void {
+		if (!parentRoot || !toggleNode || !bodyNode) return;
+		const expanded = parentRoot.dataset.expanded === "true";
+		if (expanded) {
+			toggleNode.hidden = false;
+			return;
+		}
+		// 容 2px：字体亚像素会把「刚好一行」也算成溢出
+		toggleNode.hidden = bodyNode.scrollHeight - bodyNode.clientHeight <= 2;
+	}
+
+	function renderParent(parent: GuestParent | null): void {
+		if (!parentRoot) return;
+		if (!parent || !parent.body) {
+			parentRoot.hidden = true;
+			return;
+		}
+		parentRoot.hidden = false;
+		parentRoot.dataset.expanded = "false";
+		if (authorNode) authorNode.textContent = parent.author ?? "";
+		if (dateNode) dateNode.textContent = parent.dateLabel ?? "";
+		if (bodyNode) {
+			// emojiTokensToHtml 会把文字部分转义，短码才变成 <img>
+			bodyNode.innerHTML = emojiTokensToHtml(parent.body).replace(
+				/\n/g,
+				"<br />",
+			);
+		}
+		if (toggleNode) toggleNode.textContent = i18n(I18nKey.more);
+		// 内容刚写进 DOM，等一帧再量高度
+		requestAnimationFrame(syncToggle);
+	}
+
+	toggleNode?.addEventListener("click", () => {
+		if (!parentRoot || !toggleNode) return;
+		const expanded = parentRoot.dataset.expanded === "true";
+		parentRoot.dataset.expanded = expanded ? "false" : "true";
+		toggleNode.textContent = expanded
+			? i18n(I18nKey.more)
+			: i18n(I18nKey.collapse);
+		syncToggle();
+	});
+
+	/** 父窗口手里才有这条留言的正文，向它要一次（换线程时会再要一次） */
+	function requestParent(): void {
+		window.parent.postMessage(
+			{ type: "guest-parent-request" },
+			window.location.origin,
+		);
+	}
+
+	window.addEventListener("message", (event) => {
+		if (event.origin !== window.location.origin) return;
+
+		if (event.data?.type === "guest-parent") {
+			renderParent(event.data.parent as GuestParent);
+			return;
+		}
+
+		if (event.data?.type === "dynamic-comment-theme") {
+			document.documentElement.classList.toggle(
+				"dark",
+				Boolean(event.data.dark),
+			);
+			document.documentElement.dataset.theme = event.data.dark
+				? "dark"
+				: "light";
+			if (event.data.hue) {
+				document.documentElement.style.setProperty(
+					"--hue",
+					String(event.data.hue),
+				);
+			}
+			applyWallpaperTint();
+			return;
+		}
+
+		// 换了一张便签看评论：path 已经由聊天组件自己接走，这里只更新父留言
+		if (event.data?.type === "dynamic-comment-path") {
+			requestParent();
+			return;
+		}
+
+		if (event.data?.type === "dynamic-comment-wallpaper" && event.data.id) {
+			setChatWallpaper(String(event.data.id));
+		}
+	});
+
+	requestParent();
+</script>
+
+<style>
+	/* 父留言条 + 下面的评论区，两段纵向排开；父留言限高，评论区吃掉剩余高度 */
+	.page-guest-thread {
+		display: flex;
+		height: 100vh;
+		flex-direction: column;
+		margin: 0;
+		overflow: hidden;
+	}
+
+	/* .tg-chat 原本是 height: 100%，有了父留言条之后改成占满剩余高度 */
+	.page-guest-thread :global(.tg-chat) {
+		flex: 1;
+		height: auto;
+		min-height: 0;
+	}
+
+	/* 父留言只占一条引用条的高度：一行正文 + 头，够说明「在评论什么」。
+	   正文被截断时右下角出现「展开」，展开后最多长到 45vh，再长就在条内滚 */
+	.guest-thread-parent {
+		flex: none;
+		overflow: hidden;
+		padding: 0.85rem 1rem 0.65rem;
+		background: var(--card-bg);
+		border-bottom: 1px solid var(--line-divider);
+		color: var(--deep-text);
+	}
+
+	.guest-thread-parent[hidden] {
+		display: none;
+	}
+
+	.guest-thread-parent[data-expanded="true"] {
+		max-height: 45vh;
+		overflow-y: auto;
+		/* 长文展开后条内滚，滚动条 UI 照样不露 */
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.guest-thread-parent[data-expanded="true"]::-webkit-scrollbar {
+		display: none;
+		width: 0;
+		height: 0;
+	}
+
+	.guest-thread-parent__head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.3rem;
+	}
+
+	.guest-thread-parent__author {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--primary);
+	}
+
+	.guest-thread-parent__date {
+		font-size: 0.72rem;
+		opacity: 0.6;
+	}
+
+	/* 收起态只留一行，末尾省略号；写的是 display:-webkit-box，<br> 换行也算行数 */
+	.guest-thread-parent__body {
+		display: -webkit-box;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 1;
+		font-size: 0.85rem;
+		line-height: 1.7;
+		word-break: break-word;
+	}
+
+	/* 展开：取消裁剪，按内容自然排；但仍受外层 max-height 限制 */
+	.guest-thread-parent[data-expanded="true"] .guest-thread-parent__body {
+		display: block;
+		overflow: visible;
+	}
+
+	.guest-thread-parent__toggle {
+		display: block;
+		margin: 0.1rem 0 0 auto;
+		padding: 0.1rem 0.3rem;
+		border-radius: 0.2rem;
+		background: transparent;
+		color: var(--primary);
+		font-size: 0.72rem;
+		line-height: 1.4;
+	}
+
+	.guest-thread-parent__toggle:hover {
+		background: color-mix(in srgb, var(--primary) 10%, transparent);
+	}
+
+	/* 上面的 display:block 会盖掉 hidden 属性的默认样式，这里补回来 */
+	.guest-thread-parent__toggle[hidden] {
+		display: none;
+	}
+</style>

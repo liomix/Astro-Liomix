@@ -283,6 +283,11 @@ export function openCommentDrawer(
 		frame?.focus({ preventScroll: true });
 	};
 	if (existing) {
+		// createDrawer 会把内联 display:none 写上，正常打开路径在下面摘掉；
+		// 复用（上一页预热出来的、或切页留下的）时这里也得摘，
+		// 否则抽屉永远停在 display:none —— 点了没反应就是这么来的
+		drawer.style.removeProperty("display");
+		fitGeometry(drawer);
 		drawer.dataset.open = "true";
 		focusInside();
 		return;
@@ -318,6 +323,11 @@ function onOutsideClick(event: MouseEvent): void {
 	if (!drawer || drawer.dataset.open !== "true") return;
 	const target = event.target as Node | null;
 	if (!target || drawer.contains(target)) return;
+	// 触发按钮本身不算「外面」。
+	// 动态页的评论按钮在事件委托里 stopPropagation 了，留言墙的按钮没有 ——
+	// 少了这一条，点按钮 -> 打开抽屉 -> 同一次点击冒泡到这里 -> 立刻又被关掉，
+	// 看起来就是「点了没反应」。切到另一条时 activeTrigger 已经换成新按钮，同样命中。
+	if (activeTrigger?.contains(target)) return;
 	closeCommentDrawer(false);
 }
 

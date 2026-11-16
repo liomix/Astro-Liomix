@@ -25,12 +25,19 @@
 		note: GuestTagItem;
 		/** 点赞接口关闭时按钮置灰，但仍然显示数字 */
 		likeEnabled?: boolean;
-		/** 评论按钮：交给墙去开「回复这条」的写作层 */
-		onReply?: (note: GuestTagItem) => void;
+		/** 评论按钮：交给墙去打开这条留言的评论抽屉（需要触发按钮本身做锚点） */
+		onReply?: (note: GuestTagItem, trigger: HTMLElement) => void;
 		onRemove?: (note: GuestTagItem) => void;
 	}
 
 	let { note, likeEnabled = true, onReply, onRemove }: Props = $props();
+
+	/**
+	 * 评论按钮的 DOM 引用。
+	 * 不用 event.currentTarget：Svelte 5 的 onclick 是委托到根节点的，
+	 * 回调里 currentTarget 可能不是按钮本身，而抽屉要用它做定位锚点和焦点归位。
+	 */
+	let commentButton = $state<HTMLButtonElement | null>(null);
 
 	/** 正文按纯文本 + 表情短码渲染：转义在 emojiTokensToHtml 里做，换行补成 <br> */
 	function bodyHtml(body: string): string {
@@ -102,7 +109,10 @@
 				data-comment-base={note.replies}
 				aria-label={i18n(I18nKey.dynamicComment)}
 				title={i18n(I18nKey.dynamicComment)}
-				onclick={() => onReply?.(note)}
+				bind:this={commentButton}
+				onclick={() => {
+					if (commentButton) onReply?.(note, commentButton);
+				}}
 			>
 				<dynamic-lottie-icon data-animation="comment-chats"></dynamic-lottie-icon>
 				<span class="atom-action__count" data-comment-count>
@@ -270,26 +280,11 @@
 		margin-top: 0.55rem;
 	}
 
-	/* 便签比卡片小一号：原子按钮的高度 / 图标降一档，别让底栏压过正文。
-	   atom-action.css 那份原样不动（文章页、动态页照旧）。 */
+	/* 底栏用原子组件的原始尺寸，不在便签里另调一档：
+	   图标、按钮高度、数字字号都跟 atom-action.css 走，全站一致。
+	   这里只把左侧多余的胶囊内边距抵掉，让图标和正文左边界对齐 */
 	.guest-tag__actions {
-		margin-left: -0.35rem;
-	}
-
-	.guest-tag__actions :global(.atom-action) {
-		height: 1.7rem;
-		gap: 0.22rem;
-		padding-inline: 0.3rem;
-	}
-
-	/* 爱心 / 气泡是彩色 lottie，视觉重量天生比文字重：
-	   同字号会显得「图标很大、字很小」，所以这里压到 0.9rem（正文已经 1rem） */
-	.guest-tag__actions :global(dynamic-lottie-icon) {
-		font-size: 0.9rem;
-	}
-
-	.guest-tag__actions :global(.atom-action__count) {
-		font-size: 0.82rem;
+		margin-left: -0.55rem;
 	}
 
 	.guest-tag__author {

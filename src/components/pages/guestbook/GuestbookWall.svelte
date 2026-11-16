@@ -25,6 +25,10 @@
 		setCommentUser,
 	} from "@/components/common/comment/comment-user";
 	import { registerDynamicLottieIcons } from "@/components/pages/dynamic/dynamic-lottie-icon";
+	import {
+		bindCommentDrawer,
+		openCommentDrawer,
+	} from "@/components/pages/dynamic/dynamic-comment-drawer";
 	import { commentApiConfig } from "@/config/commentApiConfig";
 	import I18nKey from "@/i18n/i18nKey";
 	import { i18n } from "@/i18n/translation";
@@ -63,12 +67,17 @@
 
 	let composerOpen = $state(false);
 	let submitting = $state(false);
-	/** 正在回复哪一条；null = 新留言 */
-	let replyTo = $state<GuestTagItem | null>(null);
 	let formName = $state("");
 	let formEmail = $state("");
 	let formBody = $state("");
 	let formError = $state("");
+
+	/**
+	 * 当前抽屉里那条留言。
+	 * 抽屉里的 iframe 是独立文档，拿不到这里的数据，所以它加载完会发
+	 * `guest-parent-request` 来要一次（见 onThreadMessage）。
+	 */
+	let activeParent: GuestTagItem | null = null;
 
 	/** 骨架便签的高度，长短不一才像真的墙 */
 	const skeletonHeights = [8, 10.5, 7, 9, 7.5, 11];
@@ -181,31 +190,33 @@
 			formName = user.name;
 			formEmail = user.email;
 		}
-		replyTo = null;
 		formError = "";
 		composerOpen = true;
 	}
 
-	/** 评论按钮：开写作层并记住回的是哪一条（parentId） */
-	function openReply(note: GuestTagItem): void {
+	/**
+	 * 评论按钮：从右侧抽出这条留言的评论抽屉。
+	 *
+	 * 抽屉里装的是 `/guestbook/thread/`，线程 slug 由 path 推出来
+	 * （`/guestbook/<id>/` → `guestbook-<id>`）；被评论的那条留言由本页在
+	 * iframe 就绪后 postMessage 递过去，所以抽屉一打开就能看到「在评论什么」。
+	 */
+	function openReply(note: GuestTagItem, trigger: HTMLElement): void {
 		if (!apiEnabled) {
 			showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
 			return;
 		}
-		const user = getCommentUser();
-		if (user) {
-			formName = user.name;
-			formEmail = user.email;
-		}
-		replyTo = note;
-		formError = "";
-		composerOpen = true;
+		activeParent = note;
+		const path = `/guestbook/${encodeURIComponent(note.id)}/`;
+		openCommentDrawer(
+			`/guestbook/thread/?embed=1&path=${encodeURIComponent(path)}`,
+			trigger,
+		);
 	}
 
 	function closeComposer(): void {
 		if (submitting) return;
 		composerOpen = false;
-		replyTo = null;
 		formError = "";
 	}
 
@@ -231,11 +242,7 @@
 		formError = "";
 		setCommentUser({ name, email });
 		try {
-			const created = await postComment(slug, {
-				author: { name, email },
-				body,
-				parentId: replyTo?.id,
-			});
+			const created = await postComment(slug, { author: { name, email }, body });
 			// 凭据只在创建响应里出现一次，先落盘再判断要不要上图
 			rememberOwnComment(
 				created.id,
@@ -243,38 +250,29 @@
 				identityKeyOf({ name, email }),
 			);
 
-			if (replyTo) {
-				// 回复不上墙（墙只放顶层），但父级的评论数要跟着 +1
-				const parentId = replyTo.id;
-				notes = notes.map((item) =>
-					item.id === parentId ? { ...item, replies: item.replies + 1 } : item,
-				);
-			} else {
-				const pending = created.status !== "approved";
-				// 待审核也先上图（带标记），刷新后它会消失 —— 这比「发完什么都没发生」可解释
-				notes = [
-					{
-						id: created.id,
-						body: created.body,
-						createdAt: created.createdAt,
-						dateLabel: formatDateToYYYYMMDD(created.createdAt),
-						author: created.author.name,
-						isOwner: created.author.isOwner === true,
-						replies: 0,
-						likes: 0,
-						liked: false,
-						mine: true,
-						pending,
-					},
-					...notes,
-				];
-				if (pending) {
-					showMessage(labels.submitted, { type: "info" });
-				}
+			const pending = created.status !== "approved";
+			// 待审核也先上图（带标记），刷新后它会消失 —— 这比「发完什么都没发生」可解释
+			notes = [
+				{
+					id: created.id,
+					body: created.body,
+					createdAt: created.createdAt,
+					dateLabel: formatDateToYYYYMMDD(created.createdAt),
+					author: created.author.name,
+					isOwner: created.author.isOwner === true,
+					replies: 0,
+					likes: 0,
+					liked: false,
+					mine: true,
+					pending,
+				},
+				...notes,
+			];
+			if (pending) {
+				showMessage(labels.submitted, { type: "info" });
 			}
 
 			formBody = "";
-			replyTo = null;
 			composerOpen = false;
 		} catch (error) {
 			formError = errorText(error);
@@ -296,11 +294,39 @@
 		}
 	}
 
+	/**
+	 * 抽屉里的 iframe 是独立文档，拿不到这里的 notes —— 它加载完会来要一次
+	 * 父留言（`guest-parent-request`），这边把当前那条回过去。
+	 */
+	function onThreadMessage(event: MessageEvent): void {
+		if (event.origin !== window.location.origin) return;
+		if (event.data?.type !== "guest-parent-request") return;
+		const parent = activeParent;
+		const frame = document.querySelector<HTMLIFrameElement>(
+			".comment-drawer-frame",
+		);
+		if (!parent || !frame?.contentWindow) return;
+		frame.contentWindow.postMessage(
+			{
+				type: "guest-parent",
+				parent: {
+					author: parent.author,
+					dateLabel: parent.dateLabel,
+					body: parent.body,
+				},
+			},
+			window.location.origin,
+		);
+	}
+
 	onMount(() => {
 		registerEmptyLottie();
 		// 爱心 / 气泡是 <dynamic-lottie-icon> 自己画的：先注册元素，再绑点赞委托
 		registerDynamicLottieIcons();
 		bindLikeButtons();
+		// 评论抽屉的外壳与全局事件（点外面收起、Esc、iframe 里的关闭按钮）
+		bindCommentDrawer();
+		window.addEventListener("message", onThreadMessage);
 		void load();
 
 		// Esc 关掉写作层：弹层挡住整页时，键盘用户不该只能找到那个 ×
@@ -308,7 +334,10 @@
 			if (event.key === "Escape" && composerOpen) closeComposer();
 		};
 		window.addEventListener("keydown", onKeydown);
-		return () => window.removeEventListener("keydown", onKeydown);
+		return () => {
+			window.removeEventListener("keydown", onKeydown);
+			window.removeEventListener("message", onThreadMessage);
+		};
 	});
 </script>
 
@@ -345,7 +374,7 @@
 				<GuestTag
 					{note}
 					{likeEnabled}
-					onReply={(target) => openReply(target)}
+					onReply={(target, trigger) => openReply(target, trigger)}
 					onRemove={(target) => void remove(target)}
 				/>
 			{/each}
@@ -392,11 +421,7 @@
 				}}
 			>
 				<header class="composer-head">
-					<h2>
-						{replyTo
-							? `${i18n(I18nKey.commentChatReply)} @${replyTo.author}`
-							: i18n(I18nKey.guestbookWrite)}
-					</h2>
+					<h2>{i18n(I18nKey.guestbookWrite)}</h2>
 					<button
 						type="button"
 						class="composer-close"
@@ -441,11 +466,7 @@
 				</div>
 
 				<label class="composer-field composer-field--body">
-					<span class="sr-only">
-						{replyTo
-							? i18n(I18nKey.commentChatReply)
-							: i18n(I18nKey.guestbookWrite)}
-					</span>
+					<span class="sr-only">{i18n(I18nKey.guestbookWrite)}</span>
 					<textarea
 						bind:value={formBody}
 						rows="5"
