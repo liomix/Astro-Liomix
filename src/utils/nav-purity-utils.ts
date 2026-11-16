@@ -40,11 +40,14 @@ export function toNavPurityPath(href: string): string | null {
 
 /**
  * 收集纯净模式覆盖的页面路径（已归一，去重）。
- * links 传 navBarConfig.links；extraPaths 是配置里手工追加的页面。
+ * links 传 navBarConfig.links；extraPaths 是配置里手工追加的页面；
+ * excludePaths 是从自动推导结果里剔除的页面（例如留言板要自己的大页布局，
+ * 不该被「只留资料卡」接管）。
  */
 export function collectNavPurityPaths(
 	links: NavBarLink[],
 	extraPaths: string[] = [],
+	excludePaths: string[] = [],
 ): string[] {
 	const paths = new Set<string>();
 
@@ -64,16 +67,23 @@ export function collectNavPurityPaths(
 		if (path) paths.add(path);
 	}
 
-	return [...paths];
+	// 排除发生在集合成型之后：导航栏里删掉留言板也不该影响别处
+	const excluded = excludePaths
+		.map((path) => toNavPurityPath(path))
+		.filter((path): path is string => !!path);
+
+	return [...paths].filter((path) => !matchesPathScope(path, excluded));
 }
 
 /**
- * 当前 pathname 是否落在纯净模式范围内。
+ * 某个路径是否落在给定集合里。
  *
  * 按前缀命中：/archive/ 也覆盖 /archive/2/ 这类分页。
  * 根路径 "/" 例外 —— 它是一切路径的前缀，只能精确命中首页。
+ *
+ * 导航页纯净模式与宽幅页面布局共用这一份判定（两者都是「按路径挑页面」）。
  */
-export function isNavPurityPage(pathname: string, paths: string[]): boolean {
+export function matchesPathScope(pathname: string, paths: string[]): boolean {
 	if (!paths.length) return false;
 	const current = normalizePath((pathname.split(/[?#]/)[0] || "/").trim());
 

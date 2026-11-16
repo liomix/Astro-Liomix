@@ -169,7 +169,16 @@ export const ru: Translation = {
 	[Key.projectStatusArchived]: "В архиве",
 	[Key.guestbook]: "Гостевая книга",
 	[Key.guestbookDescription]:
-		"Добро пожаловать, оставьте свой след здесь, поделитесь своими мыслями и предложениями",
+		"Есть вещи, которые стоит записать, чтобы потом вспомнить",
+	[Key.guestbookTitle]: "Стена сообщений",
+	[Key.guestbookWrite]: "Оставить сообщение",
+	[Key.guestbookEmpty]: "Сообщений пока нет — оставьте первое",
+	[Key.guestbookRetry]: "Повторить",
+	[Key.guestbookSubmitted]:
+		"Сообщение отправлено и появится после проверки",
+	[Key.guestbookDelete]: "Удалить сообщение",
+	[Key.guestbookDeleteConfirm]: "Удалить это сообщение?",
+	[Key.guestbookBodyRequired]: "Напишите что-нибудь перед отправкой",
 	[Key.untitled]: "Без названия",
 	[Key.uncategorized]: "Без категории",
 	[Key.noTags]: "Нет тегов",

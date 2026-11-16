@@ -1,52 +1,80 @@
 ---
-import { getEntry, render } from "astro:content";
-import Markdown from "@components/common/Markdown.astro";
-import { Icon } from "astro-icon/components";
+import GuestbookWall from "@components/pages/guestbook/GuestbookWall.svelte";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
 
 // 检查页面是否启用
 if (!siteConfig.pages.guestbook) {
 	return Astro.redirect("/404/");
 }
 
-const guestbookPost = await getEntry("spec", "guestbook");
-
-if (!guestbookPost) {
-	throw new Error("guestbook page content not found");
-}
-
-const { Content } = await render(guestbookPost);
-
-// 页面标题和描述
-const title = i18n(I18nKey.guestbook);
+/**
+ * 留言墙 = 标题 + 便利贴墙。
+ *
+ * 内容不再从 content collection 渲染：留言全在评论后端里，页面只提供舞台。
+ * 布局走宽幅模式（widePageConfig 把 /guestbook/ 排除出导航页纯净模式、并收成
+ * 单列 + 96vw），所以这里不要再套 card-base 之类的容器 —— 每张便签自己就是卡片。
+ */
+const title = i18n(I18nKey.guestbookTitle);
 const description = i18n(I18nKey.guestbookDescription);
 ---
 
 <MainGridLayout title={title} description={description}>
-  <div
-    class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32"
-  >
-    <div class="card-base z-10 px-9 py-6 relative w-full">
-      <!-- 页面标题和描述 -->
-      <div class="mb-8">
-        <div class="page-heading">
-          <div class="page-icon" aria-hidden="true">
-            <Icon name="material-symbols:chat" />
-          </div>
-          <div>
-            <h2>{title}</h2>
-            {description && <p>{description}</p>}
-          </div>
-        </div>
-      </div>
-      
-      <Markdown class="mt-2">
-        <Content />
-      </Markdown>
-    </div>
+  <div class="guestbook-page">
+    <header class="guestbook-hero">
+      <h2>{title}</h2>
+    </header>
+
+    <GuestbookWall client:load slug="guestbook" />
   </div>
 </MainGridLayout>
+
+<style>
+  /* 设计稿里整页是一块白底，便签直接贴在上面。
+     高度锁在视口内、自己滚：便签再多也不把整页顶长，白底始终铺到屏幕底部。
+     滚动条 UI 隐掉但保留滚动手感 —— 和全站文档滚动条同一策略。 */
+  .guestbook-page {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 8rem);
+    padding: 0 1.25rem 1.5rem;
+    border-radius: var(--radius-large);
+    background: var(--card-bg);
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* 滚到底再往下不会把整页一起带着走 */
+    overscroll-behavior: contain;
+  }
+
+  .guestbook-page::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* 窄屏交回页面滚动：手机视口小，锁死高度 + 软键盘很容易把人困在里面 */
+  @media (max-width: 767px) {
+    .guestbook-page {
+      height: auto;
+      min-height: calc(100vh - 8rem);
+      overflow-y: visible;
+    }
+  }
+
+  /* 标题很大、居中；和便签墙之间只留一小段呼吸空间 */
+  .guestbook-hero {
+    padding: 1.9rem 1rem 1.1rem;
+    text-align: center;
+  }
+
+  .guestbook-hero h2 {
+    font-size: clamp(2rem, 1.4rem + 2.2vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--deep-text);
+  }
+</style>

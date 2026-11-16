@@ -271,8 +271,9 @@
 /* 导航页纯净模式（src/config/navPurityConfig.ts 控制范围）---------------------
    开关是 #content-panel-inner 上的 data-nav-purity，两条路各管一段时机：
      - SSR 写首屏初值（直接访问导航页也不闪）；
-     - link 点击的 visit:start 就按目标 URL 提前切（previewNavPurity）—— 侧栏与
-       多标签栏是 swup 容器之外的静态 DOM，等新内容进来再切就已经看得见了；
+     - content:replace 时按目标 URL 切（applyPurityModes）—— 此刻旧内容已淡出、
+       新内容还没露脸，改卡片显隐看不见；侧栏与多标签栏是 swup 容器之外的静态
+       DOM，等新内容进来再切就已经看得见了；
      - page:view 再按 #content-wrapper 的实际状态校正一次（内容永远是权威）。
    只做 display:none —— 不碰 #main-grid 的列几何，卡片消失后侧栏列照样占着位置，
    正文宽度保持不变。.nav-purity-hide 由 SideBar.astro 打在「非 keepWidgets」的
@@ -325,4 +326,46 @@ body:has(#content-panel-inner[data-nav-purity="true"]) #navbar-wrapper.navbar-hi
   opacity: 1 !important;
   transform: none !important;
   translate: none !important;
+}
+
+/* 宽幅页面（大页布局，src/config/widePageConfig.ts 控制范围）--------------------
+   和纯净模式的区别：纯净模式只藏卡片、列照样占位（正文宽度不变）；宽幅是把整张
+   网格收成单列，正文真的铺满，面板也从 92vw 放开到 96vw。
+   侧栏 / 多标签栏都在 swup 容器之外、只 SSR 一次，所以状态写在 #content-panel-inner
+   上，客户端按目标 URL 同步（grid-layout-utils 的 applyPurityModes）。
+   不放进 @layer：要压过 components 层里按 --cols-* 生成的列定义与 utilities 的宽度类。
+   只在 ≥768px 生效：更窄时侧栏本来就不参与布局，面板已经是 w-full。 */
+@media (min-width: 768px) {
+  /* 96vw 给到接近满屏，但留一个上限：超宽屏下便签列会越切越细，
+     96rem 大约能摆 5–6 列，和设计稿的比例一致 */
+  #content-panel-inner[data-wide-page="true"] {
+    width: min(96vw, 96rem);
+    max-width: none;
+  }
+
+  #content-panel-inner[data-wide-page="true"] #main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* 侧栏包裹层是 display:contents，可真正占格的是内层元素；两层都藏 */
+  #content-panel-inner[data-wide-page="true"] #main-grid > #left-sidebar-wrapper,
+  #content-panel-inner[data-wide-page="true"] #main-grid > #left-sidebar-dynamic,
+  #content-panel-inner[data-wide-page="true"] #main-grid > #right-sidebar-static,
+  #content-panel-inner[data-wide-page="true"] #main-grid > #right-sidebar-dynamic {
+    display: none;
+  }
+
+  #content-panel-inner[data-wide-page="true"] #main-grid > #content-column {
+    max-width: 100%;
+  }
+
+  #content-panel-inner[data-wide-page="true"] #tab-bar-wrapper {
+    display: none;
+  }
+}
+
+/* 移动端底部组件也藏：宽幅页面要的是一整墙体，不是在便签墙后面再垫一排卡片。
+   它不在列几何里（#main-grid 在 <768px 是 block），所以不受上面那个媒体查询限制。 */
+#content-panel-inner[data-wide-page="true"] #mobile-bottom-sidebar {
+  display: none;
 }

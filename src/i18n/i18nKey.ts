@@ -191,6 +191,15 @@ enum I18nKey {
 	friendsEmpty = "friendsEmpty",
 	guestbook = "guestbook",
 	guestbookDescription = "guestbookDescription",
+	/** 留言墙页面的大标题（导航栏里仍用 navBarConfig 的「留言」） */
+	guestbookTitle = "guestbookTitle",
+	guestbookWrite = "guestbookWrite",
+	guestbookEmpty = "guestbookEmpty",
+	guestbookRetry = "guestbookRetry",
+	guestbookSubmitted = "guestbookSubmitted",
+	guestbookDelete = "guestbookDelete",
+	guestbookDeleteConfirm = "guestbookDeleteConfirm",
+	guestbookBodyRequired = "guestbookBodyRequired",
 	bangumi = "bangumi",
 
 	// 书签导航

@@ -59,6 +59,7 @@ export type {
 export type { SiteStatsConfig } from "../types/siteStatsConfig"; // 站点访问量统计类型
 export type { CommentApiConfig } from "../types/commentApiConfig"; // 评论接口类型
 export type { NavPurityConfig } from "../types/navPurityConfig"; // 导航页纯净模式类型
+export type { WidePageConfig } from "../types/widePageConfig"; // 宽幅页面布局类型
 export type { ArticlePurityConfig } from "../types/articlePurityConfig"; // 文章页纯净模式类型
 export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
@@ -87,6 +88,7 @@ export { musicPlayerConfig } from "./musicConfig"; // 音乐播放器配置
 export { navBarConfig, navBarSearchConfig } from "./navBarConfig"; // 导航栏配置与搜索配置
 export { navPurityConfig } from "./navPurityConfig"; // 导航页纯净模式（隐藏多标签栏与侧栏卡片）
 export { articlePurityConfig } from "./articlePurityConfig"; // 文章页纯净模式（只留目录，标签栏竖排到右侧）
+export { widePageConfig } from "./widePageConfig"; // 宽幅页面布局（隐藏侧栏与多标签栏，正文占满）
 export { live2dWidgetConfig, spineModelConfig } from "./pioConfig"; // 看板娘配置
 export { plantumlConfig } from "./plantumlConfig"; // PlantUML 图表配置
 export { profileConfig } from "./profileConfig"; // 用户资料配置

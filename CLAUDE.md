@@ -37,7 +37,7 @@ All features are toggled/configured via TypeScript files in `src/config/`, expor
 
 - `siteConfig.ts` — core site settings, theme, pagination
 - `sidebarConfig.ts` — sidebar layout (left/right/both, widget ordering)
-- `commentConfig.ts`, `analyticsConfig.ts`, `fontConfig.ts`, etc.
+- `commentApiConfig.ts` / `commentEmojiConfig.ts` / `commentWallpaperConfig.ts` — the built-in comment system (Telegram-style `Comment.astro`; there is no third-party comment integration), `analyticsConfig.ts`, `fontConfig.ts`, etc.
 
 ### Layout System
 

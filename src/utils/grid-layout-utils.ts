@@ -3,7 +3,8 @@
  */
 
 import { articlePurityConfig } from "@/config/articlePurityConfig";
-import { isNavPurityPage } from "@/utils/nav-purity-utils";
+import { widePageConfig } from "@/config/widePageConfig";
+import { matchesPathScope } from "@/utils/nav-purity-utils";
 import {
 	computeGridColumns,
 	gridColumnVarsToStyle,
@@ -80,8 +81,21 @@ function readNavPurityPaths(): string[] | null {
 	if (!mainGrid || mainGrid.getAttribute("data-nav-purity-enable") !== "true") {
 		return null;
 	}
-	const raw = mainGrid.getAttribute("data-nav-purity-paths") ?? "";
-	return raw
+	return readPathList(mainGrid, "data-nav-purity-paths");
+}
+
+/** 读 #main-grid 上 SSR 写的宽幅页面范围；未启用时返回 null */
+function readWidePagePaths(): string[] | null {
+	const mainGrid = document.getElementById("main-grid");
+	if (!mainGrid || mainGrid.getAttribute("data-wide-page-enable") !== "true") {
+		return null;
+	}
+	return readPathList(mainGrid, "data-wide-page-paths");
+}
+
+/** 逗号分隔的路径表 → 数组（空串过滤掉，否则 join 出来的空项会变成一个空路径） */
+function readPathList(host: HTMLElement, attr: string): string[] {
+	return (host.getAttribute(attr) ?? "")
 		.split(",")
 		.map((path) => path.trim())
 		.filter(Boolean);
@@ -117,7 +131,13 @@ export function applyPurityModes(targetUrl: string): void {
 	// 导航页：隐藏多标签栏与除 keepWidgets 外的卡片
 	const navPaths = readNavPurityPaths();
 	if (navPaths) {
-		setPurityAttr(host, "data-nav-purity", isNavPurityPage(pathname, navPaths));
+		setPurityAttr(host, "data-nav-purity", matchesPathScope(pathname, navPaths));
+	}
+
+	// 宽幅页面：隐藏侧栏与多标签栏，列几何收成单列（正文真正变宽）
+	const widePaths = readWidePagePaths();
+	if (widePaths && widePageConfig.enable) {
+		setPurityAttr(host, "data-wide-page", matchesPathScope(pathname, widePaths));
 	}
 
 	// 文章页：只留目录（目录卡已配在左栏），标签栏竖排搬进右列

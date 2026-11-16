@@ -191,7 +191,8 @@ function registerSwupHooks(): void {
 
 		// 侧栏跟着内容一起淡出。swup 的 is-changing 在某些导航路径（预加载命中、
 		// 快速连点、popstate）不挂或挂得很短，只靠 CSS 会「有时候没用」，所以这里
-		// 显式加类，并用 1.5s 超时兜底 —— 导航被中断也一定会恢复
+		// 直接写内联样式，并用 1.5s 超时兜底 —— 导航被中断也一定会恢复
+		// （transition.css 里那份 is-changing 规则是常态路径的纯 CSS 版，两者并存）
 		fadeStartedAt = performance.now();
 		setSidebarFading(true);
 		// 兜底：导航被中断时 page:view 不一定会来，1.5s 后强制恢复

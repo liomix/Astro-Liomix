@@ -20,4 +20,10 @@ export type NavPurityConfig = {
 	keepWidgets: WidgetComponentType[];
 	/** 自动推导之外、也要走纯净模式的页面路径 */
 	extraPaths: string[];
+	/**
+	 * 从自动推导结果里剔除的页面路径（前缀命中）。
+	 * 用于「页面在导航栏里有链接，但不该被纯净模式接管」的情况 ——
+	 * 例如留言板需要自己的大页布局。
+	 */
+	excludePaths: string[];
 };

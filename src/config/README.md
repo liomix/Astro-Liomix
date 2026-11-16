@@ -11,7 +11,9 @@ src/config/
 ├── analyticsConfig.ts        # 统计分析配置（Google Analytics、Umami、51la 等）
 ├── announcementConfig.ts     # 公告配置
 ├── backgroundWallpaperConfig.ts    # 背景壁纸配置
-├── commentConfig.ts          # 评论系统配置
+├── commentApiConfig.ts       # 评论后端 API 配置
+├── commentEmojiConfig.ts     # 评论表情配置
+├── commentWallpaperConfig.ts # 评论背景图配置
 ├── coverImageConfig.ts       # 封面图配置
 ├── displaySettingsConfig.ts  # 设置面板配置
 ├── dynamicConfig.ts          # 动态页面配置
@@ -53,7 +55,9 @@ import { profileConfig } from "@/config/profileConfig";
 | `analyticsConfig.ts` | 统计分析配置（Google Analytics、Microsoft Clarity、Umami、51la） |
 | `announcementConfig.ts` | 公告配置（标题、内容、类型、链接等） |
 | `backgroundWallpaperConfig.ts` | 背景壁纸配置（壁纸模式、图片、横幅文字、水波纹等） |
-| `commentConfig.ts` | 评论系统配置（Twikoo、Waline、Artalk、Giscus、Disqus） |
+| `commentApiConfig.ts` | 评论后端 API 配置（站内自建评论，主题自带的 Twikoo/Waline/Artalk/Giscus/Disqus 已移除） |
+| `commentEmojiConfig.ts` | 评论表情面板配置（表情分组、短码） |
+| `commentWallpaperConfig.ts` | 评论背景图配置 |
 | `coverImageConfig.ts` | 封面图配置（文章封面图、随机封面图 API） |
 | `displaySettingsConfig.ts` | 视图设置面板配置（面板总开关、各设置项开关） |
 | `dynamicConfig.ts` | 动态页面配置（页面标题、描述、评论开关和每页显示数量） |
