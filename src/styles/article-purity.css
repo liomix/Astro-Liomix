@@ -1,0 +1,113 @@
+/* 文章页纯净模式（src/config/articlePurityConfig.ts 控制范围）
+   ---------------------------------------------------------------------------
+   文章页只留文章目录：其余侧栏卡片隐藏（.article-purity-hide 由 SideBar.astro 打标）。
+   目录卡本身配在 sidebarConfig 的 leftComponents 里 —— 这一版不再用 grid 换列去搬它。
+   之前把右栏（目录原来在 rightComponents）grid-column:1 挪到左边，右栏又因为
+   tabletSidebar 在 768–1279 默认 display:none，目录整列跟着消失。直接配在左栏就没这问题：
+   右栏卡片全隐藏后自然空出整列，多标签栏钉进去就行。
+   开关是 #content-panel-inner[data-article-purity="true"]，由 applyPurityModes() 按
+   目标地址设置（时机同导航页：content:replace + page:view，见 grid-layout-utils）。
+   不放进 @layer：要压过 utilities 的 .hidden 与组件 scoped 样式。 */
+
+@media (min-width: 768px) {
+  /* 卡片过滤只在桌面端生效：<768px 没有侧栏列，目录卡也不在底部组件里，
+     隐藏了只会剩一片空白 */
+  #content-panel-inner[data-article-purity="true"] .article-purity-hide {
+    display: none;
+  }
+
+  /* 文章页必须看得见目录 —— 它同时带着 nav-purity-hide（导航页纯净模式的标记）
+     和 widget-hide-on-non-post（页面类型标记），任何一条误判都会把它藏掉。
+     这一页的主角就是目录，所以无条件放出来，也不让它被 nav-purity 规则带走。 */
+  #content-panel-inner[data-article-purity="true"] #left-sidebar,
+  #content-panel-inner[data-article-purity="true"] #right-sidebar {
+    display: flex !important;
+  }
+
+  #content-panel-inner[data-article-purity="true"] #left-sidebar [data-id="sidebar-toc"],
+  #content-panel-inner[data-article-purity="true"] #right-sidebar [data-id="sidebar-toc"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* 竖版多标签栏只在 xl（≥1280）启用。
+   只有那一段才是「左栏 + 正文 + 右栏」三列，右列空出来正好放它；
+   768–1279 是两列（tabletSidebar 只显示一侧），固定 17.5rem 宽的竖栏会压在正文上，
+   所以那一段保持原来的横版，只是卡片被过滤掉。 */
+@media (min-width: 1280px) {
+  #content-panel-inner[data-article-purity="true"] #tab-bar-wrapper {
+    /* 面板 92vw 居中后的两侧留白 + #main-grid 的 px-4，与第 3 列右边缘对齐 */
+    --article-purity-gutter: calc(
+      max(0px, (100vw - min(92vw, var(--page-width)))) / 2 + 1rem
+    );
+
+    position: fixed !important;
+    top: 5.5rem;
+    right: var(--article-purity-gutter);
+    bottom: 1rem;
+    width: var(--grid-sidebar-width);
+    margin: 0;
+    z-index: 6;
+  }
+
+  /* 卡片撑满固定框：用 absolute inset 而不是 height:100%，
+     后者依赖父级的确定高度，一旦 wrapper 的定位被别处改掉就只剩内容高度 */
+  #content-panel-inner[data-article-purity="true"] #tab-bar {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+    overflow: hidden;
+  }
+
+  /* 竖排：home 在上，分隔线横过来，标签列纵向滚动 */
+  #content-panel-inner[data-article-purity="true"] .tab-bar-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #content-panel-inner[data-article-purity="true"] .tab-home {
+    align-self: center;
+    flex: none;
+  }
+
+  #content-panel-inner[data-article-purity="true"] .tab-divider {
+    width: 100%;
+    height: 1px;
+    align-self: auto;
+    flex: none;
+  }
+
+  #content-panel-inner[data-article-purity="true"] .tab-scroll-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  #content-panel-inner[data-article-purity="true"] .tab-strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.375rem;
+    /* 横向手势原本留给拖拽排序；竖排后交给浏览器做纵向滚动 */
+    touch-action: auto;
+  }
+
+  /* 每个标签占满一行：标题在左、关闭按钮在右 */
+  #content-panel-inner[data-article-purity="true"] .tab-item {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  #content-panel-inner[data-article-purity="true"] .tab-item .tab-link {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+}

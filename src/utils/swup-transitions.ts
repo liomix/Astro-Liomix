@@ -8,7 +8,7 @@ import {
 	updateFullscreenTitleParallax,
 } from "@/utils/fullscreen-wallpaper-utils";
 import {
-	previewNavPurity,
+	applyPurityModes,
 	updateMainGridCols,
 	updateSidebarComponentsVisibility,
 } from "@/utils/grid-layout-utils";
@@ -114,7 +114,7 @@ function registerSwupHooks(): void {
 	window.swup.hooks.on("content:replace", () => {
 		// 纯净模式在这里切：旧内容（连带侧栏）已经淡出，新内容还没露脸，
 		// 改卡片显隐用户看不见。用 visit:start 记下的目标地址，不读钩子参数也不读新 DOM
-		previewNavPurity(navTargetUrl || window.location.href);
+		applyPurityModes(navTargetUrl || window.location.href);
 
 		initializeFloatingPanels();
 
@@ -233,7 +233,7 @@ function registerSwupHooks(): void {
 		// 更新网格列数和侧边栏组件可见性
 		updateMainGridCols();
 		// 以同一个目标地址再校一次（钩子万一没跑到，也不会留下错的状态）
-		previewNavPurity(navTargetUrl || window.location.href);
+		applyPurityModes(navTargetUrl || window.location.href);
 		updateSidebarComponentsVisibility();
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4

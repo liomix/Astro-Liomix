@@ -94,6 +94,20 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 				collapseThreshold: 10,
 			},
 		},
+		{
+			// 组件类型：侧边栏目录组件（只在文章详情页显示）
+			// 放在左栏：文章页纯净模式只留这张卡，读者视线先落在目录上。
+			// 右栏空出来的那列留给竖版多标签导航栏（见 article-purity.css）
+			type: "sidebarToc",
+			// 是否启用该组件
+			enable: true,
+			// 组件位置
+			position: "sticky",
+			// 是否在文章详情页显示
+			showOnPostPage: true,
+			// 是否在非文章详情页隐藏
+			hideOnNonPostPage: true,
+		},
 	],
 
 	// 右侧边栏组件配置列表
@@ -154,18 +168,6 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			position: "sticky",
 			// 是否在文章详情页显示
 			showOnPostPage: false,
-		},
-		{
-			// 组件类型：侧边栏目录组件（只在文章详情页显示）
-			type: "sidebarToc",
-			// 是否启用该组件
-			enable: true,
-			// 组件位置
-			position: "sticky",
-			// 是否在文章详情页显示
-			showOnPostPage: true,
-			// 是否在非文章详情页隐藏
-			hideOnNonPostPage: true,
 		},
 		{
 			// 组件类型：广告栏组件 1

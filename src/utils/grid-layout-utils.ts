@@ -2,6 +2,7 @@
  * 主网格列布局与侧边栏可见性 / 吸顶间距管理（从 Layout.astro 迁出）。
  */
 
+import { articlePurityConfig } from "@/config/articlePurityConfig";
 import { isNavPurityPage } from "@/utils/nav-purity-utils";
 import {
 	computeGridColumns,
@@ -86,34 +87,25 @@ function readNavPurityPaths(): string[] | null {
 		.filter(Boolean);
 }
 
-/** 写开关。状态放在 #content-panel-inner 上：侧栏与多标签栏都是它的后代 */
-function applyNavPurity(active: boolean): void {
-	const host = document.getElementById("content-panel-inner");
-	if (!host) return;
+/** 写开关。两个状态都放在 #content-panel-inner 上：侧栏、多标签栏都是它的后代 */
+function setPurityAttr(host: HTMLElement, name: string, active: boolean): void {
 	const next = active ? "true" : "false";
-	if (host.getAttribute("data-nav-purity") !== next) {
-		host.setAttribute("data-nav-purity", next);
+	if (host.getAttribute(name) !== next) {
+		host.setAttribute(name, next);
 	}
 }
 
 /**
- * 链接点击的瞬间（swup 的 visit:start）就按目标地址把状态切过去。
- *
- * 侧栏与多标签栏是 swup 容器之外的静态 DOM，切页不会重建它们：如果等新内容替换
- * 完（甚至等 page:view）再切，过渡这一整段用户都还看得见上一页的样子 —— 表现就是
- * 「多标签栏先渲染出来、等进度条跑完才消失」。
- */
-/**
- * 按目标地址切换纯净模式状态（状态唯一来源就是 URL）。
+ * 按目标地址切换两种纯净模式（状态唯一来源就是 URL）。
  *
  * 调用点有两处：content:replace（旧内容已淡出、新内容还没出现，此刻切看不见）
  * 和 page:view（兜底，防止某个钩子没跑到）。
  * 不读新 DOM 上的属性 —— swup 替换容器的时序不可靠，属性一旦没带过来就会退回
  * 「卡片又显示出来」。
  */
-export function previewNavPurity(targetUrl: string): void {
-	const paths = readNavPurityPaths();
-	if (!paths) return;
+export function applyPurityModes(targetUrl: string): void {
+	const host = document.getElementById("content-panel-inner");
+	if (!host) return;
 
 	let pathname: string;
 	try {
@@ -121,7 +113,17 @@ export function previewNavPurity(targetUrl: string): void {
 	} catch {
 		return;
 	}
-	applyNavPurity(isNavPurityPage(pathname, paths));
+
+	// 导航页：隐藏多标签栏与除 keepWidgets 外的卡片
+	const navPaths = readNavPurityPaths();
+	if (navPaths) {
+		setPurityAttr(host, "data-nav-purity", isNavPurityPage(pathname, navPaths));
+	}
+
+	// 文章页：只留目录、目录移到左列、标签栏竖排到右列
+	if (articlePurityConfig.enable) {
+		setPurityAttr(host, "data-article-purity", isArticleDetailPage(pathname));
+	}
 }
 
 // 更新侧边栏组件的可见性

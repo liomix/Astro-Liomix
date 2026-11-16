@@ -11,7 +11,7 @@ import SidebarTOC from "@/components/widget/SidebarTOC.astro";
 import SiteInfo from "@/components/widget/SiteInfo.astro";
 import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
-import { navPurityConfig, sidebarLayoutConfig } from "@/config";
+import { articlePurityConfig, navPurityConfig, sidebarLayoutConfig } from "@/config";
 import type {
 	MobileBottomComponentConfig,
 	WidgetComponentConfig,
@@ -146,6 +146,15 @@ const getComponentProps = (
 		!navPurityConfig.keepWidgets.includes(config.type)
 	) {
 		baseProps.class = `${baseProps.class} nav-purity-hide`;
+	}
+
+	// 文章页纯净模式：只留目录卡。两套标记可以同时存在，具体哪套生效由
+	// #content-panel-inner 上的 data-nav-purity / data-article-purity 决定
+	if (
+		articlePurityConfig.enable &&
+		!articlePurityConfig.keepWidgets.includes(config.type)
+	) {
+		baseProps.class = `${baseProps.class} article-purity-hide`;
 	}
 
 	// 特殊处理 SidebarTOC 组件

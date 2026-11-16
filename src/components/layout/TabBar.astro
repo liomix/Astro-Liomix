@@ -788,6 +788,9 @@ const labels = {
 
     strip.addEventListener("pointerdown", (event) => {
       if (event.button !== 0) return;
+      // 竖排形态（文章页纯净模式把标签栏钉到右列）下不做拖拽排序：
+      // 排序按 clientX 算位移，竖排时和纵向滚动抢手势，拖动会错位
+      if (getComputedStyle(strip).flexDirection === "column") return;
       const target = event.target as Element | null;
       if (target?.closest("[data-tab-close]")) return;
       const item = target?.closest<HTMLElement>(".tab-item");
