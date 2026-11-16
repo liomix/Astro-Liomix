@@ -63,6 +63,47 @@ html.is-animating .transition-swup-fade {
 }
 
 /* --------------------------------------------------------------------------
+   1b. 侧栏 / 多标签栏跟随切页淡出
+   -------------------------------------------------------------------------- */
+
+/* 它们是 swup 容器之外的静态 DOM，主题默认不参与过渡。结果是切页时内容在淡出、
+   侧栏纹丝不动，看起来像「整页卡住了」。这里让它们跟内容同节奏淡出。
+   opacity / transform 上的 !important：#left-sidebar 带 onload-animation，
+   动画的 forwards 会压住这两个属性。
+   类名由 swup-transitions 显式加/移除并带 1.5s 超时兜底 —— 不用 swup 的
+   is-animating，那个类一旦被中断的导航漏清，侧栏会永久停在透明。 */
+#left-sidebar,
+#right-sidebar,
+#tab-bar-wrapper,
+#mobile-bottom-sidebar {
+    transition:
+        opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 用 swup 自己的 is-changing（纯 CSS，不依赖任何 JS 模块改动，改完即生效）。
+   它只在导航期间存在，覆盖从离开到进入的整段 —— 侧栏和内容一起淡出、一起回来，
+   不会再出现「内容都淡没了、左右两列还完整杵着」。
+   之所以不怕它残留：以前「卡片永久消失」的真凶是 .onload-animation 上硬编码的
+   opacity: 0（动画被取消就永远透明），那条已经删了；类一移除，opacity 自然回到 1。 */
+/* 两套触发条件，取并集：
+   - is-changing：swup 自己的状态类，纯 CSS 就生效（预加载命中等路径可能不挂）；
+   - nav-fading：由 swup-transitions 在 visit:start 显式加、page:view 移除，带 1.5s
+     超时兜底。它覆盖 swup 不挂类的那些路径，但改动在 JS 模块里、要刷新才生效。
+   两套都写，任何一条生效就够 —— 不会再「有时候有用有时候没用」。 */
+html.is-changing #left-sidebar,
+html.is-changing #right-sidebar,
+html.is-changing #tab-bar-wrapper,
+html.is-changing #mobile-bottom-sidebar,
+html.nav-fading #left-sidebar,
+html.nav-fading #right-sidebar,
+html.nav-fading #tab-bar-wrapper,
+html.nav-fading #mobile-bottom-sidebar {
+    opacity: 0 !important;
+    transform: translateY(-1rem) !important;
+}
+
+/* --------------------------------------------------------------------------
    2. Keyframes
    -------------------------------------------------------------------------- */
 

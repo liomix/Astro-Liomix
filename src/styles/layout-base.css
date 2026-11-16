@@ -278,8 +278,15 @@
    正文宽度保持不变。.nav-purity-hide 由 SideBar.astro 打在「非 keepWidgets」的
    卡片上（默认除个人资料外全部）。
    不放进 @layer：要压过 utilities 层里给卡片加的 .hidden / 显示类。 */
+/* 两套选择器都要写：
+   - [data-nav-purity] 那份由 applyPurityModes() 按目标 URL 写给 #content-panel-inner；
+   - :has(#content-wrapper[...]) 那份跟着「会换的内容」走 —— 属性 SSR 就写在
+     #content-wrapper 上，swup 一插入新内容浏览器立刻重算，比任何 JS 钩子都早一帧。
+   只靠前者的话，切页瞬间会先看到上一页的布局。 */
 #content-panel-inner[data-nav-purity="true"] #tab-bar-wrapper,
-#content-panel-inner[data-nav-purity="true"] .nav-purity-hide {
+#content-panel-inner[data-nav-purity="true"] .nav-purity-hide,
+#content-panel-inner:has(#content-wrapper[data-nav-purity="true"]) #tab-bar-wrapper,
+#content-panel-inner:has(#content-wrapper[data-nav-purity="true"]) .nav-purity-hide {
   display: none;
 }
 

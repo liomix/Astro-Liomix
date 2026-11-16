@@ -67,6 +67,44 @@ function finishProgressBar(): void {
  */
 let navTargetUrl = "";
 
+/** 侧栏淡出开始的时间戳：让淡出至少持续 MIN_FADE_MS，缓存命中时也看得见 */
+let fadeStartedAt = 0;
+const MIN_FADE_MS = 120;
+
+/** 需要跟内容一起淡出的静态区块（都在 swup 容器之外） */
+const FADE_TARGET_IDS = [
+	"left-sidebar",
+	"right-sidebar",
+	"tab-bar-wrapper",
+	"mobile-bottom-sidebar",
+];
+
+/**
+ * 切页期间隐藏 / 恢复侧栏。
+ *
+ * 用内联样式 + important 而不是加类：这些元素带 onload-animation，
+ * 它的 animation-fill-mode: forwards 会长期压住 opacity/transform，
+ * 类选择器里的声明有时赢不了（实测同一套规则在部分导航路径上不生效）。
+ * 内联 important 的优先级高于动画，任何路径都稳定。
+ */
+function setSidebarFading(hidden: boolean): void {
+	for (const id of FADE_TARGET_IDS) {
+		const el = document.getElementById(id);
+		if (!el) continue;
+		if (hidden) {
+			el.style.setProperty(
+				"transition",
+				"opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94), top 0.2s ease-out",
+			);
+			el.style.setProperty("opacity", "0", "important");
+			el.style.setProperty("transform", "translateY(-1rem)", "important");
+		} else {
+			el.style.removeProperty("opacity");
+			el.style.removeProperty("transform");
+		}
+	}
+}
+
 /**
  * Swup 页面切换编排（从 Layout.astro 迁出）。
  * 注册 link:click / content:replace / visit:start / page:view / visit:end 钩子。
@@ -150,6 +188,15 @@ function registerSwupHooks(): void {
 	window.swup.hooks.on("visit:start", (visit: { to: { url: string } }) => {
 		// 只记下目标地址，不动布局：后面有 FLIP 要量 content-panel，先改布局会让位移算错
 		navTargetUrl = visit.to.url;
+
+		// 侧栏跟着内容一起淡出。swup 的 is-changing 在某些导航路径（预加载命中、
+		// 快速连点、popstate）不挂或挂得很短，只靠 CSS 会「有时候没用」，所以这里
+		// 显式加类，并用 1.5s 超时兜底 —— 导航被中断也一定会恢复
+		fadeStartedAt = performance.now();
+		setSidebarFading(true);
+		// 兜底：导航被中断时 page:view 不一定会来，1.5s 后强制恢复
+		window.setTimeout(() => setSidebarFading(false), 1500);
+
 
 
 		// Start progress bar（WAAPI 合成线程动画，不强制回流）
@@ -236,6 +283,11 @@ function registerSwupHooks(): void {
 		// 以同一个目标地址再校一次（钩子万一没跑到，也不会留下错的状态）
 		applyPurityModes(navTargetUrl || window.location.href);
 		updateSidebarComponentsVisibility();
+		// 缓存命中时 visit:start 到 page:view 在同一帧跑完，样式设了又立刻撤 ——
+		// 浏览器从没绘制过透明帧，表现就是「有时候淡出、有时候不淡出」。
+		// 这里保证淡出至少持续 MIN_FADE_MS，和内容的 120ms 过渡对齐。
+		const remain = Math.max(0, MIN_FADE_MS - (performance.now() - fadeStartedAt));
+		window.setTimeout(() => setSidebarFading(false), remain);
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4
 		// (sticky 与 top 组件之间间距只在 refreshSidebarStickyState 里恢复，延迟补偿一次更稳)

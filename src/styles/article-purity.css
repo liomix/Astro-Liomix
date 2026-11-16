@@ -12,7 +12,9 @@
 @media (min-width: 768px) {
   /* 卡片过滤只在桌面端生效：<768px 没有侧栏列，目录卡也不在底部组件里，
      隐藏了只会剩一片空白 */
-  #content-panel-inner[data-article-purity="true"] .article-purity-hide {
+  /* 同样是两套：属性那份由 JS 按目标 URL 写，:has 那份跟着内容走、早一帧生效 */
+  #content-panel-inner[data-article-purity="true"] .article-purity-hide,
+  #content-panel-inner:has(#content-wrapper[data-article-purity="true"]) .article-purity-hide {
     display: none;
   }
 
@@ -37,6 +39,17 @@
    768–1279 是两列（tabletSidebar 只显示一侧），固定 17.5rem 宽的竖栏会压在正文上，
    所以那一段保持原来的横版，只是卡片被过滤掉。 */
 @media (min-width: 1280px) {
+  /* 搬移前的那一帧：标签栏还没进右栏，露出来只会闪一下横版（点文章链接时最明显）。
+     判据用「有没有 .article-side-tabbar 这个搬移标记」而不是「它在不在 #content-column 里」——
+     后者依赖 DOM 父子关系，中间多一层包裹就会失效；标记由 moveSideTabBar() 主动加，
+     谁搬的、搬到哪都无所谓。 */
+  #content-panel-inner[data-article-purity="true"]
+    #tab-bar-wrapper:not(.article-side-tabbar),
+  #content-panel-inner:has(#content-wrapper[data-article-purity="true"])
+    #tab-bar-wrapper:not(.article-side-tabbar) {
+    display: none;
+  }
+
   /* 标签栏被 moveSideTabBar() 搬进了右栏，这里让它当一张 sticky 卡片：
      与目录卡同一套滚动行为 —— 粘在导航栏下方，滚到这一列结束自然跟着上移。
      不再用 fixed：fixed 永远贴视口，追不出 sticky 的收尾。 */
