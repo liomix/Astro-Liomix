@@ -63,43 +63,6 @@ html.is-animating .transition-swup-fade {
 }
 
 /* --------------------------------------------------------------------------
-   1b. 侧栏 / 多标签栏跟随切页过渡
-   -------------------------------------------------------------------------- */
-
-/* 这些是 swup 容器之外的静态 DOM，不参与内容动画。不补这一段的话，切页会变成
-   「内容在淡出、侧栏纹丝不动」；而纯净模式又要在这里显隐卡片，硬切一下更突兀。
-   让它们与 .transition-main 同节奏淡出淡入，状态切换就能藏在淡出里，用户看不到分步变化。
-   opacity / transform 必须 !important：#left-sidebar 带 onload-animation，
-   它的 animation-fill-mode: forwards 会一直压着这两个属性。 */
-#left-sidebar,
-#right-sidebar,
-#tab-bar-wrapper,
-#mobile-bottom-sidebar {
-    transition:
-        opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-        transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* 用自管类而不是 swup 的 is-animating：那个类由 swup 内部维护，一旦某次导航被中断
-   （快速连点、HMR 打断、hook 抛错）就清不掉，侧栏会永久停在 opacity:0 ——
-   表现就是「左右两边的卡片全都不见了」。nav-fading 由 swup-transitions 显式加/移除，
-   并且带 1.5s 超时兜底，绝不会赖在页面上。 */
-html.nav-fading #left-sidebar,
-html.nav-fading #right-sidebar,
-html.nav-fading #tab-bar-wrapper,
-html.nav-fading #mobile-bottom-sidebar {
-    opacity: 0 !important;
-    transform: translateY(-1rem) !important;
-}
-
-/* 切页期间提升到合成层：侧栏里有头图、日历这类重绘成本高的卡片 */
-html.nav-fading #left-sidebar,
-html.nav-fading #right-sidebar,
-html.nav-fading #tab-bar-wrapper {
-    will-change: transform, opacity;
-}
-
-/* --------------------------------------------------------------------------
    2. Keyframes
    -------------------------------------------------------------------------- */
 
@@ -118,8 +81,11 @@ html.nav-fading #tab-bar-wrapper {
    3. Onload Animations
    -------------------------------------------------------------------------- */
 
+/* 不要在这里写 opacity: 0。
+   起始透明由 keyframes 的 from 帧负责，元素默认可见 —— 这样动画一旦被取消
+   （中途 display:none、swup 换页打断、浏览器丢弃动画），元素退化成"直接显示"
+   而不是永远停在 opacity:0。侧栏整列消失就是这么来的。 */
 .onload-animation {
-    opacity: 0;
     animation: fade-in-up 120ms ease-out forwards;
 }
 

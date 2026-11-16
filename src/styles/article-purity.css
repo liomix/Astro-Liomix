@@ -52,11 +52,9 @@
     z-index: 1;
     /* 目录卡的容器（#left-sidebar-sticky）在 dynamic 导航栏显隐时是 0.2s 滑上去的，
        这里必须同款，否则 top 一变就是硬跳，看着比目录卡"生硬"。
-       opacity / transform 是切页淡出用的，得一起列出来 —— transition 是整条覆盖的。 */
-    transition:
-      opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-      transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
-      top 0.2s ease-out;
+       只过渡 top：侧栏不再参与切页淡出（见 transition.css 的说明），
+       留 opacity/transform 只会给别处误加样式留后门。 */
+    transition: top 0.2s ease-out;
   }
 
   #tab-bar-wrapper.article-side-tabbar #tab-bar {
@@ -130,5 +128,56 @@
   #tab-bar-wrapper.article-side-tabbar .tab-item .tab-link {
     flex: 1 1 auto;
     max-width: none;
+  }
+
+  /* 标签多到要滚时不要露出原生滚动条：竖排列表本来就只有 17.5rem 宽，
+     一条灰条占掉 6px 还会在 hover 时闪现。滚动能力保留，UI 藏掉。 */
+  #tab-bar-wrapper.article-side-tabbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #tab-bar-wrapper.article-side-tabbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  /* 固定标签在竖排里也走整行：横版那套「2.25rem 正方形 + 标题首字」在竖列表里
+     像个错位的色块，而且首字和下面的整行标题对不齐。这里恢复完整标题，
+     用左侧主色边条表示固定态。 */
+  #tab-bar-wrapper.article-side-tabbar .tab-item[data-pinned] {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+    justify-content: space-between;
+    border-left: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  }
+
+  #tab-bar-wrapper.article-side-tabbar .tab-item[data-pinned] .tab-link {
+    display: block;
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  #tab-bar-wrapper.article-side-tabbar .tab-item[data-pinned] .tab-pin {
+    display: none;
+  }
+
+  /* 关闭按钮在竖排里常显：横版靠 hover 才亮，竖列表里鼠标要扫过每一行才找到，
+     体验太差。这里让它一直露出来，只压低透明度，别抢标题的视觉。 */
+  #tab-bar-wrapper.article-side-tabbar .tab-close {
+    opacity: 0.45;
+    pointer-events: auto;
+  }
+
+  #tab-bar-wrapper.article-side-tabbar .tab-item:hover .tab-close,
+  #tab-bar-wrapper.article-side-tabbar .tab-item[data-active] .tab-close {
+    opacity: 0.85;
+  }
+
+  #tab-bar-wrapper.article-side-tabbar .tab-close:hover {
+    opacity: 1;
   }
 }

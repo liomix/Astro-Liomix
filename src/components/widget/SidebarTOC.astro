@@ -139,6 +139,12 @@ const items = encrypted ? [] : computeTocItems(headings, { maxLevel: 3 });
       setTimeout(initSidebarTOC, 100);
     });
 
+    // swup 4 的主事件：contentReplaced 是 swup 3 的旧名，在这里不一定派发。
+    // 缺了这条，切到别的文章再切回来，目录会停在空态（卡片高度塌成 0）。
+    document.addEventListener("swup:page:view", () => {
+      setTimeout(initSidebarTOC, 100);
+    });
+
     // Astro 页面切换事件
     document.addEventListener("astro:page-load", () => {
       setTimeout(initSidebarTOC, 100);
