@@ -11,6 +11,7 @@ import {
 	syncFullscreenStateAfterInit,
 } from "@/utils/fullscreen-wallpaper-utils";
 import {
+	moveSideTabBar,
 	refreshSidebarStickyState,
 	updateMainGridCols,
 	updateSidebarComponentsVisibility,
@@ -58,11 +59,21 @@ export function initLayout(): void {
 		scheduleContentOverflowEnhancements();
 	}
 
+	// 竖版标签栏只在 xl 生效：首屏也要搬一次（applyPurityModes 只挂在切页钩子上），
+	// 窗口跨过 1280 时也要搬回/搬进右栏，否则窄屏下它留在 display:none 的右栏里看不见
+	const syncSideTabBar = () => {
+		const host = document.getElementById("content-panel-inner");
+		moveSideTabBar(
+			host?.dataset.articlePurity === "true" && window.innerWidth >= 1280,
+		);
+	};
+
 	// Initialize wallpaper mode
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", () => {
 			updateMainGridCols();
 			updateSidebarComponentsVisibility();
+			syncSideTabBar();
 			initWallpaperMode();
 			initThemeListener();
 			initIconLoader();
@@ -71,6 +82,7 @@ export function initLayout(): void {
 	} else {
 		updateMainGridCols();
 		updateSidebarComponentsVisibility();
+		syncSideTabBar();
 		initWallpaperMode();
 		initThemeListener();
 		initIconLoader();
@@ -78,6 +90,14 @@ export function initLayout(): void {
 	}
 
 	initImageLoadFadeIn();
+	let sideTabBarFrame = 0;
+	window.addEventListener("resize", () => {
+		if (sideTabBarFrame) return;
+		sideTabBarFrame = requestAnimationFrame(() => {
+			sideTabBarFrame = 0;
+			syncSideTabBar();
+		});
+	});
 	// 切页换入后延到下一帧再重扫 LQIP fade-in，避免 astro:page-load 在同帧叠加
 	// 一堆游标/事件重扫阻塞换入首帧（swup:contentReplaced 已 rAF，一并延后）
 	document.addEventListener("astro:page-load", () => {

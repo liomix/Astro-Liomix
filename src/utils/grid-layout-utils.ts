@@ -120,9 +120,12 @@ export function applyPurityModes(targetUrl: string): void {
 		setPurityAttr(host, "data-nav-purity", isNavPurityPage(pathname, navPaths));
 	}
 
-	// 文章页：只留目录、目录移到左列、标签栏竖排到右列
+	// 文章页：只留目录（目录卡已配在左栏），标签栏竖排搬进右列
 	if (articlePurityConfig.enable) {
-		setPurityAttr(host, "data-article-purity", isArticleDetailPage(pathname));
+		const articlePurity = isArticleDetailPage(pathname);
+		setPurityAttr(host, "data-article-purity", articlePurity);
+		// 竖版只在 xl 生效：更窄的断点右栏不显示，搬进去会看不见，所以留原位横版
+		moveSideTabBar(articlePurity && window.innerWidth >= 1280);
 	}
 }
 
@@ -206,4 +209,34 @@ export function updateSidebarStickySpacing(): void {
 			sidebarStickyState[side].topClass = nextTopClass;
 		}
 	});
+}
+
+/**
+ * 文章页纯净模式：把多标签栏搬进右栏，当成一张 sticky 卡片。
+ *
+ * 它原本在 #content-column 内部（正文上方），成不了外层 grid item，所以之前只能用
+ * fixed 悬浮 —— 但 fixed 不会像 sticky 那样「到父容器底部就停」，和左栏的目录卡
+ * 观感对不上。直接把节点搬进 #right-sidebar（纯净模式下那一列是空的）就解决了：
+ * sticky 相对这一列生效，滚动行为与目录卡完全一致，不用任何滚动补偿。
+ *
+ * 只搬一次（父节点相同就跳过）。搬回时插到 #content-column 最前面，恢复原位。
+ */
+export function moveSideTabBar(side: boolean): void {
+	const wrapper = document.getElementById("tab-bar-wrapper");
+	const column = document.getElementById("content-column");
+	const rightSidebar = document.getElementById("right-sidebar");
+	if (!wrapper || !column || !rightSidebar) return;
+
+	if (side) {
+		if (wrapper.parentElement !== rightSidebar) {
+			wrapper.classList.add("article-side-tabbar");
+			rightSidebar.append(wrapper);
+		}
+		return;
+	}
+
+	if (wrapper.parentElement !== column) {
+		wrapper.classList.remove("article-side-tabbar");
+		column.prepend(wrapper);
+	}
 }

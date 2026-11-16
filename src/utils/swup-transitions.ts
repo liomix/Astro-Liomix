@@ -151,6 +151,14 @@ function registerSwupHooks(): void {
 		// 只记下目标地址，不动布局：后面有 FLIP 要量 content-panel，先改布局会让位移算错
 		navTargetUrl = visit.to.url;
 
+		// 侧栏 / 多标签栏跟着内容一起淡出（类名自管，见 transition.css）。
+		// 1.5s 超时兜底：导航被中断时 swup 不一定会走到 page:view，
+		// 不兜底的话侧栏会一直停在 opacity:0 —— 看起来就是卡片全没了
+		document.documentElement.classList.add("nav-fading");
+		window.setTimeout(() => {
+			document.documentElement.classList.remove("nav-fading");
+		}, 1500);
+
 		// Start progress bar（WAAPI 合成线程动画，不强制回流）
 		startProgressBar();
 
@@ -234,6 +242,8 @@ function registerSwupHooks(): void {
 		updateMainGridCols();
 		// 以同一个目标地址再校一次（钩子万一没跑到，也不会留下错的状态）
 		applyPurityModes(navTargetUrl || window.location.href);
+		// 新页面就位，侧栏淡入回来
+		document.documentElement.classList.remove("nav-fading");
 		updateSidebarComponentsVisibility();
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4

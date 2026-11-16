@@ -80,26 +80,22 @@ html.is-animating .transition-swup-fade {
         transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-html.is-animating.is-leaving #left-sidebar,
-html.is-animating.is-leaving #right-sidebar,
-html.is-animating.is-leaving #tab-bar-wrapper,
-html.is-animating.is-leaving #mobile-bottom-sidebar {
+/* 用自管类而不是 swup 的 is-animating：那个类由 swup 内部维护，一旦某次导航被中断
+   （快速连点、HMR 打断、hook 抛错）就清不掉，侧栏会永久停在 opacity:0 ——
+   表现就是「左右两边的卡片全都不见了」。nav-fading 由 swup-transitions 显式加/移除，
+   并且带 1.5s 超时兜底，绝不会赖在页面上。 */
+html.nav-fading #left-sidebar,
+html.nav-fading #right-sidebar,
+html.nav-fading #tab-bar-wrapper,
+html.nav-fading #mobile-bottom-sidebar {
     opacity: 0 !important;
-    transform: translateY(-2rem) !important;
-}
-
-html.is-animating:not(.is-leaving) #left-sidebar,
-html.is-animating:not(.is-leaving) #right-sidebar,
-html.is-animating:not(.is-leaving) #tab-bar-wrapper,
-html.is-animating:not(.is-leaving) #mobile-bottom-sidebar {
-    opacity: 0 !important;
-    transform: translateY(2rem) !important;
+    transform: translateY(-1rem) !important;
 }
 
 /* 切页期间提升到合成层：侧栏里有头图、日历这类重绘成本高的卡片 */
-html.is-changing #left-sidebar,
-html.is-changing #right-sidebar,
-html.is-changing #tab-bar-wrapper {
+html.nav-fading #left-sidebar,
+html.nav-fading #right-sidebar,
+html.nav-fading #tab-bar-wrapper {
     will-change: transform, opacity;
 }
 

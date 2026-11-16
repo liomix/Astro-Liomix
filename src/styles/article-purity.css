@@ -37,34 +37,55 @@
    768–1279 是两列（tabletSidebar 只显示一侧），固定 17.5rem 宽的竖栏会压在正文上，
    所以那一段保持原来的横版，只是卡片被过滤掉。 */
 @media (min-width: 1280px) {
-  #content-panel-inner[data-article-purity="true"] #tab-bar-wrapper {
-    /* 面板 92vw 居中后的两侧留白 + #main-grid 的 px-4，与第 3 列右边缘对齐 */
-    --article-purity-gutter: calc(
-      max(0px, (100vw - min(92vw, var(--page-width)))) / 2 + 1rem
-    );
-
-    position: fixed !important;
+  /* 标签栏被 moveSideTabBar() 搬进了右栏，这里让它当一张 sticky 卡片：
+     与目录卡同一套滚动行为 —— 粘在导航栏下方，滚到这一列结束自然跟着上移。
+     不再用 fixed：fixed 永远贴视口，追不出 sticky 的收尾。 */
+  #tab-bar-wrapper.article-side-tabbar {
+    position: sticky;
     top: 5.5rem;
-    right: var(--article-purity-gutter);
-    bottom: 1rem;
-    width: var(--grid-sidebar-width);
+    width: 100%;
+    /* 高度贴合内容：标签少时是一张矮卡，和左边目录卡一个观感；
+       多了就撑到视口高、内部滚动，不会顶出屏幕 */
+    max-height: calc(100vh - 6.5rem);
+    overflow-y: auto;
     margin: 0;
-    z-index: 6;
+    z-index: 1;
+    /* 目录卡的容器（#left-sidebar-sticky）在 dynamic 导航栏显隐时是 0.2s 滑上去的，
+       这里必须同款，否则 top 一变就是硬跳，看着比目录卡"生硬"。
+       opacity / transform 是切页淡出用的，得一起列出来 —— transition 是整条覆盖的。 */
+    transition:
+      opacity 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      transform 120ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      top 0.2s ease-out;
   }
 
-  /* 卡片撑满固定框：用 absolute inset 而不是 height:100%，
-     后者依赖父级的确定高度，一旦 wrapper 的定位被别处改掉就只剩内容高度 */
-  #content-panel-inner[data-article-purity="true"] #tab-bar {
-    position: absolute;
-    inset: 0;
+  #tab-bar-wrapper.article-side-tabbar #tab-bar {
     display: flex;
     flex-direction: column;
     margin-bottom: 0;
-    overflow: hidden;
   }
 
-  /* 竖排：home 在上，分隔线横过来，标签列纵向滚动 */
-  #content-panel-inner[data-article-purity="true"] .tab-bar-inner {
+  /* 与 #left-sidebar-sticky 逐条对齐：dynamic 导航栏下滑隐藏时 body 会带
+     dynamic-navbar-hidden，侧栏的粘性位置从 5.5rem 收到 1rem。
+     标签栏必须跟着走，否则滚动后会比目录卡低 72px（导航栏的高度）。 */
+  body.dynamic-navbar #tab-bar-wrapper.article-side-tabbar {
+    top: 5.5rem;
+  }
+
+  body.dynamic-navbar.dynamic-navbar-hidden #tab-bar-wrapper.article-side-tabbar {
+    top: 1rem;
+  }
+
+  /* 右栏顶部那个容器（公告 / 动态卡）在纯净模式下卡片全被隐藏，只剩一个
+     mb-4 的空壳，会把标签栏整体往下顶 1rem —— 去掉它才和目录卡齐平 */
+  #content-panel-inner[data-article-purity="true"] #right-sidebar > div:first-child {
+    margin-bottom: 0;
+  }
+
+  /* 竖排：home 在上，分隔线横过来，标签列纵向滚动。
+     选择器都挂在 .article-side-tabbar 上 —— 只有真的搬进右栏才竖排，
+     否则窄屏下（没搬）标签栏会变成竖的却还横在正文上方。 */
+  #tab-bar-wrapper.article-side-tabbar .tab-bar-inner {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
@@ -72,26 +93,26 @@
     min-height: 0;
   }
 
-  #content-panel-inner[data-article-purity="true"] .tab-home {
+  #tab-bar-wrapper.article-side-tabbar .tab-home {
     align-self: center;
     flex: none;
   }
 
-  #content-panel-inner[data-article-purity="true"] .tab-divider {
+  #tab-bar-wrapper.article-side-tabbar .tab-divider {
     width: 100%;
     height: 1px;
     align-self: auto;
     flex: none;
   }
 
-  #content-panel-inner[data-article-purity="true"] .tab-scroll-area {
+  #tab-bar-wrapper.article-side-tabbar .tab-scroll-area {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
   }
 
-  #content-panel-inner[data-article-purity="true"] .tab-strip {
+  #tab-bar-wrapper.article-side-tabbar .tab-strip {
     flex-direction: column;
     align-items: stretch;
     gap: 0.375rem;
@@ -100,13 +121,13 @@
   }
 
   /* 每个标签占满一行：标题在左、关闭按钮在右 */
-  #content-panel-inner[data-article-purity="true"] .tab-item {
+  #tab-bar-wrapper.article-side-tabbar .tab-item {
     width: 100%;
     min-width: 0;
     justify-content: space-between;
   }
 
-  #content-panel-inner[data-article-purity="true"] .tab-item .tab-link {
+  #tab-bar-wrapper.article-side-tabbar .tab-item .tab-link {
     flex: 1 1 auto;
     max-width: none;
   }
