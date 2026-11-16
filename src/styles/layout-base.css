@@ -269,13 +269,53 @@
 }
 
 /* 导航页纯净模式（src/config/navPurityConfig.ts 控制范围）---------------------
-   开关是 #content-panel-inner 上的 data-nav-purity：SSR 写初值，swup 切页后由
-   updateNavPurityMode() 按当前路径更新。
-   这里只做 display:none —— 不碰 #main-grid 的列几何，卡片消失后侧栏列照样占着
-   位置，正文宽度保持不变。.nav-purity-hide 由 SideBar.astro 打在「非 keepWidgets」
-   的卡片上（默认除个人资料外全部）。
+   开关是 #content-panel-inner 上的 data-nav-purity，两条路各管一段时机：
+     - SSR 写首屏初值（直接访问导航页也不闪）；
+     - link 点击的 visit:start 就按目标 URL 提前切（previewNavPurity）—— 侧栏与
+       多标签栏是 swup 容器之外的静态 DOM，等新内容进来再切就已经看得见了；
+     - page:view 再按 #content-wrapper 的实际状态校正一次（内容永远是权威）。
+   只做 display:none —— 不碰 #main-grid 的列几何，卡片消失后侧栏列照样占着位置，
+   正文宽度保持不变。.nav-purity-hide 由 SideBar.astro 打在「非 keepWidgets」的
+   卡片上（默认除个人资料外全部）。
    不放进 @layer：要压过 utilities 层里给卡片加的 .hidden / 显示类。 */
 #content-panel-inner[data-nav-purity="true"] #tab-bar-wrapper,
 #content-panel-inner[data-nav-purity="true"] .nav-purity-hide {
   display: none;
+}
+
+/* 导航页纯净模式下，侧栏只剩一张资料卡 —— 让它钉在视口里，不随列表滚走。
+   钉的是侧栏本身（#left-sidebar），不是里面那张卡片：卡片所在的 top 容器在
+   flex 列里，父级虽然被 stretch 到行高，但 sticky 能不能留出滚动余地依赖这层
+   高度传递，在 display:contents 包裹层 + grid 的这套结构里并不可靠（实测会跟着滚）。
+   直接钉 grid item 更稳：grid area 的高度就是整列内容高度，天然有滚动空间。
+   align-self: start 是关键 —— 默认 stretch 会让侧栏高度 == 行高，反而没得粘。
+   top 跟导航栏走：dynamic / fixed 都占着顶部 4.5rem，所以让到 5.5rem（留 1rem 间隙）；
+   static 时 1rem 就够。max-height + overflow 兜住「卡片比视口还高」的极端情况。
+   只在桌面端生效：<768px 侧栏本来就不显示。 */
+@media (min-width: 768px) {
+  #content-panel-inner[data-nav-purity="true"] #left-sidebar,
+  #content-panel-inner[data-nav-purity="true"] #right-sidebar {
+    position: sticky;
+    top: 1rem;
+    align-self: start;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+
+  body.sticky-navbar #content-panel-inner[data-nav-purity="true"] #left-sidebar,
+  body.dynamic-navbar #content-panel-inner[data-nav-purity="true"] #left-sidebar,
+  body.sticky-navbar #content-panel-inner[data-nav-purity="true"] #right-sidebar,
+  body.dynamic-navbar #content-panel-inner[data-nav-purity="true"] #right-sidebar {
+    top: 5.5rem;
+    max-height: calc(100vh - 6.5rem);
+  }
+}
+
+/* 导航页纯净模式下导航栏常显。
+   dynamic 模式本来会随下滑藏起来（scroll-utils 里已经跳过隐藏），这条是兜底：
+   残留的 .navbar-hidden 或别处加的类都不生效。写法与 body.sticky-navbar 那条一致。 */
+body:has(#content-panel-inner[data-nav-purity="true"]) #navbar-wrapper.navbar-hidden {
+  opacity: 1 !important;
+  transform: none !important;
+  translate: none !important;
 }

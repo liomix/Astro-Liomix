@@ -81,9 +81,9 @@ const shouldRenderTabBar = !!siteConfig.tabBar;
 
 /**
  * 导航页纯净模式。
- * 范围由导航栏里的站内链接自动推导；SSR 把结果写进 data 属性，客户端切页时
- * 只按属性重算 —— 侧栏与多标签栏是静态容器（不在 swup 的 containers 里），
- * 不会被重建，所以「显不显示」只能靠这个状态属性 + CSS，DOM 结构保持不变。
+ * 范围由导航栏里的站内链接自动推导，结果写进数据属性：SSR 决定首屏，
+ * 客户端在 visit:start 按目标地址提前切（详见 grid-layout-utils 的 previewNavPurity）。
+ * #content-wrapper 上也写一份 —— 它是 swup 整块替换的那一层，page:view 时用来校正。
  */
 const navPurityPaths = collectNavPurityPaths(
 	navBarConfig.links,

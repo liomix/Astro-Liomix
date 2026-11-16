@@ -8,8 +8,8 @@ import {
 	updateFullscreenTitleParallax,
 } from "@/utils/fullscreen-wallpaper-utils";
 import {
+	previewNavPurity,
 	updateMainGridCols,
-	updateNavPurityMode,
 	updateSidebarComponentsVisibility,
 } from "@/utils/grid-layout-utils";
 import { scrollFunction } from "@/utils/scroll-utils";
@@ -59,6 +59,15 @@ function finishProgressBar(): void {
 }
 
 /**
+ * 本次导航的目标地址（visit:start 记下）。
+ *
+ * 纯净模式只认这一个来源：侧栏与多标签栏是 swup 容器之外的静态 DOM，看不到新内容，
+ * 而新内容上的状态属性在替换过程中并不保证能带过来 —— 之前就是靠读它，属性一丢
+ * 卡片和标签栏又冒出来了。用目标 URL 算，等于把「要去哪」这件事在出发时就确定。
+ */
+let navTargetUrl = "";
+
+/**
  * Swup 页面切换编排（从 Layout.astro 迁出）。
  * 注册 link:click / content:replace / visit:start / page:view / visit:end 钩子。
  */
@@ -103,6 +112,10 @@ function registerSwupHooks(): void {
 		},
 	);
 	window.swup.hooks.on("content:replace", () => {
+		// 纯净模式在这里切：旧内容（连带侧栏）已经淡出，新内容还没露脸，
+		// 改卡片显隐用户看不见。用 visit:start 记下的目标地址，不读钩子参数也不读新 DOM
+		previewNavPurity(navTargetUrl || window.location.href);
+
 		initializeFloatingPanels();
 
 		// 侧边栏组件可见性由 page:view 统一更新（含 refreshSidebarStickyState 的
@@ -135,6 +148,9 @@ function registerSwupHooks(): void {
 		}
 	});
 	window.swup.hooks.on("visit:start", (visit: { to: { url: string } }) => {
+		// 只记下目标地址，不动布局：后面有 FLIP 要量 content-panel，先改布局会让位移算错
+		navTargetUrl = visit.to.url;
+
 		// Start progress bar（WAAPI 合成线程动画，不强制回流）
 		startProgressBar();
 
@@ -216,8 +232,8 @@ function registerSwupHooks(): void {
 	window.swup.hooks.on("page:view", () => {
 		// 更新网格列数和侧边栏组件可见性
 		updateMainGridCols();
-		// 纯净模式先定下来：后面重算 sticky 间距会读 offsetHeight
-		updateNavPurityMode();
+		// 以同一个目标地址再校一次（钩子万一没跑到，也不会留下错的状态）
+		previewNavPurity(navTargetUrl || window.location.href);
 		updateSidebarComponentsVisibility();
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4

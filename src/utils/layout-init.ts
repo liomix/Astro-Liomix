@@ -13,7 +13,6 @@ import {
 import {
 	refreshSidebarStickyState,
 	updateMainGridCols,
-	updateNavPurityMode,
 	updateSidebarComponentsVisibility,
 } from "@/utils/grid-layout-utils";
 import { initIconLoader } from "@/utils/icon-loader";
@@ -63,7 +62,6 @@ export function initLayout(): void {
 	if (document.readyState === "loading") {
 		document.addEventListener("DOMContentLoaded", () => {
 			updateMainGridCols();
-			updateNavPurityMode();
 			updateSidebarComponentsVisibility();
 			initWallpaperMode();
 			initThemeListener();
@@ -72,7 +70,6 @@ export function initLayout(): void {
 		});
 	} else {
 		updateMainGridCols();
-		updateNavPurityMode();
 		updateSidebarComponentsVisibility();
 		initWallpaperMode();
 		initThemeListener();

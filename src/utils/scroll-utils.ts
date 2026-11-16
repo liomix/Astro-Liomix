@@ -48,6 +48,17 @@ export function scrollFunction(): void {
 		const delta = scrollTop - lastScrollTop;
 		lastScrollTop = scrollTop;
 		operations.push(() => {
+			// 导航页纯净模式：导航栏常显 —— 这些页面本来就在长列表里翻找，
+			// 下滑就藏起来反而要上滑才找得到。状态读 #content-panel-inner 上的开关，
+			// 它与 CSS 用的是同一份（visit:start 就切好了，不等到切页结束）
+			if (
+				document.getElementById("content-panel-inner")?.dataset.navPurity ===
+				"true"
+			) {
+				navbar.classList.remove("navbar-hidden");
+				document.body.classList.remove("dynamic-navbar-hidden");
+				return;
+			}
 			const isHome = document.body.classList.contains("is-home");
 			// 壁纸/hero 边界：banner 首页 65vh、非首页 45vh；fullscreen 仅首页整屏（100lvh），非首页无 hero 为 0。
 			// 越过该边界才启用「下滑隐藏 / 上滑显示」。overHero 不 gate isHome，故非首页 banner 也会跨壁纸保持

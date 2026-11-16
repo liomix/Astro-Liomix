@@ -73,30 +73,55 @@ export function updateMainGridCols(): void {
 	}
 }
 
-/**
- * 导航页纯净模式的显隐开关。
- *
- * 初值由 SSR 写在 #content-panel-inner 上；这里按当前路径重算一次，供 swup 切页
- * 后更新。多标签栏与侧栏都在 swup 容器之外，切页不会重建，所以只能改这个状态
- * 属性、由 CSS 决定谁不显示 —— 卡片是 display:none，列宽一点没动，正文宽度
- * 因此保持不变（这正是「纯净模式但页面宽度不变」的实现方式）。
- */
-export function updateNavPurityMode(): void {
+/** 读 #main-grid 上 SSR 写的纯净模式范围；未启用或没配到页面时返回 null */
+function readNavPurityPaths(): string[] | null {
 	const mainGrid = document.getElementById("main-grid");
-	const varHost = document.getElementById("content-panel-inner");
-	if (!mainGrid || !varHost) return;
-
-	const enabled = mainGrid.getAttribute("data-nav-purity-enable") === "true";
-	const paths = (mainGrid.getAttribute("data-nav-purity-paths") ?? "")
+	if (!mainGrid || mainGrid.getAttribute("data-nav-purity-enable") !== "true") {
+		return null;
+	}
+	const raw = mainGrid.getAttribute("data-nav-purity-paths") ?? "";
+	return raw
 		.split(",")
 		.map((path) => path.trim())
 		.filter(Boolean);
+}
 
-	const active = enabled && isNavPurityPage(window.location.pathname, paths);
+/** 写开关。状态放在 #content-panel-inner 上：侧栏与多标签栏都是它的后代 */
+function applyNavPurity(active: boolean): void {
+	const host = document.getElementById("content-panel-inner");
+	if (!host) return;
 	const next = active ? "true" : "false";
-	if (varHost.getAttribute("data-nav-purity") !== next) {
-		varHost.setAttribute("data-nav-purity", next);
+	if (host.getAttribute("data-nav-purity") !== next) {
+		host.setAttribute("data-nav-purity", next);
 	}
+}
+
+/**
+ * 链接点击的瞬间（swup 的 visit:start）就按目标地址把状态切过去。
+ *
+ * 侧栏与多标签栏是 swup 容器之外的静态 DOM，切页不会重建它们：如果等新内容替换
+ * 完（甚至等 page:view）再切，过渡这一整段用户都还看得见上一页的样子 —— 表现就是
+ * 「多标签栏先渲染出来、等进度条跑完才消失」。
+ */
+/**
+ * 按目标地址切换纯净模式状态（状态唯一来源就是 URL）。
+ *
+ * 调用点有两处：content:replace（旧内容已淡出、新内容还没出现，此刻切看不见）
+ * 和 page:view（兜底，防止某个钩子没跑到）。
+ * 不读新 DOM 上的属性 —— swup 替换容器的时序不可靠，属性一旦没带过来就会退回
+ * 「卡片又显示出来」。
+ */
+export function previewNavPurity(targetUrl: string): void {
+	const paths = readNavPurityPaths();
+	if (!paths) return;
+
+	let pathname: string;
+	try {
+		pathname = new URL(targetUrl, window.location.href).pathname;
+	} catch {
+		return;
+	}
+	applyNavPurity(isNavPurityPage(pathname, paths));
 }
 
 // 更新侧边栏组件的可见性
