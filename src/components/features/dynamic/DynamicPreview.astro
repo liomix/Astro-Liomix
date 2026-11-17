@@ -2,7 +2,7 @@
 import { getImage } from "astro:assets";
 import * as path from "node:path";
 import type { ImageMetadata } from "astro";
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import DynamicSidebar from "@/components/features/dynamic/DynamicSidebar.svelte";
 import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -72,7 +72,7 @@ const avatarPosterUrl = profileConfig.avatarPoster
 
 {
 	siteConfig.pages.dynamic && (
-		<WidgetLayout
+		<WidgetFrame
 			name={i18n(I18nKey.latestDynamics)}
 			showTitle={showTitle}
 			id="latest-dynamics"
@@ -89,6 +89,6 @@ const avatarPosterUrl = profileConfig.avatarPoster
 				{avatarUrl}
 				avatarPosterUrl={avatarPosterUrl}
 			/>
-		</WidgetLayout>
+		</WidgetFrame>
 	)
 }

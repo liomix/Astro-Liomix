@@ -3,7 +3,7 @@ import { Icon } from "astro-icon/components";
 import "@/styles/markdown.css";
 import "@/styles/markdown-extend.styl";
 import AvatarImage from "@/components/ui/AvatarImage.astro";
-import DynamicActions from "@/components/features/dynamic/DynamicActions.astro";
+import DynamicActionBar from "@/components/features/dynamic/DynamicActionBar.astro";
 import DynamicGallery from "@/components/features/dynamic/DynamicGallery.astro";
 import { dynamicConfig, profileConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -52,7 +52,7 @@ const profileUrl = url(dynamicConfig.profileUrl || "/");
 				<a class="page-time" data-dynamic-permalink>
 					<time data-dynamic-time></time>
 				</a>
-				<DynamicActions />
+				<DynamicActionBar />
 			</footer>
 		</article>
 	</dynamic-entry>

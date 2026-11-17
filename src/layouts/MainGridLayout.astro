@@ -5,10 +5,10 @@ import SpineModel from "@/components/features/effects/SpineModel.astro";
 import Footer from "@/components/shell/Footer.astro";
 import HeaderTopRow from "@/components/shell/HeaderTopRow.astro";
 import NavMenuPanel from "@/components/shell/NavMenuPanel.astro";
-import SideBar from "@/components/shell/SideBar.astro";
+import Sidebar from "@/components/shell/Sidebar.astro";
 import type { MarkdownHeading } from "astro";
 import FloatingControls from "@/components/controls/FloatingControls.astro";
-import MessagePop from "@/components/ui/MessagePop.svelte";
+import ToastHost from "@/components/shell/ToastHost.svelte";
 import TabBar from "@/components/shell/TabBar.astro";
 import SidebarColumn from "@/components/shell/SidebarColumn.astro";
 import WallpaperSection from "@/components/shell/WallpaperSection.astro";
@@ -186,7 +186,7 @@ const {
                 {/* 移动端底部组件：<768px 时 #main-grid 是 display:block，必须排在页脚之前 */}
                 {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && (
                     <div id="mobile-bottom-sidebar" class="block md:hidden mt-4">
-                        <SideBar side="bottom" headings={headings} encrypted={encrypted}></SideBar>
+                        <Sidebar side="bottom" headings={headings} encrypted={encrypted}></Sidebar>
                     </div>
                 )}
             </div>
@@ -209,7 +209,7 @@ const {
         {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
 
         {/* 全局消息提示宿主：全站只挂一次，任意脚本用 showMessage() 发消息 */}
-        <MessagePop client:idle />
+        <ToastHost client:idle />
 
         {/* 页脚宽度跨「侧栏 + 内容栏」，故在 #content-column 之外；又在 Swup 容器之外，
             切页不重渲染 */}

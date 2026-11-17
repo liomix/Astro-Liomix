@@ -1,5 +1,5 @@
 ---
-import SideBar from "@/components/shell/SideBar.astro";
+import Sidebar from "@/components/shell/Sidebar.astro";
 import type { MarkdownHeading } from "astro";
 
 interface Props {
@@ -32,7 +32,7 @@ const staticId =
 // 双侧栏或该侧为主侧栏时用静态容器（不被 swup 替换，避免闪烁）；否则用动态容器
 const staticShown = position === "both" || position === side;
 const hasComponents = side === "left" ? hasLeftComponents : hasRightComponents;
-// 左侧静态容器在非双侧栏时 side 传 undefined（SideBar 内部回退为 "left"）
+// 左侧静态容器在非双侧栏时 side 传 undefined（Sidebar 内部回退为 "left"）
 const staticSideBarSide =
 	side === "left"
 		? position === "both"
@@ -48,7 +48,7 @@ const staticSideBarSide =
 			data-hide-sidebar-on-post={hideSidebarOnPostPage ? "true" : "false"}
 		>
 			{hasComponents && (
-				<SideBar
+				<Sidebar
 					side={staticSideBarSide}
 					class={sidebarClass}
 					headings={headings}

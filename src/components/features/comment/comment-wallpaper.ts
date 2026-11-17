@@ -28,7 +28,7 @@
  *
  * 性能：
  *   - lottie-web 与几 MB 的 JSON 都按需加载：悬浮 / 聚焦评论按钮时，抽屉会先把 iframe
- *     建好并在后台加载（dynamic-comment-drawer.ts 的 prewarmDrawer），等真正点开时
+ *     建好并在后台加载（comment-drawer.ts 的 prewarmDrawer），等真正点开时
  *     壁纸已经画好了 —— 这也是「打开即成品」的另一半。
  *   - 只画一帧就停，没有逐帧 rAF：整帧上千层画一遍要 10ms 上下，之后的「动」
  *     全交给合成层的 CSS 变换。

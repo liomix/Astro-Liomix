@@ -1,5 +1,5 @@
 ---
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import PostActivity from "@/components/features/stats/PostActivity.astro";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -87,7 +87,7 @@ const stats: StatTile[] = [
 ];
 ---
 
-<WidgetLayout name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={className} style={style}>
+<WidgetFrame name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={className} style={style}>
   <div class="stats-tiles">
     {stats.map((stat) => (
       <div class="stats-tile">
@@ -101,7 +101,7 @@ const stats: StatTile[] = [
 
   {/* 日历卡片的下半部分：年度热力图 + 全站最新文章列表 */}
   <PostActivity />
-</WidgetLayout>
+</WidgetFrame>
 
 <style>
   .stats-tiles {

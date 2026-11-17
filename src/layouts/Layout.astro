@@ -3,7 +3,7 @@ import PostViewCounter from "@/components/features/stats/PostViewCounter.astro";
 import SiteVisitCounter from "@/components/features/stats/SiteVisitCounter.astro";
 import CodeGroupManager from "@/components/managers/CodeGroupManager.astro";
 import FancyboxManager from "@/components/managers/FancyboxManager.astro";
-import FontSetup from "@/components/managers/FontSetup.astro";
+import FontManager from "@/components/managers/FontManager.astro";
 import GithubCardManager from "@/components/managers/GithubCardManager.astro";
 import MusicManager from "@/components/features/music/MusicManager.astro";
 import MusicPlayerView from "@/components/features/music/MusicPlayerView.astro";
@@ -511,7 +511,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
     />
 
     <!-- Font Setup (Astro Font API) -->
-    <FontSetup />
+    <FontManager />
   </head>
   <body
     class="min-h-screen"

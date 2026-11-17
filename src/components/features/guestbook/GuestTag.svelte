@@ -19,7 +19,7 @@
 		type GuestTagItem,
 		likeSlugOfGuestTag,
 		toneOfGuestTag,
-	} from "./guest-tag";
+	} from "./guestbook-tag";
 
 	interface Props {
 		note: GuestTagItem;

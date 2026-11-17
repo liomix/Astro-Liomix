@@ -112,41 +112,46 @@ function syncFrameWallpaper(): void {
 }
 
 /**
- * 几何对齐右侧栏那两张卡片：
- *   - 右边缘直接贴视口边缘、宽度 = 右栏左边缘到视口右边缘。不能只取右栏列宽
- *     （那样右边会空出 #main-grid 的 1rem 内边距，右下角 home / 齿轮两个浮动按钮
- *     正好落在那条缝里，从抽屉旁边露出来）；
- *   - 顶边对齐公告卡片：用「文档坐标」而不是当前 rect.top —— 用户往下滚一段再点评论时，
- *     卡片早已滚出视口，直接照抄会得到负数、抽屉一路贴到屏幕顶端紧贴导航栏；
- *     rect.top + scrollY 是卡片在页面顶部时相对视口的位置，滚动多少都不变；
- *   - 顶边上限压到视口 45%（有 banner 时卡片可能在视口下方很远），免得抽屉被压扁。
- * 右栏不显示时（窄屏 / 本站关侧栏）撤掉变量，交给 CSS 兜底。
+ * 抽屉只对齐「右边缘」：宽度 = 右栏左边缘 → 视口右边缘。不能只取右栏列宽
+ * （那样右边会空出 #main-grid 的 1rem 内边距，右下角 home / 齿轮两个浮动按钮
+ * 正好落在那条缝里，从抽屉旁边露出来）。
+ *
+ * **顶边不在这里算**。抽屉是贴在视口右侧的面板，顶边固定为导航栏下沿（CSS 的 5.5rem）。
+ * 早先版本去量侧栏第一张卡片的 top 来「对齐圆角」，可 banner 模式下内容面板从
+ * `65vh` 才开始 —— 量出来必然在半个屏幕以下，于是又加了「上限定为视口 45%」的夹取，
+ * 最终抽屉永远只有半个屏幕高。卡片在哪、页面多高，跟这个面板该多高没有关系。
+ *
+ * 宽度也用 offsetLeft 链而不是 `rect.left`：静止时两者等价，但 rect 会被 transform
+ * （卡片入场动画、swup 转场）临时推移，量出来会抖。
+ * 右栏不显示时（窄屏 / 本站关侧栏）撤掉变量，交给 CSS 的 100vw 兜底。
  */
+function documentLeftOf(el: HTMLElement): number {
+	let x = 0;
+	let node: HTMLElement | null = el;
+	while (node) {
+		x += node.offsetLeft;
+		node = node.offsetParent as HTMLElement | null;
+	}
+	return x;
+}
+
 function fitGeometry(drawer: HTMLElement): void {
 	// 窄屏右栏本来就不显示（有的是挪到底部），别去量它，直接交给 CSS 的 100vw 兜底
 	const desktop = window.matchMedia("(min-width: 768px)").matches;
 	const sidebar = desktop
 		? document.querySelector<HTMLElement>("#right-sidebar")
 		: null;
-	const rect = sidebar?.getBoundingClientRect();
-	if (!rect || rect.width <= 0) {
+	if (!sidebar || sidebar.offsetWidth <= 0) {
 		drawer.style.removeProperty("--comment-drawer-width");
-		drawer.style.removeProperty("--comment-drawer-top");
 		return;
 	}
 
 	const viewport = document.documentElement.clientWidth;
+	const left = documentLeftOf(sidebar) - window.scrollX;
 	drawer.style.setProperty(
 		"--comment-drawer-width",
-		`${Math.round(viewport - rect.left)}px`,
+		`${Math.round(viewport - left)}px`,
 	);
-
-	const maxTop = Math.max(8, Math.round(window.innerHeight * 0.45));
-	const top = Math.min(
-		Math.max(Math.round(rect.top + window.scrollY), 8),
-		maxTop,
-	);
-	drawer.style.setProperty("--comment-drawer-top", `${top}px`);
 }
 
 /**
@@ -480,9 +485,14 @@ export function bindCommentDrawer(): void {
 	window.addEventListener("resize", onResize, { passive: true });
 	window.addEventListener("message", onFrameMessage);
 	// 切页时抽屉 DOM 会被 Swup 换掉，顺手把状态清干净
-	document.addEventListener("swup:visit:start", () =>
-		closeCommentDrawer(false),
-	);
+	document.addEventListener("swup:visit:start", () => {
+		closeCommentDrawer(false);
+		// 隐藏不能只靠 CSS：这枚 aside 挂在 body 上，比页面的样式活得久。
+		// 切到别的页面后，若样式 chunk 被换掉，留在文档里的就是一个没有定位的裸 aside
+		// （表现为面包屑/内容区左上角冒出一块 iframe）。切页时先把内联 display 写回去，
+		// 下次 openCommentDrawer 会再摘掉。
+		getDrawer()?.style.setProperty("display", "none");
+	});
 
 	// 空闲预热：让「点开即成品」不只对鼠标用户成立
 	scheduleDrawerWarm();

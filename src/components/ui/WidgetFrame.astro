@@ -88,7 +88,7 @@ const className = Astro.props.class;
 </style>
 
 <script>
-    class WidgetLayout extends HTMLElement {
+    class WidgetFrame extends HTMLElement {
         constructor() {
             super();
 
@@ -131,6 +131,6 @@ const className = Astro.props.class;
     }
 
     if (!customElements.get("widget-layout")) {
-        customElements.define("widget-layout", WidgetLayout);
+        customElements.define("widget-layout", WidgetFrame);
     }
 </script>

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Icon } from "astro-icon/components";
 import ci from "ci-info";
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import { licenseConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -161,7 +161,7 @@ const detailItems: {
 ];
 ---
 
-<WidgetLayout
+<WidgetFrame
   name={i18n(I18nKey.siteInfo)}
   showTitle={showTitle}
   id="site-info"
@@ -251,7 +251,7 @@ const detailItems: {
       </button>
     </site-info-collapse>
   </div>
-</WidgetLayout>
+</WidgetFrame>
 
 <style>
   site-info-collapse .collapsed {

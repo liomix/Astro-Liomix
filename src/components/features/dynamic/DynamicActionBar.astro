@@ -1,12 +1,12 @@
 ---
-import CommentButton from "@/components/features/comment/CommentButton.astro";
+import { CommentButton } from "@/components/features/comment";
 import LikeButton from "@/components/ui/LikeButton.astro";
 
 /**
  * 动态卡片底部操作条：点赞 / 评论
  * 交互逻辑统一在 dynamic-actions.ts 里通过事件委托处理；
  * 两个图标都是 <dynamic-lottie-icon>（点赞爱心 / 评论气泡），
- * 元素本身在 dynamic-lottie-icon.ts 里注册，页面、模板克隆、侧栏弹窗共用。
+ * 元素本身在 ui/lottie-icon.ts 里注册，页面、模板克隆、侧栏弹窗共用。
  * 数字由 formatCompactNumber 统一格式化（万级缩写成 1.6w）。
  */
 

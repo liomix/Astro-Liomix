@@ -1,5 +1,5 @@
 ---
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import MusicPlayer from "@/components/features/music/MusicPlayer.astro";
 import { musicPlayerConfig } from "@/config/musicConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -19,7 +19,7 @@ const showTitle = widgetConfig?.showTitle !== false;
 ---
 
 {musicPlayerConfig.showInSidebar !== false && (
-	<WidgetLayout id={`${widgetId}-layout`} class={className} style={style} name={i18n(I18nKey.music)} showTitle={showTitle}>
+	<WidgetFrame id={`${widgetId}-layout`} class={className} style={style} name={i18n(I18nKey.music)} showTitle={showTitle}>
 		<MusicPlayer id={widgetId} />
-	</WidgetLayout>
+	</WidgetFrame>
 )}

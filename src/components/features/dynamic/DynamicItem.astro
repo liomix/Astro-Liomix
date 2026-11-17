@@ -2,7 +2,7 @@
 import { type CollectionEntry, render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import AvatarImage from "@/components/ui/AvatarImage.astro";
-import DynamicActions from "@/components/features/dynamic/DynamicActions.astro";
+import DynamicActionBar from "@/components/features/dynamic/DynamicActionBar.astro";
 import DynamicGallery from "@/components/features/dynamic/DynamicGallery.astro";
 import { dynamicConfig, profileConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -87,7 +87,7 @@ const profileUrl = url(dynamicConfig.profileUrl || "/");
 					{published}
 				</time>
 			</a>
-			<DynamicActions
+			<DynamicActionBar
 				likes={entry.data.likes}
 				comments={entry.data.comments}
 			/>

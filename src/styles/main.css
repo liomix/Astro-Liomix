@@ -12,6 +12,7 @@
 @import './layout-base.css';
 @import './article-purity.css';
 @import './lottie-icon.css';
+@import './components/comment-drawer.css';
 
 @plugin '@tailwindcss/typography';
 

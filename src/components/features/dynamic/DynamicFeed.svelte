@@ -8,7 +8,7 @@ import {
 import {
 	closeCommentDrawer,
 	openCommentDrawer,
-} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
+} from "@/components/features/comment/comment-drawer";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";

@@ -7,28 +7,24 @@
 	 * `[data-like]` 结构，行为由 utils/likes.ts 接管（乐观更新、回滚、动画全在那里）。
 	 *
 	 * 这一层只管「取数 + 排布 + 写作弹层」；单张纸片是 GuestTag，
-	 * 取色 / 类型在 guest-tag.ts。
+	 * 取色 / 类型在 guestbook-tag.ts。
 	 */
 	import { onMount, tick } from "svelte";
 	import {
-		deleteTokenOf,
-		forgetOwnComment,
-		identityKeyOf,
-		rememberOwnComment,
-	} from "@/components/features/comment/comment-own.ts";
-	import {
+		bindCommentDrawer,
 		COMMENT_EMAIL_MAX,
 		COMMENT_NAME_MAX,
+		deleteTokenOf,
+		forgetOwnComment,
 		getCommentUser,
+		identityKeyOf,
 		isValidEmail,
 		isValidName,
-		setCommentUser,
-	} from "@/components/features/comment/comment-user.ts";
-	import { registerDynamicLottieIcons } from "@/components/features/dynamic/dynamic-lottie-icon.ts";
-	import {
-		bindCommentDrawer,
 		openCommentDrawer,
-	} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
+		rememberOwnComment,
+		setCommentUser,
+	} from "@/components/features/comment";
+	import { registerDynamicLottieIcons } from "@/components/ui/lottie-icon";
 	import { commentApiConfig } from "@/config/commentApiConfig";
 	import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 	import I18nKey from "@/i18n/i18nKey";
@@ -52,7 +48,7 @@
 	import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
 	import { showMessage } from "@/utils/message-pop";
 	import GuestTag from "./GuestTag.svelte";
-	import type { GuestTagItem } from "./guest-tag";
+	import type { GuestTagItem } from "./guestbook-tag";
 
 	interface Props {
 		/** 评论线程的 slug，默认就是留言板自己 */

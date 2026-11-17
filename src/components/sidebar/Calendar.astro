@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import { siteConfig } from "@/config/siteConfig";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -53,7 +53,7 @@ const currentLang = siteConfig.lang || "en";
 const calendarDataUrl = url("/api/allPostMeta.json");
 ---
 
-<WidgetLayout name={i18n(I18nKey.calendar)} showTitle={showTitle} id="calendar-widget" class={className} style={style}>
+<WidgetFrame name={i18n(I18nKey.calendar)} showTitle={showTitle} id="calendar-widget" class={className} style={style}>
   <div class="calendar-container">
     <div class="flex justify-between items-center mb-2">
         <button id="prev-month-btn" class="btn-plain rounded-lg w-8 h-8 flex items-center justify-center hover:bg-(--btn-plain-bg-hover) transition-colors" aria-label="Previous Month">
@@ -97,7 +97,7 @@ const calendarDataUrl = url("/api/allPostMeta.json");
       <!-- 将由 JavaScript 填充 -->
     </div>
   </div>
-</WidgetLayout>
+</WidgetFrame>
 
 <script is:inline data-swup-ignore-script define:vars={{ monthNames, weekDays, yearText, currentLang, calendarDataUrl }}>
   // State variables

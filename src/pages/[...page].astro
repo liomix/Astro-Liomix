@@ -1,6 +1,6 @@
 ---
 import type { GetStaticPaths } from "astro";
-import Pagination from "@/components/ui/Pagination.astro";
+import ServerPagination from "@/components/ui/ServerPagination.astro";
 import PostPage from "@/components/features/post/PostPage.astro";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -31,7 +31,7 @@ const heading =
   <PostPage page={page} />
   {
     page.total > page.size && (
-      <Pagination
+      <ServerPagination
         class="mx-auto onload-animation"
         page={page}
         style={`animation-delay: calc(var(--content-delay) + ${len * 50}ms)`}

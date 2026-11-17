@@ -32,7 +32,7 @@ import SponsorButton from "@/components/features/sponsor/SponsorButton.astro";
 import PostComments from "@/components/features/comment/PostComments.astro";
 import CommentButton from "@/components/features/comment/CommentButton.astro";
 import LikeButton from "@/components/ui/LikeButton.astro";
-import SponsorPop from "@/components/features/sponsor/SponsorPop.svelte";
+import SponsorDialog from "@/components/features/sponsor/SponsorDialog.svelte";
 import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
@@ -680,7 +680,7 @@ const seriesData = await getSeriesPosts(entry);
   <!-- 打赏弹窗：由底部的金币按钮通过 data-sponsor-pop 触发 -->
   {
     showSponsorButton && (
-      <SponsorPop
+      <SponsorDialog
         client:idle
         id={SPONSOR_POP_ID}
         qrCode={sponsorQr}

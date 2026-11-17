@@ -12,7 +12,7 @@ import {
 	registerDynamicActions,
 	syncDynamicLikeStates,
 } from "@/components/features/dynamic/dynamic-actions.ts";
-import SidebarPop from "@/components/shell/SidebarPop.svelte";
+import SidebarDrawer from "@/components/shell/SidebarDrawer.svelte";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
@@ -258,7 +258,7 @@ function visibleImages(entry: DynamicEntry) {
 	{/if}
 </div>
 
-<SidebarPop bind:open={dialogOpen} title={i18n(I18nKey.latestDynamics)} count={totalCount} size="lg">
+<SidebarDrawer bind:open={dialogOpen} title={i18n(I18nKey.latestDynamics)} count={totalCount} size="lg">
 	{#each allEntries as entry (entry.id)}
 		{@const text = getPlainText(entry.html)}
 		{@const imgs = visibleImages(entry)}
@@ -362,7 +362,7 @@ function visibleImages(entry: DynamicEntry) {
 			</footer>
 		</article>
 	{/each}
-</SidebarPop>
+</SidebarDrawer>
 
 <style>
 	.pop-item {

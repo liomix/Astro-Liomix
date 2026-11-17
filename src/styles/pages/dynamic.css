@@ -1,5 +1,4 @@
 /* 动态页专属：页头统计条、动态流与条目、图集查看器、评论抽屉、空态 */
-@import "../components/comment-drawer.css";
 
 dynamic-feed {
 	display: block;

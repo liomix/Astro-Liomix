@@ -5,10 +5,9 @@
 
    原本长在 styles/pages/dynamic.css 里，但留言墙也要用同一个抽屉，
    而两页各自 import 整份 dynamic.css 太重 —— 抽出来两边共用一份。 */
-/* 评论抽屉：从屏幕右侧抽出，正好盖住右栏那两张卡片 ——
-   右边缘贴视口边缘，宽度/顶边由 JS 实测 #right-sidebar 的几何写入
-   （--comment-drawer-width / --comment-drawer-top），底部到视口边。
-   右栏不显示时（<768px / 本站关侧栏）走下面的兜底。
+/* 评论抽屉：从屏幕右侧抽出，顶边固定在导航栏下沿、底边贴视口底。
+   右边缘贴视口边缘，宽度由 JS 实测右栏左边缘后写入（--comment-drawer-width）——
+   这样右下角那组浮动按钮不会从抽屉旁边露出来。右栏不显示时走下面的兜底。
    z-index 1200：评论态下压住一切常驻浮层 —— 右下角浮动按钮组（1000）、浮动目录（1001）、
    设置面板（1100）；只有移动标签右键菜单（1300）和页面过渡遮罩（9999）在它之上
 
@@ -17,7 +16,7 @@
    而 backdrop-filter 只能采样同一个 document，壁纸没法由这一侧代画 */
 .comment-drawer {
 	position: fixed;
-	top: var(--comment-drawer-top, 5.5rem);
+	top: 5.5rem;
 	right: 0;
 	bottom: 0;
 	z-index: 1200;

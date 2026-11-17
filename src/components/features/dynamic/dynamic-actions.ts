@@ -2,7 +2,7 @@
  * 动态卡片底部操作条：点赞 / 评论
  * 用 document 级事件委托统一处理，动态页（模板克隆）与侧栏弹窗（Svelte）共用
  * - 点赞：行为在 utils/likes.ts（服务端 /api/v1/posts/{slug}/likes），这里只负责把数字画出来
- * - 评论：从右侧抽出评论抽屉（CommentDrawer），见 dynamic-comment-drawer.ts
+ * - 评论：从右侧抽出评论抽屉（CommentDrawer），见 features/comment/comment-drawer.ts
  */
 
 import {
@@ -10,8 +10,8 @@ import {
 	closeCommentDrawer,
 	openCommentDrawer,
 	scheduleDrawerWarm,
-} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
-import { registerDynamicLottieIcons } from "@/components/features/dynamic/dynamic-lottie-icon.ts";
+} from "@/components/features/comment";
+import { registerDynamicLottieIcons } from "@/components/ui/lottie-icon";
 import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
 import { formatCompactNumber } from "@/utils/number-utils";
 

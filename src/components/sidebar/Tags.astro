@@ -1,7 +1,7 @@
 ---
 
-import ButtonTag from "@/components/ui/ButtonTag.astro";
-import WidgetLayout from "@/components/ui/WidgetLayout.astro";
+import TagLink from "@/components/ui/TagLink.astro";
+import WidgetFrame from "@/components/ui/WidgetFrame.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { WidgetComponentConfig } from "@/types/config";
@@ -23,15 +23,15 @@ const collapseThreshold = widgetConfig?.specificConfig?.collapseThreshold;
 const showTitle = widgetConfig?.showTitle !== false;
 const isCollapsed = collapseThreshold ? tags.length > collapseThreshold : false;
 ---
-<WidgetLayout name={i18n(I18nKey.tags)} showTitle={showTitle} id="tags" isCollapsed={isCollapsed} collapsedHeight={COLLAPSED_HEIGHT} useExpandedButtonSpacing={true} moreUrl={url("/tags/")} class={className} style={style}>
+<WidgetFrame name={i18n(I18nKey.tags)} showTitle={showTitle} id="tags" isCollapsed={isCollapsed} collapsedHeight={COLLAPSED_HEIGHT} useExpandedButtonSpacing={true} moreUrl={url("/tags/")} class={className} style={style}>
     <div class="tags-container">
         {tags.map(t => (
-            <ButtonTag href={getTagUrl(t.name)} label={`View all posts with the ${t.name.trim()} tag`}>
+            <TagLink href={getTagUrl(t.name)} label={`View all posts with the ${t.name.trim()} tag`}>
                 {t.name.trim()}
-            </ButtonTag>
+            </TagLink>
         ))}
     </div>
-</WidgetLayout>
+</WidgetFrame>
 
 <style>
   .tags-container {

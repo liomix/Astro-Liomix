@@ -21,7 +21,7 @@
 import Icon from "@/components/ui/Icon.svelte";
 import { cubicBezier, planScroll } from "@/utils/shelf-physics";
 import { onMount } from "svelte";
-import BookPop from "./BookPop.svelte";
+import BookPopover from "./BookPopover.svelte";
 
 export interface ShelfBook {
 	id: string;
@@ -640,6 +640,6 @@ onMount(() => {
 			{/each}
 		</div>
 
-		<BookPop book={popBook} onClose={() => (popBook = null)} />
+		<BookPopover book={popBook} onClose={() => (popBook = null)} />
 	{/if}
 </div>
