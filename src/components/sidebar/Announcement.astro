@@ -1,6 +1,6 @@
 ---
 import WidgetFrame from "@/components/ui/WidgetFrame.astro";
-import SidebarDrawer from "@/components/shell/SidebarDrawer.svelte";
+import SidebarDialog from "@/components/ui/SidebarDialog.svelte";
 import Welcome from "@/components/sidebar/Welcome.astro";
 import { announcementConfig } from "@/config/announcementConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -73,7 +73,7 @@ const popContent = fullContent || config.content;
 <!-- 公告全文弹窗，与「更多动态」共用同一套侧栏弹窗 -->
 <!-- 注意：这里只能用 client:idle —— 岛根节点是 display:contents，唯一子节点是关闭态的 dialog（display:none），
      client:visible 永远等不到交叉观察，导致组件不水合、点击退化成跳转 -->
-<SidebarDrawer client:idle id={popId} title={popTitle} bodyText={popContent} />
+<SidebarDialog client:idle id={popId} title={popTitle} bodyText={popContent} />
 
 <style>
   /* 文字区容器：整块可点击打开完整公告弹窗 */

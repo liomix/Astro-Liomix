@@ -8,7 +8,7 @@ src/components/
 ├─ features/                  按功能划分（删一个功能只动一个目录）
 │  ├─ comment/                评论：Comment.astro + 顶栏/输入栏/表情/壁纸逻辑 + PostComments
 │  ├─ post/                   文章：PostCard / PostHeader / PostMeta / PostPage / PostStats / SeriesNav / License / ShareButton / Encrypted*
-│  ├─ dynamic/                动态：DynamicItem / DynamicFeed / DynamicGallery / DynamicActionBar / 侧栏预览
+│  ├─ dynamic/                动态：DynamicItemTemplate / DynamicFeed / DynamicGallery / DynamicActionBar / 侧栏预览
 │  ├─ guestbook/              留言墙：GuestbookWall + GuestTag + 类型与配色
 │  ├─ catalog/                条目库：bangumi/ mal/ vndb/ bilibili/ gallery/ projects/
 │  ├─ books/                  阅读：BookPopover / Bookshelf3D / ReadingHeatmap
@@ -16,12 +16,12 @@ src/components/
 │  ├─ effects/                视觉特效：Sakura / Waves / Typewriter / Live2D / Spine / BackgroundPlayer / PioMessageBox
 │  ├─ stats/                  统计与图表：SiteVisitCounter / PostViewCounter / SiteStats / PostActivity / 两个图表
 │  └─ sponsor/                打赏：SponsorButton / SponsorButtonLottie / SponsorPop
-├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / Pagination / TabGroup / Timeline / EmptyState
-├─ shell/                     全站外壳：Navbar / Footer / SideBar / TabBar / WallpaperSection / DropdownMenu / ConfigCarrier
+├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / ServerPagination / TabGroup / Timeline / EmptyState / SidebarDialog
+├─ shell/                     全站外壳：Navbar / Footer / Sidebar / TabBar / WallpaperSection / DropdownMenu / FloatingControls / ToastHost
 ├─ sidebar/                   侧栏卡片（纯卡片）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo
 ├─ controls/                  交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 设置
 ├─ managers/                  只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontManager
-└─ mdx/                       MDX 文章组件出口（index.ts 桶 + mdx-icons.ts）
+└─ mdx/                       MDX 文章组件出口（仅 index.ts 桶；图标在 ui/mdx-icons.ts）
 ```
 
 ## 约定
