@@ -10,8 +10,8 @@ import {
 	closeCommentDrawer,
 	openCommentDrawer,
 	scheduleDrawerWarm,
-} from "@/components/dynamic/dynamic-comment-drawer.ts";
-import { registerDynamicLottieIcons } from "@/components/dynamic/dynamic-lottie-icon.ts";
+} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
+import { registerDynamicLottieIcons } from "@/components/features/dynamic/dynamic-lottie-icon.ts";
 import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
 import { formatCompactNumber } from "@/utils/number-utils";
 

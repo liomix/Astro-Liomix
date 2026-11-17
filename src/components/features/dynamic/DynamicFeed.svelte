@@ -4,11 +4,11 @@ import ClientPagination from "@/components/ui/ClientPagination.svelte";
 import {
 	registerDynamicActions,
 	syncDynamicLikeStates,
-} from "@/components/dynamic/dynamic-actions.ts";
+} from "@/components/features/dynamic/dynamic-actions.ts";
 import {
 	closeCommentDrawer,
 	openCommentDrawer,
-} from "@/components/dynamic/dynamic-comment-drawer.ts";
+} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";

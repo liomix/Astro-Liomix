@@ -23,7 +23,7 @@ import {
 	qqFromEmail,
 	setCommentUser,
 	type CommentUser,
-} from "@/components/comment/comment-user.ts";
+} from "@/components/features/comment/comment-user.ts";
 
 /**
  * 把头像画进一个「头像盒」：盒子里固定是

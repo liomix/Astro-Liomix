@@ -46,8 +46,8 @@
  * 图片附件按钮暂不开放：后端还没有上传接口，blob: 地址过不了正文的 URL 白名单，
  * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
  */
-import CommentSkeleton from "@/components/comment/CommentSkeleton.astro";
-import { avatarGradientOf, initialOf } from "@/components/comment/comment-user.ts";
+import CommentSkeleton from "@/components/features/comment/CommentSkeleton.astro";
+import { avatarGradientOf, initialOf } from "@/components/features/comment/comment-user.ts";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 import { profileConfig } from "@/config/profileConfig";
 import {
@@ -263,7 +263,7 @@ const showTabs = packs.length > 1;
 
 	<div class="tg-bottom">
 		{/* 回复预览条：和 Telegram 输入框上方那条一样 —— 左侧竖线 + 名字 + 摘要，
-		    发送后引用块会嵌进新气泡顶部。由 ChatContextPop 控制显隐 */}
+		    发送后引用块会嵌进新气泡顶部。由 CommentRightclickPop 控制显隐 */}
 		<div class="tg-reply" data-tg-reply hidden>
 			<span class="tg-reply-line" aria-hidden="true"></span>
 			<span class="tg-reply-body">
@@ -505,7 +505,7 @@ const showTabs = packs.length > 1;
 		</div>
 	</div>
 
-	{/* ChatContextPop：消息右键菜单（复制 / 回复 / 撤回）。
+	{/* CommentRightclickPop：消息右键菜单（复制 / 回复 / 撤回）。
 	    没有遮罩，贴着指针 fixed 定位，超出视口由脚本翻转；三项之间的分隔线
 	    和 Telegram 的菜单一致，删除（撤回）单独一组并用危险色。
 	    撤回只能删自己发的消息，所以这一组单独包起来，脚本按 data-tg-side 开关。
@@ -604,23 +604,23 @@ const showTabs = packs.length > 1;
 
 <script>
 	import {
-		initChatContextPop,
+		initCommentRightclickPop,
 		summarizeMarkdown,
 		summarizeMarkdownHtml,
-	} from "@/components/comment/chat-context-pop.ts";
-	import { initCommentInfo } from "@/components/comment/comment-info.ts";
+	} from "@/components/features/comment/comment-rightclick-pop.ts";
+	import { initCommentInfo } from "@/components/features/comment/comment-info.ts";
 	import {
 		identityKeyOf,
 		readOwnComments,
 		readOwnIdentities,
 		rememberOwnComment,
-	} from "@/components/comment/comment-own.ts";
+	} from "@/components/features/comment/comment-own.ts";
 	import {
 		getCommentUser,
 		initialOf,
 		watchCommentUserStorage,
-	} from "@/components/comment/comment-user.ts";
-	import { mountChatWallpaper } from "@/components/comment/comment-wallpaper.ts";
+	} from "@/components/features/comment/comment-user.ts";
+	import { mountChatWallpaper } from "@/components/features/comment/comment-wallpaper.ts";
 	import {
 		apiErrorMessage,
 		isAbortedRequest,
@@ -986,10 +986,10 @@ const showTabs = packs.length > 1;
 		const pathParam = new URLSearchParams(window.location.search).get("path");
 		if (pathParam) chat.dataset.tgPath = pathParam;
 
-		// 消息右键菜单（ChatContextPop）：复制 / 回复 / 撤回。
+		// 消息右键菜单（CommentRightclickPop）：复制 / 回复 / 撤回。
 		// 必须在 toBottom 之前：初始化会先把已撤回的消息从列表里摘掉，
 		// 滚动位置得按最终列表算；也要在 ?path= 落定之后，拉数据用的就是它
-		const chatCtx = initChatContextPop(chat);
+		const rightclickPop = initCommentRightclickPop(chat);
 
 		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
@@ -1282,7 +1282,7 @@ const showTabs = packs.length > 1;
 			row.dataset.tgTone = String(tone);
 			// 父评论先记在行上：它可能还在后一页没拉回来，等索引补全了再画引用块
 			row.dataset.tgParent = comment.parentId ?? "";
-			chatCtx.registerRow(row);
+			rightclickPop.registerRow(row);
 			return row;
 		};
 
@@ -1296,7 +1296,7 @@ const showTabs = packs.length > 1;
 			if (!row) return null;
 			row.dataset.tgMsg = comment.id;
 			row.dataset.tgParent = comment.parentId ?? "";
-			chatCtx.registerRow(row);
+			rightclickPop.registerRow(row);
 			return row;
 		};
 
@@ -1333,7 +1333,7 @@ const showTabs = packs.length > 1;
 				if (!parentId) continue;
 				const parent = byID.get(parentId);
 				if (!parent) continue;
-				chatCtx.decorate(row, {
+				rightclickPop.decorate(row, {
 					id: parent.id,
 					name: parent.author.name || "?",
 					text: summarizeMarkdown(parent.body),
@@ -1363,7 +1363,7 @@ const showTabs = packs.length > 1;
 			placeRows(rows, prepend);
 
 			decorateReplies();
-			chatCtx.relayout();
+			rightclickPop.relayout();
 			syncMore();
 
 			// 「今天」分隔线只在确实全是今天的时候才成立，跨天的评论会露馅。
@@ -1700,9 +1700,9 @@ const showTabs = packs.length > 1;
 			}
 			if (time) time.textContent = clockOf(new Date());
 
-			chatCtx.registerRow(row);
+			rightclickPop.registerRow(row);
 			scroller.append(row);
-			chatCtx.relayout();
+			rightclickPop.relayout();
 			requestAnimationFrame(toBottom);
 		};
 
@@ -1824,7 +1824,7 @@ const showTabs = packs.length > 1;
 			}
 
 			decorateReplies();
-			chatCtx.relayout();
+			rightclickPop.relayout();
 		});
 
 		form.addEventListener("submit", (event) => {
@@ -1844,14 +1844,14 @@ const showTabs = packs.length > 1;
 			// 取走待发送的引用：引用块要嵌在气泡顶部、正文之上。
 			// 引用的 target 就是原消息的 data-tg-msg，自己发过的那些已经是后端 id，
 			// 提交时直接当 parentId 用
-			const quote = chatCtx.takePendingReply();
+			const quote = rightclickPop.takePendingReply();
 			const row = buildOutgoing(source, clockOf(new Date()), true);
 			if (!row) return;
-			if (quote) chatCtx.decorate(row, quote);
+			if (quote) rightclickPop.decorate(row, quote);
 
-			chatCtx.registerRow(row);
+			rightclickPop.registerRow(row);
 			scroller.append(row);
-			chatCtx.relayout();
+			rightclickPop.relayout();
 			composer.innerHTML = "";
 			syncSend();
 			resizeInput();

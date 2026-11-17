@@ -1,5 +1,5 @@
 /**
- * ChatContextPop：评论区消息的右键菜单（复制 / 回复 / 撤回）
+ * CommentRightclickPop：评论区消息的右键菜单（复制 / 回复 / 撤回）
  * ---------------------------------------------------------------------------
  * 交互照着 Telegram Android 的消息菜单做：右键（移动端长按）在消息上唤出，
  * 菜单贴着指针弹出、超出视口自动翻转，Esc / 点空白 / 滚动都会收起。
@@ -26,8 +26,8 @@
 import {
 	deleteTokenOf,
 	forgetOwnComment,
-} from "@/components/comment/comment-own.ts";
-import { getCommentUser } from "@/components/comment/comment-user.ts";
+} from "@/components/features/comment/comment-own.ts";
+import { getCommentUser } from "@/components/features/comment/comment-user.ts";
 import { emojiTokensToHtml, emojiTokensToText } from "@/utils/emoji-shortcode";
 import { apiErrorMessage } from "@/utils/api-error-message";
 import { ApiError } from "@/utils/api-client";
@@ -60,7 +60,7 @@ interface PendingReply {
 	html: string;
 }
 
-interface ChatContextPopHandle {
+interface CommentRightclickPopHandle {
 	/** 取走待发送的引用（取走即清空）；没有回复对象时返回 null */
 	takePendingReply(): PendingReply | null;
 	/** 给刚创建的气泡挂上引用块（在 append 之前调用即可） */
@@ -160,7 +160,7 @@ export function summarizeMarkdownHtml(
 	return emojiTokensToHtml(condense(markdown, max));
 }
 
-export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
+export function initCommentRightclickPop(chat: HTMLElement): CommentRightclickPopHandle {
 	const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 	// 菜单可能已经被上一次 init 挪到 body 上了（见下面的注释），所以补一次全文查找：
 	// 一个文档里只有一台聊天，不会认错
@@ -194,7 +194,7 @@ export function initChatContextPop(chat: HTMLElement): ChatContextPopHandle {
 			unknown: chat.dataset.tgApiUnknown || "Something went wrong",
 		},
 	};
-	const noopHandle: ChatContextPopHandle = {
+	const noopHandle: CommentRightclickPopHandle = {
 		takePendingReply: () => null,
 		decorate: () => {},
 		registerRow: () => {},

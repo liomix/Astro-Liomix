@@ -3,7 +3,7 @@ import { getImage } from "astro:assets";
 import * as path from "node:path";
 import type { ImageMetadata } from "astro";
 import WidgetLayout from "@/components/ui/WidgetLayout.astro";
-import DynamicSidebar from "@/components/dynamic/DynamicSidebar.svelte";
+import DynamicSidebar from "@/components/features/dynamic/DynamicSidebar.svelte";
 import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -49,10 +49,10 @@ async function resolveAvatar(src: string): Promise<string> {
 		return url(src);
 	}
 	const files = import.meta.glob<ImageMetadata>(
-		"../../**/*.{png,jpg,jpeg,webp,avif}",
+		"../../../**/*.{png,jpg,jpeg,webp,avif}",
 		{ import: "default" },
 	);
-	const key = path.normalize(path.join("../../", src)).replace(/\\/g, "/");
+	const key = path.normalize(path.join("../../../", src)).replace(/\\/g, "/");
 	const loader = files[key];
 	if (!loader) return "";
 	try {

@@ -15,7 +15,7 @@
 		forgetOwnComment,
 		identityKeyOf,
 		rememberOwnComment,
-	} from "@/components/comment/comment-own.ts";
+	} from "@/components/features/comment/comment-own.ts";
 	import {
 		COMMENT_EMAIL_MAX,
 		COMMENT_NAME_MAX,
@@ -23,12 +23,12 @@
 		isValidEmail,
 		isValidName,
 		setCommentUser,
-	} from "@/components/comment/comment-user.ts";
-	import { registerDynamicLottieIcons } from "@/components/dynamic/dynamic-lottie-icon.ts";
+	} from "@/components/features/comment/comment-user.ts";
+	import { registerDynamicLottieIcons } from "@/components/features/dynamic/dynamic-lottie-icon.ts";
 	import {
 		bindCommentDrawer,
 		openCommentDrawer,
-	} from "@/components/dynamic/dynamic-comment-drawer.ts";
+	} from "@/components/features/dynamic/dynamic-comment-drawer.ts";
 	import { commentApiConfig } from "@/config/commentApiConfig";
 	import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 	import I18nKey from "@/i18n/i18nKey";

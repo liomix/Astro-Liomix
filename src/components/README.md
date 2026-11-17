@@ -1,25 +1,27 @@
 # Components
 
 目录名 = 领域。判断标准：**删掉某个功能，需要动几个目录** —— 理想是 1 个。
+通用层留在顶层，功能域一律进 `features/`。
 
 ```
 src/components/
-├─ ui/          纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / Pagination / TabGroup / Timeline / EmptyState …
-├─ shell/       全站外壳：Navbar / Footer / SideBar / TabBar / WallpaperSection / DropdownMenu / ConfigCarrier / Banner*Overlay
-├─ comment/     评论：Comment.astro + 顶栏/输入栏/表情/壁纸逻辑 + PostComments（文章页内嵌）
-├─ post/        文章：PostCard / PostHeader / PostMeta / PostPage / PostStats / SeriesNav / License / ShareButton / Encrypted*
-├─ dynamic/     动态：DynamicItem / DynamicFeed / DynamicGallery / 抽屉 / 图标元素 / 侧栏预览
-├─ guestbook/   留言墙：GuestbookWall + GuestTag + 类型与配色
-├─ media/       条目库：bangumi/ mal/ vndb/ bilibili/ gallery/ projects/
-├─ books/       阅读：BookPop / Bookshelf3D / ReadingHeatmap
-├─ music/       音乐：MusicPlayer / MusicManager / NowPlayingCard / PlaybackSettings / NavMusicButton / 侧栏 Music
-├─ effects/     视觉特效：Sakura / Waves / Typewriter / Live2D / Spine / BackgroundPlayer / PioMessageBox
-├─ stats/       统计与图表：SiteVisitCounter / PostViewCounter / SiteStats / PostActivity / CategoryRoseChart / TagBarChart
-├─ sponsor/     打赏：SponsorButton / SponsorButtonLottie / SponsorPop
-├─ sidebar/     侧栏卡片（纯卡片，无领域逻辑）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo / Advertisement / SidebarTOC
-├─ controls/    交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 沉浸阅读 / 明暗切换 / 设置面板
-├─ managers/    只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontSetup
-└─ mdx/         MDX 文章组件出口（index.ts 桶 + icons.ts）
+├─ features/                  按功能划分（删一个功能只动一个目录）
+│  ├─ comment/                评论：Comment.astro + 顶栏/输入栏/表情/壁纸逻辑 + PostComments
+│  ├─ post/                   文章：PostCard / PostHeader / PostMeta / PostPage / PostStats / SeriesNav / License / ShareButton / Encrypted*
+│  ├─ dynamic/                动态：DynamicItem / DynamicFeed / DynamicGallery / 抽屉 / lottie 图标元素 / 侧栏预览
+│  ├─ guestbook/              留言墙：GuestbookWall + GuestTag + 类型与配色
+│  ├─ media/                  条目库：bangumi/ mal/ vndb/ bilibili/ gallery/ projects/
+│  ├─ books/                  阅读：BookPop / Bookshelf3D / ReadingHeatmap
+│  ├─ music/                  音乐：MusicPlayer / MusicManager / NowPlayingCard / PlaybackSettings / NavMusicButton
+│  ├─ effects/                视觉特效：Sakura / Waves / Typewriter / Live2D / Spine / BackgroundPlayer / PioMessageBox
+│  ├─ stats/                  统计与图表：SiteVisitCounter / PostViewCounter / SiteStats / PostActivity / 两个图表
+│  └─ sponsor/                打赏：SponsorButton / SponsorButtonLottie / SponsorPop
+├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / Pagination / TabGroup / Timeline / EmptyState
+├─ shell/                     全站外壳：Navbar / Footer / SideBar / TabBar / WallpaperSection / DropdownMenu / ConfigCarrier
+├─ sidebar/                   侧栏卡片（纯卡片）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo
+├─ controls/                  交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 设置
+├─ managers/                  只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontSetup
+└─ mdx/                       MDX 文章组件出口（index.ts 桶 + icons.ts）
 ```
 
 ## 约定

@@ -11,7 +11,7 @@ import { onMount, tick } from "svelte";
 import {
 	registerDynamicActions,
 	syncDynamicLikeStates,
-} from "@/components/dynamic/dynamic-actions.ts";
+} from "@/components/features/dynamic/dynamic-actions.ts";
 import SidebarPop from "@/components/shell/SidebarPop.svelte";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";

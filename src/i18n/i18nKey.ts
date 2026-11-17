@@ -103,7 +103,7 @@ enum I18nKey {
 	commentChatCopy = "commentChatCopy",
 	commentChatCopied = "commentChatCopied",
 	commentChatCode = "commentChatCode",
-	// 消息右键菜单（ChatContextPop）与回复引用
+	// 消息右键菜单（CommentRightclickPop）与回复引用
 	commentChatReply = "commentChatReply",
 	commentChatRetract = "commentChatRetract",
 	commentChatRetracted = "commentChatRetracted",

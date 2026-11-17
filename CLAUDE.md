@@ -62,7 +62,7 @@ Defined in `src/content.config.ts`:
 
 ### Key Directories
 
-- `src/components/` — organized by domain (see its README): `ui/` atoms, `shell/` global chrome, then feature dirs `comment/`, `post/`, `dynamic/`, `guestbook/`, `media/`, `books/`, `music/`, `effects/`, `stats/`, `sponsor/`, `sidebar/`, plus `controls/` (interactive controls), `managers/` (behavior installers) and `mdx/` (MDX barrel). Rule of thumb: deleting a feature should touch one directory.
+- `src/components/` — shared layer on top (`ui/` atoms, `shell/` chrome, `sidebar/` cards, `controls/`, `managers/` behavior installers, `mdx/` barrel) and everything feature-specific under `features/<domain>/` (`comment/`, `post/`, `dynamic/`, `guestbook/`, `media/`, `books/`, `music/`, `effects/`, `stats/`, `sponsor/`). Rule of thumb: deleting a feature should touch one directory. See `src/components/README.md`.
 - `src/plugins/` — 15 custom remark/rehype plugins (Mermaid, PlantUML, KaTeX, GitHub cards, reading time, wiki links, etc.)
 - `src/i18n/` — translation keys in `i18nKey.ts`, language files in `languages/*.ts`, lookup via `translation.ts`
 - `src/utils/` — content sorting, crypto (encrypted posts), date formatting, image processing/LQIP, TOC generation

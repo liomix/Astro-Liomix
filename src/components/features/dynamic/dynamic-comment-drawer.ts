@@ -24,7 +24,7 @@
 import {
 	getChatWallpaperSrc,
 	getChatWallpaperTint,
-} from "@/components/comment/comment-wallpaper.ts";
+} from "@/components/features/comment/comment-wallpaper.ts";
 import { getStoredCommentWallpaper } from "@/utils/setting-utils";
 
 const BOUND_KEY = "__fireflyCommentDrawerBound";

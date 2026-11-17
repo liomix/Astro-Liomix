@@ -387,7 +387,7 @@
 				// 这里必须写相对路径：new URL(..., import.meta.url) 由 Vite 静态分析，
 				// 不认 @ 别名（路径是相对当前文件解析的）
 				this.worker = new Worker(
-					new URL("../../workers/sakura.worker.ts", import.meta.url),
+					new URL("../../../workers/sakura.worker.ts", import.meta.url),
 					{ type: "module" },
 				);
 
