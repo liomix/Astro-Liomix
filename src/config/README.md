@@ -8,7 +8,6 @@
 src/config/
 ├── index.ts                  # 配置索引文件 - 统一导出
 ├── siteConfig.ts             # 站点基础配置
-├── analyticsConfig.ts        # 统计分析配置（Google Analytics、Umami、51la 等）
 ├── announcementConfig.ts     # 公告配置
 ├── backgroundWallpaperConfig.ts    # 背景壁纸配置
 ├── commentApiConfig.ts       # 评论后端 API 配置
@@ -52,7 +51,6 @@ import { profileConfig } from "@/config/profileConfig";
 | 文件 | 说明 |
 |------|------|
 | `siteConfig.ts` | 站点基础配置（标题、描述、主题色、页面宽度、文章内容页配置等） |
-| `analyticsConfig.ts` | 统计分析配置（Google Analytics、Microsoft Clarity、Umami、51la） |
 | `announcementConfig.ts` | 公告配置（标题、内容、类型、链接等） |
 | `backgroundWallpaperConfig.ts` | 背景壁纸配置（壁纸模式、图片、横幅文字、水波纹等） |
 | `commentApiConfig.ts` | 评论后端 API 配置（站内自建评论，主题自带的 Twikoo/Waline/Artalk/Giscus/Disqus 已移除） |

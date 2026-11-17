@@ -6,7 +6,7 @@
  * 这是「顶栏和底栏用壁纸的高斯模糊」能成立的前提：backdrop-filter 只采样同一个
  * document 里画在它下面的东西，跨 iframe 是采不到的。父窗口那层抽屉因此只剩外壳。
  */
-import Comment from "@/components/common/Comment.astro";
+import Comment from "@/components/comment/Comment.astro";
 import { dynamicConfig, profileConfig, siteConfig } from "@/config";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -52,7 +52,7 @@ const contact = (
 	import {
 		applyWallpaperTint,
 		setChatWallpaper,
-	} from "@/components/common/comment/comment-wallpaper";
+	} from "@/components/comment/comment-wallpaper.ts";
 
 	window.addEventListener("message", (event) => {
 		if (event.origin !== window.location.origin) return;

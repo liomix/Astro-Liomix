@@ -10,7 +10,7 @@
  * 父留言的内容不写进 URL（正文可能上千字），而是由父窗口在 iframe 就绪后
  * postMessage 过来；直接打开这一页时没有父留言，只显示评论区。
  */
-import Comment from "@/components/common/Comment.astro";
+import Comment from "@/components/comment/Comment.astro";
 import { profileConfig, siteConfig } from "@/config";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import I18nKey from "@/i18n/i18nKey";
@@ -59,7 +59,7 @@ const contact = (
 	import {
 		applyWallpaperTint,
 		setChatWallpaper,
-	} from "@/components/common/comment/comment-wallpaper";
+	} from "@/components/comment/comment-wallpaper.ts";
 	import I18nKey from "@/i18n/i18nKey";
 	import { i18n } from "@/i18n/translation";
 	import { emojiTokensToHtml } from "@/utils/emoji-shortcode";

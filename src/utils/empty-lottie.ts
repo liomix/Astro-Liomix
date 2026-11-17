@@ -15,14 +15,23 @@
  *   - prefers-reduced-motion 时只画中间那一帧，不做循环动画。
  *
  * 尺寸不在这里定：元素铺满父容器，父容器由使用方用 `--empty-size` 决定
- * （见 components/common/EmptyState.astro 的 size 参数）。这样同一个素材在整页
+ * （见 components/ui/EmptyState.astro 的 size 参数）。这样同一个素材在整页
  * 空态里可以大、在评论区里可以小。
  */
 
 /** 素材名 → 文件。新增插画只要放进 src/assets/lottie 就能被 data-animation 引用 */
-const animations = import.meta.glob("../assets/lottie/*.json", {
+const animations = import.meta.glob("@/assets/lottie/*.json", {
 	import: "default",
 });
+
+/** 键只取文件名：glob 的 key 会带上 pattern 里写死的前缀，按路径查一搬目录就静默取空 */
+const loaderByName = new Map<string, () => Promise<LottieData>>();
+for (const [key, loader] of Object.entries(animations)) {
+	loaderByName.set(
+		key.slice(key.lastIndexOf("/") + 1, -".json".length),
+		loader as () => Promise<LottieData>,
+	);
+}
 
 interface LottiePlayer {
 	play: () => void;
@@ -55,7 +64,7 @@ function loadLottie() {
 }
 
 function loadAnimationData(name: string): Promise<LottieData> | null {
-	const loader = animations[`../assets/lottie/${name}.json`];
+	const loader = loaderByName.get(name);
 	if (!loader) return null;
 	let cached = dataCache.get(name);
 	if (!cached) {

@@ -1,178 +1,33 @@
-# 📦 Components 组件目录
+# Components
 
-## 动态组件
+目录名 = 领域。判断标准：**删掉某个功能，需要动几个目录** —— 理想是 1 个。
 
-- `widget/Dynamic.astro`：显示最新动态的侧边栏组件。
-- `pages/dynamic/DynamicFeed.svelte`：负责动态 JSON 加载、搜索、年份筛选和分页。
-- `pages/dynamic/DynamicGallery.astro`：动态图片网格、轮播和灯箱。
-- `pages/dynamic/dynamic-comment-drawer.ts`：右侧评论抽屉（点评论按钮从屏幕右侧抽出，内容用 iframe 装评论页）。
-- `pages/dynamic/DynamicItem.astro`：动态条目的服务端渲染组件。
-- `pages/dynamic/DynamicItemTemplate.astro`：动态条目的客户端渲染模板。
+```
+src/components/
+├─ ui/          纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / Pagination / TabGroup / Timeline / EmptyState …
+├─ shell/       全站外壳：Navbar / Footer / SideBar / TabBar / WallpaperSection / DropdownMenu / ConfigCarrier / Banner*Overlay
+├─ comment/     评论：Comment.astro + 顶栏/输入栏/表情/壁纸逻辑 + PostComments（文章页内嵌）
+├─ post/        文章：PostCard / PostHeader / PostMeta / PostPage / PostStats / SeriesNav / License / ShareButton / Encrypted*
+├─ dynamic/     动态：DynamicItem / DynamicFeed / DynamicGallery / 抽屉 / 图标元素 / 侧栏预览
+├─ guestbook/   留言墙：GuestbookWall + GuestTag + 类型与配色
+├─ media/       条目库：bangumi/ mal/ vndb/ bilibili/ gallery/ projects/
+├─ books/       阅读：BookPop / Bookshelf3D / ReadingHeatmap
+├─ music/       音乐：MusicPlayer / MusicManager / NowPlayingCard / PlaybackSettings / NavMusicButton / 侧栏 Music
+├─ effects/     视觉特效：Sakura / Waves / Typewriter / Live2D / Spine / BackgroundPlayer / PioMessageBox
+├─ stats/       统计与图表：SiteVisitCounter / PostViewCounter / SiteStats / PostActivity / CategoryRoseChart / TagBarChart
+├─ sponsor/     打赏：SponsorButton / SponsorButtonLottie / SponsorPop
+├─ sidebar/     侧栏卡片（纯卡片，无领域逻辑）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo / Advertisement / SidebarTOC
+├─ controls/    交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 沉浸阅读 / 明暗切换 / 设置面板
+├─ managers/    只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontSetup
+└─ mdx/         MDX 文章组件出口（index.ts 桶 + icons.ts）
+```
 
-Firefly 项目中所有可复用组件的集中管理。组件按照功能和职责进行分类，提供清晰的架构和易于维护的代码组织。
+## 约定
 
-## 📁 目录结构
-
-### 🏗️ layout/ - 页面布局组件
-
-负责整体页面框架和布局结构的组件。
-
-- `CategoryBar.astro` - 分类栏组件
-- `ConfigCarrier.astro` - 配置载体组件
-- `DropdownMenu.astro` - 下拉菜单组件
-- `Footer.astro` - 页脚组件
-- `Navbar.astro` - 导航栏组件
-- `NavMenuPanel.astro` - 导航菜单面板
-- `PostCard.astro` - 文章卡片组件
-- `PostMeta.astro` - 文章元数据组件
-- `PostPage.astro` - 文章页面布局组件
-- `SideBar.astro` - 侧边栏组件
-
-### 🎮 controls/ - 导航和交互控件
-
-页面导航和用户交互功能组件。
-
-**导航控件**
-- `BackToComment.astro` - 返回评论区按钮
-- `BackToHome.astro` - 返回主页按钮
-- `BackToTop.astro` - 返回顶部按钮
-- `FloatingControls.astro` - 右下角悬浮控件容器
-- `FloatingTOC.astro` - 浮动目录组件
-- `ScrollDownIndicator.astro` - 向下滚动指示器
-- `ArchivePanel.astro` - 归档面板组件（服务端渲染 + 客户端筛选/折叠）
-
-**交互组件**
-- `DisplaySettings.svelte` - 显示设置组件
-- `DisplaySettingsIntegrated.svelte` - 集成显示设置组件
-- `LayoutSwitchButton.svelte` - 布局切换按钮
-- `LightDarkSwitch.svelte` - 主题切换组件
-- `Search.svelte` - 搜索功能组件
-- `WallpaperSwitch.svelte` - 壁纸模式切换组件
-
-### 🔧 common/ - 公共可复用组件
-
-通用的 UI 组件和工具组件，支持跨项目复用。
-
-**基础 UI 组件**
-- `ButtonLink.astro` - 链接按钮
-- `ButtonTag.astro` - 标签按钮
-- `DropdownItem.astro` / `.svelte` - 下拉选项
-- `DropdownPanel.astro` / `.svelte` - 下拉面板容器
-- `FloatingButton.astro` - 悬浮按钮基础组件
-- `Icon.svelte` - 图标组件（带加载状态和错误处理）
-- `WidgetLayout.astro` - 小部件布局容器
-
-**内容和展示组件**
-- `CoverImage.astro` - 封面图组件（支持本地图片和随机图API）
-- `ImageWrapper.astro` - 图片包装器（支持本地和远程图片）
-- `Markdown.astro` - Markdown 内容样式包装器
-- `PioMessageBox.astro` - 消息框组件（Live2D/Spine 消息显示）
-- `Timeline.astro` / `TimelineItem.astro` - MDX 时间线组件（左侧竖线节点，条目支持日期/标题/正文 Markdown、节点换色和内置图标）
-- `Steps.astro` / `StepItem.astro` / `Badge.astro`  - MDX 内容组件（编号步骤条、内联徽章）
-
-**评论组件**
-- `Comment.astro` - 评论组件（Telegram 风格气泡 / 时间 / 输入栏 / 表情面板 / 身份弹窗），动态页的评论抽屉与文章页的评论区共用；`closable` 决定抽屉形态还是内嵌形态
-- `comment/` - `Comment.astro` 的内部逻辑：`chat-context-pop`（右键菜单）、`comment-info`（身份弹窗）、`comment-own`（自己的评论凭据）、`comment-user`（昵称/头像色）、`comment-wallpaper`（评论背景）
-
-**分页组件**
-- `ClientPagination.svelte` - 客户端分页（JavaScript 控制）
-- `Pagination.astro` - 静态路由分页（Astro 原生）
-
-**列表与筛选组件**
-- `FilterControls.svelte` - 筛选控制组件（胶囊筛选按钮，bangumi/vndb/mal 共用）
-- `TabNav.svelte` - 标签导航组件（支持 URL hash 深链，bangumi/vndb/mal/bilibili 共用）
-- `GridSkeleton.svelte` - 媒体网格加载骨架
-
-### 🧩 widget/ - 小部件
-
-侧边栏中使用的各种功能小部件。
-
-- `Advertisement.astro` - 广告组件
-- `Announcement.astro` - 公告组件
-- `Calendar.astro` - 日历组件
-- `Categories.astro` - 分类组件
-- `Music.astro` - 音乐播放器小部件
-- `Profile.astro` - 个人信息/社交链接小部件
-- `SidebarTOC.astro` - 侧边栏目录组件
-- `SiteInfo.astro` - 站点信息组件
-- `SiteStats.astro` - 站点统计组件
-- `SpineModel.astro` - Spine 看板娘组件
-- `Tags.astro` - 标签组件
-
-### ✨ features/ - 全局功能特效组件
-
-全局加载的功能增强和特效组件。
-
-**管理器（初始化和管理功能）**
-- `FancyboxManager.astro` - Fancybox 图片查看器管理
-- `FontSetup.astro` - 字体加载和管理（基于 Astro Font API）
-- `KatexManager.astro` - Katex 数学公式渲染管理
-- `MusicManager.astro` - 全局音乐播放管理器（单例，管理唯一 audio 元素和播放状态，通过 CustomEvent 同步所有 MusicPlayer 视图实例）
-
-**功能组件**
-- `EncryptedContent.astro` - 加密内容组件
-- `EncryptedPost.astro` - 加密文章组件
-- `Live2DWidget.astro` - Live2D 看板娘组件
-- `MusicPlayer.astro` - 音乐播放器 UI 视图控制器（纯 UI，委托 MusicManager 进行播放控制）
-- `SakuraEffect.astro` - 樱花飘落特效
-- `SpineModel.astro` - Spine 看板娘组件
-- `TypewriterText.astro` - 打字机动画效果
-
-### 📃 pages/ - 页面特定组件
-
-特定页面使用的组件，不用于其他页面。
-
-- `AdvancedSearch.svelte` - 高级搜索组件
-
-**pages/bangumi/** - 番组计划页面组件
-- `BangumiGrid.svelte` - 番组网格布局组件
-- `BangumiSection.svelte` - 番组分类展示组件
-- `Card.svelte` - 番组卡片组件
-
-**pages/gallery/** - 相册页面组件
-- `AlbumCard.astro` - 相册卡片组件
-- `PhotoCard.astro` - 照片卡片组件
-
-### 💬 comment/ - 评论系统组件
-
-第三方评论系统集成组件。
-
-- `index.astro` - 评论主组件
-- `Artalk.astro` - Artalk 评论集成
-- `Disqus.astro` - Disqus 评论集成
-- `Giscus.astro` - Giscus 评论集成（GitHub 讨论）
-- `Twikoo.astro` - Twikoo 评论集成
-- `Waline.astro` - Waline 评论集成
-
-### 📊 analytics/ - 数据统计组件
-
-网站分析和统计集成组件。
-
-- `GoogleAnalytics.astro` - Google Analytics
-- `La51Analytics.astro` - 51la 统计
-- `MicrosoftClarity.astro` - Microsoft Clarity
-- `UmamiAnalytics.astro` - Umami 统计
-
-### 🔧 misc/ - 杂项工具组件
-
-其他辅助和工具类组件。
-
-- `License.astro` - 许可证信息显示
-- `RecommendedPost.astro` - 推荐文章组件
-- `SharePoster.svelte` - 分享海报生成
-
----
-
-## 🗂️ 分类原则
-
-| 分类 | 用途 | 特点 |
-|------|------|------|
-| **layout/** | 页面布局和结构 | 决定整体页面框架 |
-| **controls/** | 导航和交互 | 用户交互功能 |
-| **common/** | 通用可复用组件 | 跨多个页面/组件使用 |
-| **widget/** | 侧边栏小部件 | 侧边栏特定组件 |
-| **features/** | 全局功能特效 | 全局加载的增强功能 |
-| **pages/** | 页面特定组件 | 仅在特定页面使用 |
-| **comment/** | 评论系统 | 第三方服务集成 |
-| **analytics/** | 数据统计 | 分析和统计服务 |
-| **misc/** | 工具和辅助 | 其他杂项功能 |
+- import 路径形态（别名 / 相对 / `import.meta.glob` 索引 / 迁移扫描）统一见
+  [`docs/博客规范补充.md`](../../docs/博客规范补充.md) §1；本文件不再重述，避免两处走样。
+- 组件只负责画。取数、请求、状态机放 `src/utils/` 或父组件；点赞统一走 `utils/likes.ts`，别再写第二份。
+- 同目录**禁止同名不同扩展**（`X.astro` 与 `X.svelte` 并存会让编辑器自动导入选错）。
+- 组件内 `<style>` 是 unlayered，优先级高于 `@layer utilities`；要压 Tailwind 的规则写在组件里。
+- 领域目录暂不强制 `index.ts` 桶文件，只有被多处消费的（`mdx/`）才需要。
+- 新增页面级组件：先问「它属于哪个领域」；`ui/` 只放不依赖站点数据的原子。

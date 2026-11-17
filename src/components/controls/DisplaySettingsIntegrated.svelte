@@ -64,7 +64,7 @@ import {
 } from "@utils/setting-utils";
 import { originFromElement } from "@utils/light-dark-switch";
 import { onMount } from "svelte";
-import Icon from "@/components/common/Icon.svelte";
+import Icon from "@/components/ui/Icon.svelte";
 import {
 	backgroundWallpaperConfig,
 	commentWallpaperConfig,

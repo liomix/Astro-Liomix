@@ -104,7 +104,7 @@
 	text-align: center;
 }
 
-/* ── 3D 书架（几何常量见 components/misc/Bookshelf3D.svelte） ── */
+/* ── 3D 书架（几何常量见 components/books/Bookshelf3D.svelte） ── */
 .books-shelf {
 	/* 纸色与阴影集中在这里，取值对齐 Wenku8_Flutter 的 ArchiveDesign */
 	--shelf-paper: #f2f0e9; /* 书脊：一张平纸，不做渐变 */

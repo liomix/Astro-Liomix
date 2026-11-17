@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import BangumiGrid from "@/components/pages/bangumi/BangumiGrid.svelte";
+import BangumiGrid from "@/components/media/bangumi/BangumiGrid.svelte";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -13,7 +13,7 @@ import type {
 } from "@/types/bangumi";
 import { formatDateI18n } from "@/utils/date-utils";
 import { filterNsfw, isBangumiNsfw } from "@/utils/nsfw-utils";
-import EmptyState from "@/components/common/EmptyState.astro";
+import EmptyState from "@/components/ui/EmptyState.astro";
 
 //参考：霞葉 https://kasuha.com/posts/fuwari-enhance-ep2/
 

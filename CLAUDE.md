@@ -37,7 +37,8 @@ All features are toggled/configured via TypeScript files in `src/config/`, expor
 
 - `siteConfig.ts` — core site settings, theme, pagination
 - `sidebarConfig.ts` — sidebar layout (left/right/both, widget ordering)
-- `commentApiConfig.ts` / `commentEmojiConfig.ts` / `commentWallpaperConfig.ts` — the built-in comment system (Telegram-style `Comment.astro`; there is no third-party comment integration), `analyticsConfig.ts`, `fontConfig.ts`, etc.
+- `commentApiConfig.ts` / `commentEmojiConfig.ts` / `commentWallpaperConfig.ts` — the built-in comment system (Telegram-style `Comment.astro`; there is no third-party comment integration), `fontConfig.ts`, etc.
+- `siteStatsConfig.ts` — self-hosted visit / view counters. The theme's third-party analytics (Google Analytics, Umami, 51la, Microsoft Clarity) were removed; `SiteVisitCounter` / `PostViewCounter` are the only analytics left.
 
 ### Layout System
 
@@ -61,7 +62,7 @@ Defined in `src/content.config.ts`:
 
 ### Key Directories
 
-- `src/components/` — organized by domain: `analytics/`, `comment/`, `common/`, `controls/`, `features/`, `layout/`, `misc/`, `pages/`, `widget/`
+- `src/components/` — organized by domain (see its README): `ui/` atoms, `shell/` global chrome, then feature dirs `comment/`, `post/`, `dynamic/`, `guestbook/`, `media/`, `books/`, `music/`, `effects/`, `stats/`, `sponsor/`, `sidebar/`, plus `controls/` (interactive controls), `managers/` (behavior installers) and `mdx/` (MDX barrel). Rule of thumb: deleting a feature should touch one directory.
 - `src/plugins/` — 15 custom remark/rehype plugins (Mermaid, PlantUML, KaTeX, GitHub cards, reading time, wiki links, etc.)
 - `src/i18n/` — translation keys in `i18nKey.ts`, language files in `languages/*.ts`, lookup via `translation.ts`
 - `src/utils/` — content sorting, crypto (encrypted posts), date formatting, image processing/LQIP, TOC generation
@@ -84,7 +85,7 @@ Defined in `src/content.config.ts`:
 
 Multi-step: `scripts/generate-lqips.ts` → `scripts/generate-vndb-covers.ts` → `astro build` → `scripts/prune-pio-assets.ts` → `scripts/subset-fonts.ts` → `scripts/minify-inline-scripts.ts` → `pagefind --site dist`
 
-LQIP data is generated into `src/constants/lqips.json` and committed — regenerate with `pnpm lqips`. Icon data lives in `src/constants/icons-data.json` (committed, Biome-ignored, consumed by `src/components/common/Icon.svelte`) but has no generator script in the current build.
+LQIP data is generated into `src/constants/lqips.json` and committed — regenerate with `pnpm lqips`. Icon data lives in `src/constants/icons-data.json` (committed, Biome-ignored, consumed by `src/components/ui/Icon.svelte`) but has no generator script in the current build.
 
 `generate-vndb-covers.ts` downloads VNDB cover art into `public/vndb-covers/` (gitignored, skips files that already exist). It no-ops unless `siteConfig.vndb` has a `userId`, `downloadCovers: true`, and `mode: "static"`.
 

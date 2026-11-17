@@ -1,7 +1,7 @@
 /**
  * 全局消息提示（MessagePop）
  *
- * 宿主组件 `src/components/misc/MessagePop.svelte` 在 MainGridLayout 挂载一次，
+ * 宿主组件 `src/components/ui/MessagePop.svelte` 在 MainGridLayout 挂载一次，
  * 任意客户端脚本 import { showMessage } 即可发一条提示：
  *
  *   showMessage("已复制链接", { type: "success" });

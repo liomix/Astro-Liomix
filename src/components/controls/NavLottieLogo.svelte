@@ -14,9 +14,15 @@ interface Props {
 let { name = "logo" }: Props = $props();
 
 /** 素材按名字动态加载：导航栏每个页面都要用，做成独立 chunk 由客户端按需取 */
-const animations = import.meta.glob<unknown>("../../assets/lottie/*.json", {
+const animations = import.meta.glob<unknown>("@/assets/lottie/*.json", {
 	import: "default",
 });
+
+/** 键只取文件名：glob 的 key 会带上 pattern 里写死的前缀，按路径查一搬目录就静默取空 */
+const loaderByName = new Map<string, () => Promise<unknown>>();
+for (const [key, loader] of Object.entries(animations)) {
+	loaderByName.set(key.slice(key.lastIndexOf("/") + 1, -".json".length), loader);
+}
 
 interface LottiePlayer {
 	play: () => void;
@@ -39,8 +45,7 @@ onMount(() => {
 	let trigger: Element | null = null;
 	let replay: (() => void) | null = null;
 
-	const url = `../../assets/lottie/${name}.json`;
-	const load = animations[url];
+	const load = loaderByName.get(name);
 	if (!load) return;
 
 	void (async () => {

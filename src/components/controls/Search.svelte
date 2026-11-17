@@ -1,12 +1,12 @@
 <script lang="ts">
-import CardSkeleton from "@/components/common/CardSkeleton.svelte";
+import CardSkeleton from "@/components/ui/CardSkeleton.svelte";
 import { registerEmptyLottie } from "@/utils/empty-lottie";
 registerEmptyLottie();
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { navigateToPage } from "@utils/navigation-utils";
 import { onMount } from "svelte";
-import Icon from "@/components/common/Icon.svelte";
+import Icon from "@/components/ui/Icon.svelte";
 import type { SearchResult } from "@/global";
 import { FLOATING_PANEL_CLOSE_EVENT } from "@/utils/floating-panel-utils";
 import { url as formatUrl, getSearchUrl } from "@/utils/url-utils";

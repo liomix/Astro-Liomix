@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import AlbumCard from "@/components/pages/gallery/AlbumCard.astro";
+import AlbumCard from "@/components/media/gallery/AlbumCard.astro";
 import { galleryConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -8,7 +8,7 @@ import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils";
 import "@/styles/pages/card-grid.css";
-import EmptyState from "@/components/common/EmptyState.astro";
+import EmptyState from "@/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.gallery) {

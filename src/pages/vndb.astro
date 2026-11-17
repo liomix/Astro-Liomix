@@ -2,7 +2,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { Icon } from "astro-icon/components";
-import VndbGrid from "@/components/pages/vndb/VndbGrid.svelte";
+import VndbGrid from "@/components/media/vndb/VndbGrid.svelte";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -17,7 +17,7 @@ import {
 	fetchVndbUlist,
 	type VndbTab,
 } from "@/utils/vndb-utils";
-import EmptyState from "@/components/common/EmptyState.astro";
+import EmptyState from "@/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.vndb) {

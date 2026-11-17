@@ -1,24 +1,19 @@
 ---
-import GoogleAnalytics from "@components/analytics/GoogleAnalytics.astro";
-import La51Analytics from "@components/analytics/La51Analytics.astro";
-import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
-import PostViewCounter from "@components/analytics/PostViewCounter.astro";
-import SiteVisitCounter from "@components/analytics/SiteVisitCounter.astro";
-import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
-import CodeGroupManager from "@components/features/CodeGroupManager.astro";
-import FancyboxManager from "@components/features/FancyboxManager.astro";
-import FontSetup from "@components/features/FontSetup.astro";
-import GithubCardManager from "@components/features/GithubCardManager.astro";
-import MusicManager from "@components/features/MusicManager.astro";
-import MusicPlayerView from "@components/features/MusicPlayerView.astro";
-import NowPlayingCard from "@components/features/NowPlayingCard.svelte";
-import SakuraEffect from "@components/features/SakuraEffect.astro";
-import WavesEffect from "@components/features/WavesEffect.astro";
-import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
-import BrowserChrome from "@/components/layout/BrowserChrome.astro";
+import PostViewCounter from "@/components/stats/PostViewCounter.astro";
+import SiteVisitCounter from "@/components/stats/SiteVisitCounter.astro";
+import CodeGroupManager from "@/components/managers/CodeGroupManager.astro";
+import FancyboxManager from "@/components/managers/FancyboxManager.astro";
+import FontSetup from "@/components/managers/FontSetup.astro";
+import GithubCardManager from "@/components/managers/GithubCardManager.astro";
+import MusicManager from "@/components/music/MusicManager.astro";
+import MusicPlayerView from "@/components/music/MusicPlayerView.astro";
+import NowPlayingCard from "@/components/music/NowPlayingCard.svelte";
+import SakuraEffect from "@/components/effects/SakuraEffect.astro";
+import WavesEffect from "@/components/effects/WavesEffect.astro";
+import ConfigCarrier from "@/components/shell/ConfigCarrier.astro";
+import BrowserChrome from "@/components/shell/BrowserChrome.astro";
 
 import {
-	analyticsConfig,
 	backgroundWallpaperConfig,
 	displaySettingsConfig,
 	expressiveCodeConfig,
@@ -158,34 +153,7 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
     <meta charset="UTF-8" />
     <style is:inline>
 			@layer properties, theme, base, components, utilities;
-		</style>
-    {analyticsConfig?.googleAnalyticsId && (
-            <GoogleAnalytics analyticsId={analyticsConfig.googleAnalyticsId} />
-    )}
-    {analyticsConfig?.microsoftClarityId && (
-            <MicrosoftClarity clarityId={analyticsConfig.microsoftClarityId} />
-    )}
-        {analyticsConfig?.umamiAnalytics?.websiteId && (
-          <UmamiAnalytics
-          websiteId={analyticsConfig.umamiAnalytics.websiteId}
-          scriptUrl={analyticsConfig.umamiAnalytics.scriptUrl}
-          replaysScriptUrl={analyticsConfig.umamiAnalytics.replaysScriptUrl}
-          trackOutboundLinks={analyticsConfig.umamiAnalytics.trackOutboundLinks}
-          collectWebVitals={analyticsConfig.umamiAnalytics.collectWebVitals}
-          replays={analyticsConfig.umamiAnalytics.replays}
-          />
-        )}
-        {analyticsConfig?.la51Analytics?.Id && (
-            <La51Analytics
-            analyticsId={analyticsConfig.la51Analytics.Id}
-            sdkUrl={analyticsConfig.la51Analytics?.sdkUrl}
-            ck={analyticsConfig.la51Analytics?.ck}
-            autoTrack={analyticsConfig.la51Analytics?.autoTrack}
-            hashMode={analyticsConfig.la51Analytics?.hashMode}
-            screenRecord={analyticsConfig.la51Analytics?.screenRecord}
-            />
-    )}
-
+    </style>
     {siteStatsConfig?.enable && <SiteVisitCounter />}
     {siteStatsConfig?.enable && siteStatsConfig.articleViews && <PostViewCounter />}
 

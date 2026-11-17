@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import MalGrid from "@/components/pages/mal/MalGrid.svelte";
+import MalGrid from "@/components/media/mal/MalGrid.svelte";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -15,7 +15,7 @@ import {
 	type MalListKind,
 } from "@/utils/mal-utils";
 import { filterNsfw, isMalNsfw } from "@/utils/nsfw-utils";
-import EmptyState from "@/components/common/EmptyState.astro";
+import EmptyState from "@/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.mal) {

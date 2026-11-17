@@ -1,0 +1,114 @@
+---
+/**
+ * 通用评论按钮：Lottie 气泡 + 数字。
+ *
+ * 两种形态，因为两处评论的打开方式不同：
+ *   - link：文章页，锚到页面内嵌的评论区（默认）；
+ *   - drawer：动态卡片，交给 dynamic-actions.ts 抽评论抽屉。
+ *
+ * 数字来源也分两条：动态卡片的基数由 DynamicFeed 批量问后端后写进 data-comment-base；
+ * 文章页是静态渲染的，构建期没有评论数据库，所以传 slug，让按钮在客户端自己问一次。
+ */
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { formatCompactNumber } from "@/utils/number-utils";
+import "@/styles/components/atom-action.css";
+
+interface Props {
+	/** 展示的评论数 */
+	count?: number;
+	/** link 形态的跳转目标，默认文章页内嵌评论区 */
+	href?: string;
+	/** true 时渲染成按钮并交给动态页的抽屉逻辑 */
+	drawer?: boolean;
+	class?: string;
+	label?: string;
+	/**
+	 * 评论线程的 slug（文章页传文章 slug）。
+	 * 传了就在客户端问一次真实条数并把数字补上 —— 静态页渲染时不知道有几条评论。
+	 */
+	slug?: string;
+}
+
+const {
+	count = 0,
+	href = "#post-comments",
+	drawer = false,
+	class: className,
+	label = i18n(I18nKey.dynamicComment),
+	slug = "",
+} = Astro.props;
+---
+
+{
+	drawer ? (
+		<button
+			type="button"
+			class:list={["atom-action", className]}
+			data-comment-open
+			data-comment-base={count}
+			aria-expanded="false"
+			aria-label={label}
+			title={label}
+		>
+			<dynamic-lottie-icon data-animation="comment" />
+			<span class="atom-action__count" data-comment-count>
+				{formatCompactNumber(count)}
+			</span>
+		</button>
+	) : (
+		<a
+			href={href}
+			class:list={["atom-action", className]}
+			data-comment-base={count}
+			data-comment-slug={slug || undefined}
+			aria-label={label}
+			title={label}
+		>
+			<dynamic-lottie-icon data-animation="comment" />
+			<span class="atom-action__count" data-comment-count>
+				{formatCompactNumber(count)}
+			</span>
+		</a>
+	)
+}
+
+<script>
+	import { registerDynamicLottieIcons } from "@/components/dynamic/dynamic-lottie-icon.ts";
+	import { fetchCommentCounts } from "@/utils/comment-client";
+	import { formatCompactNumber } from "@/utils/number-utils";
+
+	// 单独使用评论按钮时（没有点赞按钮同页）也要把气泡图标注册出来
+	registerDynamicLottieIcons();
+
+	/**
+	 * 文章页的按钮带着 slug：静态渲染出来是 0，这里问一次真实条数。
+	 * 接口没开、后端不可达都只是保持 0，不弹任何错误 —— 数字是次要信息，
+	 * 点进去看到评论列表才是主要目的。
+	 */
+	const buttons = Array.from(
+		document.querySelectorAll<HTMLElement>("[data-comment-slug]"),
+	);
+	const slugs = Array.from(
+		new Set(buttons.map((button) => button.dataset.commentSlug ?? "")),
+	).filter(Boolean);
+
+	if (slugs.length > 0) {
+		void (async () => {
+			try {
+				const counts = await fetchCommentCounts(slugs);
+				for (const button of buttons) {
+					const count = counts.get(button.dataset.commentSlug ?? "");
+					if (count === undefined) continue;
+					button.dataset.commentBase = String(count);
+					const node = button.querySelector<HTMLElement>(
+						"[data-comment-count]",
+					);
+					if (node) node.textContent = formatCompactNumber(count);
+				}
+			} catch {
+				// 拿不到就沿用 SSR 的数字
+			}
+		})();
+	}
+</script>

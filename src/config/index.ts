@@ -23,7 +23,6 @@ export type {
 // 类型导出
 export type {
 	AdConfig,
-	AnalyticsConfig,
 	AnnouncementConfig,
 	BackgroundWallpaperConfig,
 	BooknavFaviconConfig,
@@ -61,7 +60,6 @@ export type { CommentApiConfig } from "../types/commentApiConfig"; // 评论接�
 export type { NavPurityConfig } from "../types/navPurityConfig"; // 导航页纯净模式类型
 export type { WidePageConfig } from "../types/widePageConfig"; // 宽幅页面布局类型
 export type { ArticlePurityConfig } from "../types/articlePurityConfig"; // 文章页纯净模式类型
-export { analyticsConfig } from "./analyticsConfig"; // 统计分析配置
 export { announcementConfig } from "./announcementConfig"; // 公告配置
 // 样式配置
 export { backgroundWallpaperConfig } from "./backgroundWallpaperConfig"; // 背景壁纸配置

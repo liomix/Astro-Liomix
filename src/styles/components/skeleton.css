@@ -3,7 +3,7 @@
    放在全局样式里而不是组件的作用域样式里，因为 Svelte 岛（导航搜索、动态流）
    也要用 —— 作用域样式带 [data-astro-cid-*]，Svelte 里拼出来的元素匹配不到。
 
-   形状（宽/高/圆角）由 `--skeleton-*` 变量给，见 components/common/Skeleton.astro。 */
+   形状（宽/高/圆角）由 `--skeleton-*` 变量给，见 components/ui/Skeleton.astro。 */
 .skeleton {
 	position: relative;
 	display: block;

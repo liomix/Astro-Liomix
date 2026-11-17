@@ -30,7 +30,7 @@ import { fileURLToPath } from "node:url";
 const PROJECT_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
 /** 默认缓存目录：项目根的 cache/weread（已 gitignore） */
-export const DEFAULT_CACHE_DIR = path.join(PROJECT_ROOT, "cache", "weread");
+export const DEFAULT_CACHE_DIR: string = path.join(PROJECT_ROOT, "cache", "weread");
 
 /** 被网关拒绝后暂停多久（秒），避免「越试越封」 */
 const DENIED_COOLDOWN = 15 * 60;
@@ -77,10 +77,12 @@ interface Cooldown {
 const memory = new Map<string, Entry>();
 const inflight = new Map<string, Promise<FetchOutcome<unknown>>>();
 
-const stats = { hit: 0, stale: 0, fetch: 0, denied: 0, skipped: 0 };
+type WereadCacheStats = { hit: number; stale: number; fetch: number; denied: number; skipped: number };
+
+const stats: WereadCacheStats = { hit: 0, stale: 0, fetch: 0, denied: 0, skipped: 0 };
 
 /** 缓存命中情况，dev 下打印一行用 */
-export function wereadCacheStats() {
+export function wereadCacheStats(): WereadCacheStats {
 	return { ...stats };
 }
 

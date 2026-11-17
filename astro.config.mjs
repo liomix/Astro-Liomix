@@ -27,7 +27,7 @@ import remarkDirective from "remark-directive"; /* Handle directives */
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 import {
-	commentConfig,
+	commentApiConfig,
 	dynamicConfig,
 	expressiveCodeConfig,
 	fontConfig,
@@ -275,9 +275,7 @@ export default defineConfig({
 				// 动态页评论嵌入页：评论关闭时重定向到 /404/，不应进 sitemap
 				if (
 					pathname === "/dynamic/comments/" &&
-					(dynamicConfig.showComment === false ||
-						!commentConfig.type ||
-						commentConfig.type === "none")
+					(dynamicConfig.showComment === false || commentApiConfig.enable === false)
 				) {
 					return false;
 				}
