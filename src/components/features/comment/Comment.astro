@@ -628,7 +628,7 @@ const showTabs = packs.length > 1;
 	} from "@/utils/api-error-message";
 	import { ApiError } from "@/utils/api-client";
 	import { copyText } from "@/utils/clipboard";
-	import { createEmptyLottie, registerEmptyLottie } from "@/utils/empty-lottie";
+	import { createEmptyLottie, registerEmptyLottie } from "@/components/ui/empty-lottie";
 	import {
 		type ApiComment,
 		type CommentPage,
@@ -943,7 +943,7 @@ const showTabs = packs.length > 1;
 
 	/**
 	 * 空态占位：一张插画 + 一句文案。
-	 * 插画是全站统一的那张（utils/empty-lottie），尺寸由 comment.css 的
+	 * 插画是全站统一的那张（ui/empty-lottie），尺寸由 comment.css 的
 	 * `[data-tg-state="empty"]` 控制 —— 抽屉里窄、文章页里宽，同一个素材两种大小。
 	 */
 	function paintEmptyPlaceholder(node: HTMLElement, text: string): void {

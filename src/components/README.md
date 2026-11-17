@@ -16,12 +16,12 @@ src/components/
 │  ├─ effects/                视觉特效：Sakura / Waves / Typewriter / Live2D / Spine / BackgroundPlayer / PioMessageBox
 │  ├─ stats/                  统计与图表：SiteVisitCounter / PostViewCounter / SiteStats / PostActivity / 两个图表
 │  └─ sponsor/                打赏：SponsorButton / SponsorButtonLottie / SponsorPop
-├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / ServerPagination / TabGroup / Timeline / EmptyState / SidebarDialog
+├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / ServerPagination / TabGroup / Timeline / EmptyState / LikeButton / CommentButton / SidebarDialog
 ├─ shell/                     全站外壳：Navbar / Footer / Sidebar / TabBar / WallpaperSection / DropdownMenu / FloatingControls / ToastHost
 ├─ sidebar/                   侧栏卡片（纯卡片）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo
 ├─ controls/                  交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 设置
 ├─ managers/                  只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontManager
-└─ mdx/                       MDX 文章组件出口（仅 index.ts 桶；图标在 ui/mdx-icons.ts）
+└─ mdx/                       MDX 文章组件出口（仅 index.ts 桶；图标在 ui/icons.ts）
 ```
 
 ## 约定

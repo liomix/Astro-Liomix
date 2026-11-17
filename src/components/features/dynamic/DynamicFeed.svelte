@@ -18,7 +18,7 @@ import { likeCountOf } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
 import CardSkeleton from "@/components/ui/CardSkeleton.svelte";
-import { registerEmptyLottie } from "@/utils/empty-lottie";
+import { registerEmptyLottie } from "@/components/ui/empty-lottie";
 import { registerDynamicGallery } from "./dynamic-gallery";
 
 type DynamicImage = {

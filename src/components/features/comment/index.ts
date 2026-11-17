@@ -11,7 +11,6 @@
  */
 
 export { default as Comment } from "./Comment.astro";
-export { default as CommentButton } from "./CommentButton.astro";
 export { default as CommentSkeleton } from "./CommentSkeleton.astro";
 export { default as PostComments } from "./PostComments.astro";
 

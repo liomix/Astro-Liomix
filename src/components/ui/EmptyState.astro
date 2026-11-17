@@ -8,7 +8,7 @@
  *   - 列表筛选无结果、评论区空态这类「局部空」传小一点。
  * 不传就按视口走 `clamp()`，窄屏不会顶满、宽屏不会缩成一个小点。
  *
- * 动画本身在 utils/empty-lottie.ts 的 `<empty-lottie>` 里：按需加载 lottie-web、
+ * 动画本身在 ui/empty-lottie.ts 的 `<empty-lottie>` 里：按需加载 lottie-web、
  * 进视口才播、`prefers-reduced-motion` 时只画静态帧。
  */
 interface Props {
@@ -48,7 +48,7 @@ const {
 </div>
 
 <script>
-	import { registerEmptyLottie } from "@/utils/empty-lottie";
+	import { registerEmptyLottie } from "@/components/ui/empty-lottie";
 
 	// frontmatter 只在构建/SSR 时执行，自定义元素必须在浏览器里注册一次
 	registerEmptyLottie();

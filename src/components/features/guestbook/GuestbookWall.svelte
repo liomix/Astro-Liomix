@@ -43,7 +43,7 @@
 		emojiTokenPattern,
 		resolveEmojiToken,
 	} from "@/utils/emoji-shortcode";
-	import { registerEmptyLottie } from "@/utils/empty-lottie";
+	import { registerEmptyLottie } from "@/components/ui/empty-lottie";
 	import { isLikeApiEnabled } from "@/utils/like-client";
 	import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
 	import { showMessage } from "@/utils/message-pop";
