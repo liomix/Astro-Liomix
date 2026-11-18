@@ -4,6 +4,13 @@ import Icon from "@/components/ui/Icon.svelte";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import {
+	AUTOPLAY_DEFAULT,
+	AUTOPLAY_EVENT,
+	type AutoPlayEventDetail,
+	readAutoPlay,
+	saveAutoPlay,
+} from "@/utils/now-playing-autoplay";
+import {
 	GLASS_BLUR_DEFAULT,
 	GLASS_BLUR_MAX,
 	GLASS_BLUR_MIN,
@@ -12,13 +19,6 @@ import {
 	readGlassBlur,
 	saveGlassBlur,
 } from "@/utils/now-playing-glass";
-import {
-	AUTOPLAY_DEFAULT,
-	AUTOPLAY_EVENT,
-	type AutoPlayEventDetail,
-	readAutoPlay,
-	saveAutoPlay,
-} from "@/utils/now-playing-autoplay";
 import {
 	CARD_PERSIST_DEFAULT,
 	CARD_PERSIST_EVENT,
@@ -50,9 +50,7 @@ let autoPlay = $state(AUTOPLAY_DEFAULT);
 
 const volumePercent = $derived(Math.round(volume * 100));
 const speedPercent = $derived(Math.round(playbackRate * 100));
-const rateLabel = $derived(
-	`${playbackRate.toFixed(2).replace(/\.?0+$/, "")}×`,
-);
+const rateLabel = $derived(`${playbackRate.toFixed(2).replace(/\.?0+$/, "")}×`);
 
 function syncFromManager(): void {
 	const api = window.__fireflyMusic;

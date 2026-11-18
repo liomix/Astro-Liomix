@@ -264,8 +264,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 		const headers = new Headers();
 		// 只有带 body 的请求才声称 JSON：GET 加上这个头会把简单请求升级成预检，
 		// 每读一次列表就多一个往返。
-		if (opts.body !== undefined) headers.set("Content-Type", "application/json");
-		if (opts.idempotencyKey) headers.set("Idempotency-Key", opts.idempotencyKey);
+		if (opts.body !== undefined)
+			headers.set("Content-Type", "application/json");
+		if (opts.idempotencyKey)
+			headers.set("Idempotency-Key", opts.idempotencyKey);
 		for (const [name, value] of Object.entries(opts.headers ?? {})) {
 			headers.set(name, value);
 		}
@@ -288,15 +290,22 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 		} catch (error) {
 			if (error instanceof ApiError) throw error;
 			if (external?.aborted && !timedOut) {
-				throw new ApiError({ kind: "aborted", message: "request aborted by caller" });
+				throw new ApiError({
+					kind: "aborted",
+					message: "request aborted by caller",
+				});
 			}
 			if (timedOut) {
-				throw new ApiError({ kind: "timeout", message: `request timed out after ${timeoutMs}ms` });
+				throw new ApiError({
+					kind: "timeout",
+					message: `request timed out after ${timeoutMs}ms`,
+				});
 			}
 			// fetch 在网络层失败时只给一个笼统的 TypeError，状态码都拿不到
 			throw new ApiError({
 				kind: "network",
-				message: error instanceof Error ? error.message : "network request failed",
+				message:
+					error instanceof Error ? error.message : "network request failed",
 			});
 		} finally {
 			clearTimeout(timer);
@@ -333,11 +342,17 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 					if (lastError.kind === "aborted") throw lastError;
 					logFailure(method, url, lastError);
 					if (!lastError.retryable || index === retries) throw lastError;
-					await sleep(backoffDelay(index, lastError.retryAfterSeconds), opts.signal);
+					await sleep(
+						backoffDelay(index, lastError.retryAfterSeconds),
+						opts.signal,
+					);
 				}
 			}
 			// 循环至少跑过一次，走到这里说明最后一次尝试抛了错
-			throw lastError ?? new ApiError({ kind: "network", message: "request failed" });
+			throw (
+				lastError ??
+				new ApiError({ kind: "network", message: "request failed" })
+			);
 		},
 	};
 }
@@ -352,5 +367,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
 export function newIdempotencyKey(): string {
 	if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
 	const bytes = crypto.getRandomValues(new Uint8Array(16));
-	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+		"",
+	);
 }

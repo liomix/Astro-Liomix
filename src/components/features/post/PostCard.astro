@@ -2,16 +2,13 @@
 import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
-import CoverImage from "@/components/ui/CoverImage.astro";
 import PostMetadata from "@/components/features/post/PostMeta.astro";
 import PostStats from "@/components/features/post/PostStats.astro";
+import CoverImage from "@/components/ui/CoverImage.astro";
 import { siteConfig, siteStatsConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import {
-	formatDateToYYYYMMDD,
-	formatRelativeTime,
-} from "@/utils/date-utils";
+import { formatDateToYYYYMMDD, formatRelativeTime } from "@/utils/date-utils";
 import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
 import { getFileDirFromPath, getTagUrl } from "@/utils/url-utils";
 

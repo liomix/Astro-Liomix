@@ -7,9 +7,10 @@
  * 安全边界在这里：SAFE_TAGS / DROP_TAGS 决定「后端存下来的 HTML 能不能进气泡」，
  * 改白名单等于改评论的信任边界，别为了显示效果放宽它。
  */
+
+import { Marked } from "marked";
 import { createEmptyLottie } from "@/components/ui/empty-lottie";
 import { emojiShortcodeExtension } from "@/utils/emoji-shortcode";
-import { Marked } from "marked";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -211,7 +212,8 @@ function sanitizeHtml(html: string): string {
 				const name = attr.name.toLowerCase();
 				const keep =
 					(tag === "A" && (name === "href" || name === "title")) ||
-					(tag === "IMG" && (name === "src" || name === "alt" || name === "title")) ||
+					(tag === "IMG" &&
+						(name === "src" || name === "alt" || name === "title")) ||
 					(tag === "IMG" && name === "class") ||
 					(tag === "CODE" && name === "class") ||
 					(tag === "TH" && name === "align") ||
@@ -304,7 +306,11 @@ function decorateCodeBlocks(root: HTMLElement, labels: CodeLabels): void {
 }
 
 /** 渲染一段 Markdown 到气泡里：解析 → 消毒 → 补代码块顶栏 */
-export function setMarkdown(target: HTMLElement, text: string, labels: CodeLabels): void {
+export function setMarkdown(
+	target: HTMLElement,
+	text: string,
+	labels: CodeLabels,
+): void {
 	target.innerHTML = renderMarkdown(text);
 	decorateCodeBlocks(target, labels);
 }

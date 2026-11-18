@@ -124,11 +124,13 @@ export function getBannerVisibilityState(
 		typeof gradientConfig === "object"
 			? gradientConfig.mobile
 			: (gradientConfig ?? true);
-	const gradientHeight = backgroundWallpaperConfig.common?.gradient?.height ?? "30vh";
+	const gradientHeight =
+		backgroundWallpaperConfig.common?.gradient?.height ?? "30vh";
 	const shouldRenderGradient =
 		gradientEnabledOnDesktop || gradientEnabledOnMobile || gradientSwitchable;
 
-	const homeTextEnable = backgroundWallpaperConfig.common?.homeText?.enable ?? false;
+	const homeTextEnable =
+		backgroundWallpaperConfig.common?.homeText?.enable ?? false;
 	const showHomeText =
 		(isBannerMode || isFullscreenMode) && !!homeTextEnable && isHomePageCheck;
 	const homeTextLinksEnable =

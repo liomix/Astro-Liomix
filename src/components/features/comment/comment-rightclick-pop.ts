@@ -28,11 +28,11 @@ import {
 	forgetOwnComment,
 } from "@/components/features/comment/comment-own.ts";
 import { getCommentUser } from "@/components/features/comment/comment-user.ts";
-import { emojiTokensToHtml, emojiTokensToText } from "@/utils/emoji-shortcode";
-import { apiErrorMessage } from "@/utils/api-error-message";
 import { ApiError } from "@/utils/api-client";
+import { apiErrorMessage } from "@/utils/api-error-message";
 import { copyText } from "@/utils/clipboard";
 import { deleteComment } from "@/utils/comment-client";
+import { emojiTokensToHtml, emojiTokensToText } from "@/utils/emoji-shortcode";
 
 /** 引用预览里的摘要长度上限：超过就截断，够看清是哪条消息 */
 const REPLY_SUMMARY_MAX = 90;
@@ -160,7 +160,9 @@ export function summarizeMarkdownHtml(
 	return emojiTokensToHtml(condense(markdown, max));
 }
 
-export function initCommentRightclickPop(chat: HTMLElement): CommentRightclickPopHandle {
+export function initCommentRightclickPop(
+	chat: HTMLElement,
+): CommentRightclickPopHandle {
 	const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
 	// 菜单可能已经被上一次 init 挪到 body 上了（见下面的注释），所以补一次全文查找：
 	// 一个文档里只有一台聊天，不会认错

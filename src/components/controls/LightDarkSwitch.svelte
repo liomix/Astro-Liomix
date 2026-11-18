@@ -1,8 +1,8 @@
 <script lang="ts">
-import sunMoonData from "@/assets/lottie/sun-moon.json";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { onMount } from "svelte";
+import sunMoonData from "@/assets/lottie/sun-moon.json";
 import Icon from "@/components/ui/Icon.svelte";
 import {
 	DARK_MODE,
@@ -11,12 +11,8 @@ import {
 	SYSTEM_MODE,
 } from "@/constants/constants";
 import type { LightDarkMode } from "@/types/config.ts";
-import {
-	getStoredTheme,
-	resolveTheme,
-	setTheme,
-} from "@/utils/setting-utils";
 import { originFromElement } from "@/utils/light-dark-switch";
+import { getStoredTheme, resolveTheme, setTheme } from "@/utils/setting-utils";
 
 // 导航栏图标：一枚「月亮 ⇄ 太阳」的 Lottie，点一下就切换日/夜。
 // 更细的模式（跟随系统、定时）在主题弹窗的「背景」里设置。

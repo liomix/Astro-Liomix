@@ -25,7 +25,10 @@ import {
 	siteConfig,
 } from "../config";
 import { isHomePage as checkIsHomePage } from "./layout-utils";
-import { runThemeReveal, type ThemeTransitionOrigin } from "./light-dark-switch";
+import {
+	runThemeReveal,
+	type ThemeTransitionOrigin,
+} from "./light-dark-switch";
 
 // Declare global functions
 declare global {
@@ -80,7 +83,9 @@ export const DEFAULT_THEME_SCHEDULE: ThemeSchedule = {
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 function normalizeTime(value: unknown, fallback: string): string {
-	return typeof value === "string" && TIME_PATTERN.test(value) ? value : fallback;
+	return typeof value === "string" && TIME_PATTERN.test(value)
+		? value
+		: fallback;
 }
 
 function toMinutes(value: string): number {
@@ -97,10 +102,7 @@ export function getThemeSchedule(): ThemeSchedule {
 		if (!raw) return { ...DEFAULT_THEME_SCHEDULE };
 		const parsed = JSON.parse(raw) as Partial<ThemeSchedule>;
 		return {
-			dayStart: normalizeTime(
-				parsed.dayStart,
-				DEFAULT_THEME_SCHEDULE.dayStart,
-			),
+			dayStart: normalizeTime(parsed.dayStart, DEFAULT_THEME_SCHEDULE.dayStart),
 			nightStart: normalizeTime(
 				parsed.nightStart,
 				DEFAULT_THEME_SCHEDULE.nightStart,
@@ -410,7 +412,10 @@ export function setupScheduledThemeListener(): void {
 
 	applyScheduledThemeTick();
 	scheduledThemeTimer = setInterval(applyScheduledThemeTick, 30_000);
-	document.addEventListener("visibilitychange", handleScheduledVisibilityChange);
+	document.addEventListener(
+		"visibilitychange",
+		handleScheduledVisibilityChange,
+	);
 }
 
 function cleanupScheduledThemeListener(): void {
@@ -435,9 +440,7 @@ export function getStoredTheme(): LightDarkMode {
 	) {
 		return getDefaultTheme();
 	}
-	return (
-		(localStorage.getItem("theme") as LightDarkMode) || getDefaultTheme()
-	);
+	return (localStorage.getItem("theme") as LightDarkMode) || getDefaultTheme();
 }
 
 // 初始化主题监听器（用于页面加载后）
@@ -599,7 +602,8 @@ export function updateNavbarTransparency(mode: WallpaperMode): void {
 		// 全屏壁纸：首页 + semifull 动态透明，其余半透明玻璃
 		const isHomePage = checkIsHomePage(window.location.pathname);
 		const fsMode =
-			backgroundWallpaperConfig.fullscreen?.navbar?.transparentMode || "semifull";
+			backgroundWallpaperConfig.fullscreen?.navbar?.transparentMode ||
+			"semifull";
 		const glassBlur = backgroundWallpaperConfig.fullscreen?.navbar?.blur ?? 20;
 		transparentMode = fsMode === "semifull" && isHomePage ? "semifull" : "semi";
 		blurAmount = glassBlur;
@@ -718,7 +722,7 @@ export function getDefaultOverlayPanelTransparency(): number {
 	}
 	return clampNumber(
 		backgroundWallpaperConfig.overlay?.panelTransparency ??
-			(1 - getDefaultOverlayCardOpacity()),
+			1 - getDefaultOverlayCardOpacity(),
 		0,
 		1,
 	);
@@ -909,10 +913,7 @@ export function setOverlayPanelTransparency(transparency: number): void {
 		typeof localStorage !== "undefined" &&
 		typeof localStorage.setItem === "function"
 	) {
-		localStorage.setItem(
-			"overlayPanelTransparency",
-			String(safeTransparency),
-		);
+		localStorage.setItem("overlayPanelTransparency", String(safeTransparency));
 	}
 	applyOverlayPanelTransparencyToDocument(safeTransparency);
 }

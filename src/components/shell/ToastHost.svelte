@@ -15,9 +15,9 @@ import { onMount } from "svelte";
 import { fade, fly } from "svelte/transition";
 import {
 	MESSAGE_POP_EVENT,
-	markMessagePopReady,
 	type MessageDetail,
 	type MessageType,
+	markMessagePopReady,
 } from "@/utils/message-pop";
 
 /** 同时最多显示几条，超出先挤掉最早的 */

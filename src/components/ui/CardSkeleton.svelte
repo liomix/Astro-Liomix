@@ -1,27 +1,27 @@
 <script lang="ts">
-	/**
-	 * 列表卡片的骨架屏（Svelte 版）
-	 * ---------------------------------------------------------------------------
-	 * 动态流、搜索结果这些「一屏好几张卡片」的地方，加载时先画出卡片的形状：
-	 * 头像 + 昵称/时间 + 两三行正文 + 底部动作条。数据回来是替换而不是重排。
-	 *
-	 * 为什么是 .svelte 而不是 .astro：三个调用方（动态流、两个搜索面板）都是
-	 * Svelte 岛，.astro 组件只能经 Astro 渲染，塞不进岛里。骨架块本身用全局的
-	 * `skeleton` 类（styles/components/skeleton.css），和 Astro 那边的
-	 * Skeleton.astro 是同一套视觉。
-	 */
-	interface Props {
-		/** 画几张；默认 2 张够占住首屏 */
-		rows?: number;
-		/** card：整张卡片（动态流）；compact：一行一项（搜索下拉） */
-		variant?: "card" | "compact";
-		/** 读屏软件念的话（视觉上是骨架） */
-		label?: string;
-	}
+/**
+ * 列表卡片的骨架屏（Svelte 版）
+ * ---------------------------------------------------------------------------
+ * 动态流、搜索结果这些「一屏好几张卡片」的地方，加载时先画出卡片的形状：
+ * 头像 + 昵称/时间 + 两三行正文 + 底部动作条。数据回来是替换而不是重排。
+ *
+ * 为什么是 .svelte 而不是 .astro：三个调用方（动态流、两个搜索面板）都是
+ * Svelte 岛，.astro 组件只能经 Astro 渲染，塞不进岛里。骨架块本身用全局的
+ * `skeleton` 类（styles/components/skeleton.css），和 Astro 那边的
+ * Skeleton.astro 是同一套视觉。
+ */
+interface Props {
+	/** 画几张；默认 2 张够占住首屏 */
+	rows?: number;
+	/** card：整张卡片（动态流）；compact：一行一项（搜索下拉） */
+	variant?: "card" | "compact";
+	/** 读屏软件念的话（视觉上是骨架） */
+	label?: string;
+}
 
-	let { rows = 2, variant = "card", label = "加载中…" }: Props = $props();
+let { rows = 2, variant = "card", label = "加载中…" }: Props = $props();
 
-	const count = $derived(Math.max(1, Math.min(6, rows)));
+const count = $derived(Math.max(1, Math.min(6, rows)));
 </script>
 
 <div

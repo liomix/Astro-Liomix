@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { comparePostOrder, type PostOrderKey } from "./post-order";
 
-const post = (
-	id: string,
-	published: string,
-	pinned = false,
-): PostOrderKey => ({ id, published, pinned });
+const post = (id: string, published: string, pinned = false): PostOrderKey => ({
+	id,
+	published,
+	pinned,
+});
 
 test("置顶优先，无论时间早晚", () => {
 	const pinnedOld = post("old", "2020-01-01", true);
@@ -41,7 +41,10 @@ test("排序结果与输入顺序无关", () => {
 		post("p", "2020-01-01", true),
 	];
 	const once = [...list].sort(comparePostOrder).map((p) => p.id);
-	const twice = [...list].reverse().sort(comparePostOrder).map((p) => p.id);
+	const twice = [...list]
+		.reverse()
+		.sort(comparePostOrder)
+		.map((p) => p.id);
 	assert.deepEqual(once, twice);
 	assert.deepEqual(once, ["p", "a", "b", "c"]);
 });

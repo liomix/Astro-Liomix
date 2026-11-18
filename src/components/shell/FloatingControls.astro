@@ -1,15 +1,15 @@
 ---
 import type { MarkdownHeading } from "astro";
-import { displaySettingsConfig, musicPlayerConfig, siteConfig } from "@/config";
 import BackToComment from "@/components/controls/BackToComment.astro";
 import BackToHome from "@/components/controls/BackToHome.astro";
 import BackToTop from "@/components/controls/BackToTop.astro";
-import PlaybackSettings from "@/components/features/music/PlaybackSettings.svelte";
-import SettingsButton from "@/components/controls/SettingsButton.astro";
-import SettingsMenu from "@/components/controls/SettingsMenu.astro";
 import FloatingTOC from "@/components/controls/FloatingTOC.astro";
 import ImmersiveReading from "@/components/controls/ImmersiveReading.astro";
 import ImmersiveTOC from "@/components/controls/ImmersiveTOC.astro";
+import SettingsButton from "@/components/controls/SettingsButton.astro";
+import SettingsMenu from "@/components/controls/SettingsMenu.astro";
+import PlaybackSettings from "@/components/features/music/PlaybackSettings.svelte";
+import { displaySettingsConfig, musicPlayerConfig, siteConfig } from "@/config";
 
 interface Props {
 	headings?: MarkdownHeading[];

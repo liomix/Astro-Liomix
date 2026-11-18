@@ -38,8 +38,9 @@ const lowIndex = counts.indexOf(Math.min(...counts));
 
 const total = counts.reduce((sum, count) => sum + count, 0);
 const average = items.length > 0 ? total / items.length : 0;
-const averageText =
-	Number.isInteger(average) ? String(average) : average.toFixed(1);
+const averageText = Number.isInteger(average)
+	? String(average)
+	: average.toFixed(1);
 
 const ratio = (value: number) => `${(value / maxTick) * 100}%`;
 ---

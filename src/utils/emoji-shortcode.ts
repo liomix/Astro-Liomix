@@ -89,10 +89,13 @@ export function resolveEmojiToken(token: string): ResolvedEmoji | null {
  * 不认识的短码原样留下：那是用户自己写的字，不该被吞掉。
  */
 export function emojiTokensToText(text: string): string {
-	return text.replace(emojiTokenPattern(), (raw, pack: string, name: string) => {
-		const emoji = resolveEmojiToken(`:${pack}/${name}:`);
-		return emoji ? `[${emoji.alt}]` : raw;
-	});
+	return text.replace(
+		emojiTokenPattern(),
+		(raw, pack: string, name: string) => {
+			const emoji = resolveEmojiToken(`:${pack}/${name}:`);
+			return emoji ? `[${emoji.alt}]` : raw;
+		},
+	);
 }
 
 /**

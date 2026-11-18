@@ -15,6 +15,7 @@ import {
 	avatarUrlOf,
 	COMMENT_EMAIL_MAX,
 	COMMENT_NAME_MAX,
+	type CommentUser,
 	getCommentUser,
 	initialOf,
 	isValidEmail,
@@ -22,7 +23,6 @@ import {
 	qqAvatarFallbackUrl,
 	qqFromEmail,
 	setCommentUser,
-	type CommentUser,
 } from "@/components/features/comment/comment-user.ts";
 
 /**
@@ -32,10 +32,7 @@ import {
  *
  * 图没到之前一直显示首字，不能先设 true —— 否则会空着一个圆等网络。
  */
-function paintAvatar(
-	box: HTMLElement | null,
-	user: CommentUser | null,
-): void {
+function paintAvatar(box: HTMLElement | null, user: CommentUser | null): void {
 	if (!box) return;
 
 	const img = box.querySelector<HTMLImageElement>("[data-avatar-img]");

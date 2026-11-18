@@ -50,7 +50,12 @@ function guessMime(bytes: Uint8Array): string {
 		return "image/png";
 	if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46)
 		return "image/gif";
-	if (bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50)
+	if (
+		bytes[8] === 0x57 &&
+		bytes[9] === 0x45 &&
+		bytes[10] === 0x42 &&
+		bytes[11] === 0x50
+	)
 		return "image/webp";
 	return "image/jpeg";
 }
@@ -58,7 +63,8 @@ function guessMime(bytes: Uint8Array): string {
 // ── ID3v2（.mp3）─────────────────────────────────────────────
 function parseId3(b: Uint8Array): RawCover | null {
 	// ID3 是 3 字节标识，第 4 个字节是版本号，不能用 tag() 比
-	if (b.length < 10 || b[0] !== 0x49 || b[1] !== 0x44 || b[2] !== 0x33) return null;
+	if (b.length < 10 || b[0] !== 0x49 || b[1] !== 0x44 || b[2] !== 0x33)
+		return null;
 	const major = b[3];
 	const size = syncSafe(b, 6);
 	const endOfTag = Math.min(b.length, 10 + size);
@@ -90,7 +96,8 @@ function parseApic(frame: Uint8Array): RawCover | null {
 	p++; // 图片类型（3 = front cover，不校验）
 	// 描述文本：UTF-16 用双字节 0 结尾，其余单字节
 	if (encoding === 1 || encoding === 2) {
-		while (p + 1 < frame.length && !(frame[p] === 0 && frame[p + 1] === 0)) p += 2;
+		while (p + 1 < frame.length && !(frame[p] === 0 && frame[p + 1] === 0))
+			p += 2;
 		p += 2;
 	} else {
 		while (p < frame.length && frame[p] !== 0) p++;
@@ -147,8 +154,7 @@ function findBox(
 		let head = 8;
 		if (size === 1) {
 			// 64 位长度
-			size =
-				u32(b, off + 8) * 0x100000000 + u32(b, off + 12);
+			size = u32(b, off + 8) * 0x100000000 + u32(b, off + 12);
 			head = 16;
 		} else if (size === 0) {
 			size = end - off;
@@ -186,7 +192,12 @@ function parseMp4(b: Uint8Array, base: number): RawCover | null {
 /** 尾段缓冲区里扫 moov 头：向前 4 字节是 size，向后是 4 字节类型 */
 function scanMoov(b: Uint8Array): { body: number; end: number } | null {
 	for (let i = 4; i + 4 < b.length; i++) {
-		if (b[i] !== 0x6d || b[i + 1] !== 0x6f || b[i + 2] !== 0x6f || b[i + 3] !== 0x76)
+		if (
+			b[i] !== 0x6d ||
+			b[i + 1] !== 0x6f ||
+			b[i + 2] !== 0x6f ||
+			b[i + 3] !== 0x76
+		)
 			continue; // 'moov'
 		const size = u32(b, i - 4);
 		if (size < 8 || i - 4 + size > b.length) continue;
@@ -197,16 +208,16 @@ function scanMoov(b: Uint8Array): { body: number; end: number } | null {
 
 function finishCover(mime: string, bytes: Uint8Array): RawCover | null {
 	if (!bytes.length || bytes.length > MAX_COVER_BYTES) return null;
-	return { mime: mime && mime.indexOf("/") > 0 ? mime : guessMime(bytes), bytes };
+	return {
+		mime: mime && mime.indexOf("/") > 0 ? mime : guessMime(bytes),
+		bytes,
+	};
 }
 
 // ── 网络取字节 ──────────────────────────────────────────────
 type Chunk = { bytes: Uint8Array; start: number };
 
-async function readChunk(
-	url: string,
-	range: string,
-): Promise<Chunk | null> {
+async function readChunk(url: string, range: string): Promise<Chunk | null> {
 	try {
 		const res = await fetch(url, { headers: { Range: range } });
 		if (!res.ok) return null;
@@ -218,7 +229,8 @@ async function readChunk(
 			const m = /\/(\d+)$/.exec(contentRange);
 			const head = /^bytes\s+(\d+)-/i.exec(contentRange);
 			if (head) start = Number(head[1]);
-			else if (m && range.startsWith("bytes=-")) start = Number(m[1]) - buf.length;
+			else if (m && range.startsWith("bytes=-"))
+				start = Number(m[1]) - buf.length;
 		}
 		return { bytes: buf, start: Math.max(0, start) };
 	} catch {

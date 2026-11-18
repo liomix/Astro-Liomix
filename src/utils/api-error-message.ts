@@ -48,7 +48,10 @@ export function isAbortedRequest(error: unknown): boolean {
 }
 
 /** 取一句能给用户看的话 */
-export function apiErrorMessage(error: unknown, labels: ApiErrorLabels): string {
+export function apiErrorMessage(
+	error: unknown,
+	labels: ApiErrorLabels,
+): string {
 	if (!(error instanceof ApiError)) return labels.unknown;
 
 	const mapped = CODE_LABELS[error.code];

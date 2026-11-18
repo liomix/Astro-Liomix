@@ -5,11 +5,12 @@
  * 播放中循环播放，暂停时停回起始帧（圆 + 声波，音符还没飞出）。
  * 不设 title —— 悬浮时不要浏览器原生提示，语义只留在 aria-label。
  */
+
+import { onMount } from "svelte";
 import speakersData from "@/assets/lottie/music-speakers.json";
 import Icon from "@/components/ui/Icon.svelte";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { onMount } from "svelte";
 
 const labelPlay = i18n(I18nKey.musicPlay);
 const labelPause = i18n(I18nKey.musicPause);
@@ -98,9 +99,8 @@ onMount(() => {
 		syncAnimation();
 	};
 	const handlePlayState = (event: Event): void => {
-		isPlaying = !!(
-			event as CustomEvent<{ isPlaying?: boolean }>
-		).detail?.isPlaying;
+		isPlaying = !!(event as CustomEvent<{ isPlaying?: boolean }>).detail
+			?.isPlaying;
 		syncAnimation();
 	};
 

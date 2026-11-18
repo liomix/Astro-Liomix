@@ -21,7 +21,10 @@ const animations = import.meta.glob<unknown>("@/assets/lottie/*.json", {
 /** 键只取文件名：glob 的 key 会带上 pattern 里写死的前缀，按路径查一搬目录就静默取空 */
 const loaderByName = new Map<string, () => Promise<unknown>>();
 for (const [key, loader] of Object.entries(animations)) {
-	loaderByName.set(key.slice(key.lastIndexOf("/") + 1, -".json".length), loader);
+	loaderByName.set(
+		key.slice(key.lastIndexOf("/") + 1, -".json".length),
+		loader,
+	);
 }
 
 interface LottiePlayer {

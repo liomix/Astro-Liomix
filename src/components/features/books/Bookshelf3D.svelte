@@ -18,9 +18,10 @@
  * 一定停在整数书位；点非中心的书先滑到中间，点中心书打开详情。
  * 书列首尾相连（和原实现一致，可无限滑），所以焦点永远在正中，弧线绝对不动。
  */
+
+import { onMount } from "svelte";
 import Icon from "@/components/ui/Icon.svelte";
 import { cubicBezier, planScroll } from "@/utils/shelf-physics";
-import { onMount } from "svelte";
 import BookPopover from "./BookPopover.svelte";
 
 export interface ShelfBook {
@@ -139,9 +140,7 @@ const geo = $derived.by(() => {
 		 * 不压缩的话 ±7 之外会拍成一条水平线。压缩后曲线正好铺满可见宽度。
 		 */
 		railK: Math.min(1, RAIL_CLAMP / (w / pitch / 2)),
-		stageHeight: Math.round(
-			baseY + height + maxDrop + 14 - headroom,
-		),
+		stageHeight: Math.round(baseY + height + maxDrop + 14 - headroom),
 		matSpine: "matrix(1,0.1,0,1,0,0)",
 		matTop: `matrix(1,0.1,${DEPTH_X},${DEPTH_Y},0,0)`,
 	};
@@ -183,9 +182,7 @@ function stripBrackets(title: string): string {
 function spineTitle(title: string): string {
 	const glyphs = Array.from(stripBrackets(title));
 	const shown =
-		glyphs.length > SPINE_MAX
-			? [...glyphs.slice(0, SPINE_MAX), "…"]
-			: glyphs;
+		glyphs.length > SPINE_MAX ? [...glyphs.slice(0, SPINE_MAX), "…"] : glyphs;
 	return shown.join("\n");
 }
 
@@ -218,7 +215,11 @@ const slots = $derived.by<Slot[]>(() => {
 	// 再多就是白白每帧重算（远处那些书肉眼也看不到）
 	const span = Math.ceil(geo.w / geo.pitch / 2) + 2;
 	const out: Slot[] = [];
-	for (let key = Math.floor(logical) - span; key <= Math.ceil(logical) + span; key++) {
+	for (
+		let key = Math.floor(logical) - span;
+		key <= Math.ceil(logical) + span;
+		key++
+	) {
 		out.push(buildSlot(key, key - logical, mod(key, count)));
 	}
 	return out;
@@ -236,8 +237,7 @@ function buildSlot(key: number, d: number, index: number): Slot {
 	const lift = weight * weight * (3 - 2 * weight);
 	// 抽出后沿深度往观察者方向走：横向左偏 pull*depthX，纵向 +0.3*pull，再被 lift 抬起。
 	// 书位基准线整体先右移 pullX（原实现的 start），抽出的那本再减回去，正好落在正中。
-	const x =
-		g.w / 2 - g.footprint / 2 + g.pullX + d * g.pitch - pull * DEPTH_X;
+	const x = g.w / 2 - g.footprint / 2 + g.pullX + d * g.pitch - pull * DEPTH_X;
 	const y =
 		railY(d) + g.baseY - pull * DEPTH_Y - g.height * 0.6 * lift - g.headroom;
 
@@ -517,11 +517,7 @@ onMount(() => {
 	// 横向滚轮 / Shift+滚轮翻书；纵向滚轮留给页面
 	const onWheel = (event: WheelEvent) => {
 		const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
-		const delta = horizontal
-			? event.deltaX
-			: event.shiftKey
-				? event.deltaY
-				: 0;
+		const delta = horizontal ? event.deltaX : event.shiftKey ? event.deltaY : 0;
 		if (!delta) return;
 		event.preventDefault();
 		stop();

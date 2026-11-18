@@ -38,17 +38,14 @@ export function planScroll(position: number, velocity: number): ScrollPlan {
 	// 真甩动要么落在前面，要么别冲过头再倒回来：给出足够的滑行跑道
 	if (
 		flung &&
-		(target - position) * Math.sign(release) <
-			Math.abs(release) / OMEGA
+		(target - position) * Math.sign(release) < Math.abs(release) / OMEGA
 	) {
 		const runway = position + release / OMEGA;
-		target =
-			release > 0 ? Math.ceil(runway) : Math.floor(runway);
+		target = release > 0 ? Math.ceil(runway) : Math.floor(runway);
 	}
 
 	const speed = Math.abs(release);
-	const coast =
-		flung && speed > HANDOFF ? Math.log(speed / HANDOFF) / DRAG : 0;
+	const coast = flung && speed > HANDOFF ? Math.log(speed / HANDOFF) / DRAG : 0;
 
 	const slide = (t: number) =>
 		position + (release * (1 - Math.exp(-DRAG * t))) / DRAG;

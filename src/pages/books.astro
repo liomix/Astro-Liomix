@@ -8,12 +8,12 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/books.css";
+import { wereadCacheStats } from "@/utils/weread-cache";
 import {
 	fetchWereadData,
 	formatHours,
 	formatMinutes,
 } from "@/utils/weread-utils";
-import { wereadCacheStats } from "@/utils/weread-cache";
 
 // 页面开关：站点开关或微信读书配置任一关闭都跳 404
 if (!siteConfig.pages.books || !wereadConfig.enable) {
@@ -21,8 +21,7 @@ if (!siteConfig.pages.books || !wereadConfig.enable) {
 }
 
 const title = wereadConfig.title || i18n(I18nKey.books);
-const description =
-	wereadConfig.description || i18n(I18nKey.booksDescription);
+const description = wereadConfig.description || i18n(I18nKey.booksDescription);
 
 // 构建时抓取微信读书书架与阅读统计（网关只放行 weread.qq.com 跨域，必须服务端拉）
 // 结果会落在 cache/weread/，TTL 内不再重复请求，避免 dev 反复刷新把 Key 撸限流

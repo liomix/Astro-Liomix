@@ -1,48 +1,48 @@
 <script lang="ts">
-	/**
-	 * 一张便签（GuestTag）。
-	 *
-	 * 只负责「把一条 GuestTagItem 画成纸片」，取数、点赞请求、删除请求都在
-	 * GuestbookWall 里 —— 这里收到的 onReply / onRemove 是回调，点击后由墙去改数据。
-	 *
-	 * 底部两个按钮直接用全站原子组件那一套（atom-action 结构 + dynamic-lottie-icon）：
-	 *   - 点赞：data-like 由 utils/likes.ts 的事件委托接管，不在这里写第二份逻辑；
-	 *   - 评论：只提供 data-comment-base / data-comment-count 契约，点击回调交给墙 ——
-	 *     留言评论后端还没单独成模块，先不接动态页的评论抽屉。
-	 */
-	import I18nKey from "@/i18n/i18nKey";
-	import { i18n } from "@/i18n/translation";
-	import { emojiTokensToHtml } from "@/utils/emoji-shortcode";
-	import { formatCompactNumber } from "@/utils/number-utils";
-	import "@/styles/components/atom-action.css";
-	import {
-		type GuestTagItem,
-		likeSlugOfGuestTag,
-		toneOfGuestTag,
-	} from "./guestbook-tag";
+/**
+ * 一张便签（GuestTag）。
+ *
+ * 只负责「把一条 GuestTagItem 画成纸片」，取数、点赞请求、删除请求都在
+ * GuestbookWall 里 —— 这里收到的 onReply / onRemove 是回调，点击后由墙去改数据。
+ *
+ * 底部两个按钮直接用全站原子组件那一套（atom-action 结构 + dynamic-lottie-icon）：
+ *   - 点赞：data-like 由 utils/likes.ts 的事件委托接管，不在这里写第二份逻辑；
+ *   - 评论：只提供 data-comment-base / data-comment-count 契约，点击回调交给墙 ——
+ *     留言评论后端还没单独成模块，先不接动态页的评论抽屉。
+ */
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { emojiTokensToHtml } from "@/utils/emoji-shortcode";
+import { formatCompactNumber } from "@/utils/number-utils";
+import "@/styles/components/atom-action.css";
+import {
+	type GuestTagItem,
+	likeSlugOfGuestTag,
+	toneOfGuestTag,
+} from "./guestbook-tag";
 
-	interface Props {
-		note: GuestTagItem;
-		/** 点赞接口关闭时按钮置灰，但仍然显示数字 */
-		likeEnabled?: boolean;
-		/** 评论按钮：交给墙去打开这条留言的评论抽屉（需要触发按钮本身做锚点） */
-		onReply?: (note: GuestTagItem, trigger: HTMLElement) => void;
-		onRemove?: (note: GuestTagItem) => void;
-	}
+interface Props {
+	note: GuestTagItem;
+	/** 点赞接口关闭时按钮置灰，但仍然显示数字 */
+	likeEnabled?: boolean;
+	/** 评论按钮：交给墙去打开这条留言的评论抽屉（需要触发按钮本身做锚点） */
+	onReply?: (note: GuestTagItem, trigger: HTMLElement) => void;
+	onRemove?: (note: GuestTagItem) => void;
+}
 
-	let { note, likeEnabled = true, onReply, onRemove }: Props = $props();
+let { note, likeEnabled = true, onReply, onRemove }: Props = $props();
 
-	/**
-	 * 评论按钮的 DOM 引用。
-	 * 不用 event.currentTarget：Svelte 5 的 onclick 是委托到根节点的，
-	 * 回调里 currentTarget 可能不是按钮本身，而抽屉要用它做定位锚点和焦点归位。
-	 */
-	let commentButton = $state<HTMLButtonElement | null>(null);
+/**
+ * 评论按钮的 DOM 引用。
+ * 不用 event.currentTarget：Svelte 5 的 onclick 是委托到根节点的，
+ * 回调里 currentTarget 可能不是按钮本身，而抽屉要用它做定位锚点和焦点归位。
+ */
+let commentButton = $state<HTMLButtonElement | null>(null);
 
-	/** 正文按纯文本 + 表情短码渲染：转义在 emojiTokensToHtml 里做，换行补成 <br> */
-	function bodyHtml(body: string): string {
-		return emojiTokensToHtml(body, "guest-tag__emoji").replace(/\n/g, "<br />");
-	}
+/** 正文按纯文本 + 表情短码渲染：转义在 emojiTokensToHtml 里做，换行补成 <br> */
+function bodyHtml(body: string): string {
+	return emojiTokensToHtml(body, "guest-tag__emoji").replace(/\n/g, "<br />");
+}
 </script>
 
 <article

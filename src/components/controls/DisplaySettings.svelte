@@ -11,6 +11,7 @@ import {
 } from "@constants/constants";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
+import { originFromElement } from "@utils/light-dark-switch";
 import {
 	DEFAULT_THEME_SCHEDULE,
 	getDefaultBannerCarouselEnabled,
@@ -62,7 +63,6 @@ import {
 	setWallpaperMode,
 	setWavesEnabled,
 } from "@utils/setting-utils";
-import { originFromElement } from "@utils/light-dark-switch";
 import { onMount } from "svelte";
 import Icon from "@/components/ui/Icon.svelte";
 import {
@@ -287,7 +287,10 @@ let themeSettingsIsDefault = $derived(
 function selectThemeMode(nextMode: LightDarkMode, event?: MouseEvent) {
 	themeMode = nextMode;
 	const target = event?.currentTarget;
-	setTheme(nextMode, originFromElement(target instanceof Element ? target : null));
+	setTheme(
+		nextMode,
+		originFromElement(target instanceof Element ? target : null),
+	);
 }
 
 function applyThemeSchedule() {

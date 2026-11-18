@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 import type { WereadConfig } from "@/types/wereadConfig";
 import {
-	type FetchOutcome,
 	cachedCall,
+	type FetchOutcome,
 	makeCacheKey,
 	resolveCacheDir,
 } from "@/utils/weread-cache";
@@ -235,7 +235,9 @@ async function requestGateway<T>(
 			};
 		}
 		if (data.upgrade_info) {
-			console.warn(`[Weread] ${apiName}: 返回 upgrade_info，请升级 skill_version`);
+			console.warn(
+				`[Weread] ${apiName}: 返回 upgrade_info，请升级 skill_version`,
+			);
 		}
 		return { value: data };
 	} catch (error) {
@@ -298,7 +300,8 @@ async function callGateway<T>(
 	// 缓存缺失（首次运行，或刚跑过 books:refresh）时仍会抓一次，所以数据不会缺。
 	// 要更新数据：pnpm books:refresh（或 books:refresh:all），别指望刷新页面。
 	const devReadOnly = isDevServer();
-	const wantsNoCache = process.env.WEREAD_CACHE === "off" || config.cache === false;
+	const wantsNoCache =
+		process.env.WEREAD_CACHE === "off" || config.cache === false;
 	if (devReadOnly && wantsNoCache && !warnedDevCacheOff) {
 		warnedDevCacheOff = true;
 		console.warn(
@@ -384,7 +387,9 @@ function normalizeBooks(data: ShelfResponse | null): WereadBook[] {
 					: ""),
 			lastReadAt: book.readUpdateTime ?? 0,
 			// 书架上的书只有两种状态：读完 / 在读
-			status: (book.finishReading === 1 ? "finished" : "reading") as WereadBookStatus,
+			status: (book.finishReading === 1
+				? "finished"
+				: "reading") as WereadBookStatus,
 			intro: "",
 			wordCount: 0,
 			rating: 0,
@@ -439,7 +444,9 @@ async function attachBookMeta(
 const CALENDAR_TZ = 8 * 3600;
 
 function toDateKey(unixSeconds: number): string {
-	return new Date((unixSeconds + CALENDAR_TZ) * 1000).toISOString().slice(0, 10);
+	return new Date((unixSeconds + CALENDAR_TZ) * 1000)
+		.toISOString()
+		.slice(0, 10);
 }
 
 /**
@@ -450,9 +457,7 @@ async function fetchCalendar(
 	config: WereadConfig,
 ): Promise<WereadCalendar | null> {
 	const span = Math.max(1, Math.min(10, config.heatmapYears ?? 3));
-	const nowYear = Number(
-		toDateKey(Math.floor(Date.now() / 1000)).slice(0, 4),
-	);
+	const nowYear = Number(toDateKey(Math.floor(Date.now() / 1000)).slice(0, 4));
 	const years = Array.from({ length: span }, (_, i) => nowYear - i);
 
 	const responses = await Promise.all(
@@ -517,8 +522,9 @@ export async function fetchWereadData(
 	if (monthly || overall) {
 		const topCategory = (monthly?.preferCategory ?? [])
 			.filter((item) => (item.readingTime ?? 0) > 0)
-			.sort((a, b) => (b.readingTime ?? 0) - (a.readingTime ?? 0))[0]
-			?.categoryTitle;
+			.sort(
+				(a, b) => (b.readingTime ?? 0) - (a.readingTime ?? 0),
+			)[0]?.categoryTitle;
 
 		stats = {
 			monthReadTime: monthly?.totalReadTime ?? 0,

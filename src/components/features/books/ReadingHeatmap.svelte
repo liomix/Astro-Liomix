@@ -6,8 +6,9 @@
  * 档位按该年「有记录的那些天」的分位数切 4 档，稀疏年份也不会一片同色。
  * 数据在构建时抓好后按 "YYYY-MM-DD" → 秒数传进来，切换年份纯前端计算。
  */
-import { tick } from "svelte";
+
 import { formatDuration } from "@utils/date-utils";
+import { tick } from "svelte";
 
 interface Props {
 	/** 有阅读记录的年份，倒序（最新在前） */
@@ -130,7 +131,11 @@ const view = $derived.by(() => {
 	const activeDays = values.length;
 	const hours = seconds / 3600;
 	const hoursText =
-		hours <= 0 ? "0" : hours >= 100 ? String(Math.round(hours)) : hours.toFixed(1);
+		hours <= 0
+			? "0"
+			: hours >= 100
+				? String(Math.round(hours))
+				: hours.toFixed(1);
 
 	return {
 		cells,

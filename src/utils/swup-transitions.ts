@@ -198,8 +198,6 @@ function registerSwupHooks(): void {
 		// 兜底：导航被中断时 page:view 不一定会来，1.5s 后强制恢复
 		window.setTimeout(() => setSidebarFading(false), 1500);
 
-
-
 		// Start progress bar（WAAPI 合成线程动画，不强制回流）
 		startProgressBar();
 
@@ -287,7 +285,10 @@ function registerSwupHooks(): void {
 		// 缓存命中时 visit:start 到 page:view 在同一帧跑完，样式设了又立刻撤 ——
 		// 浏览器从没绘制过透明帧，表现就是「有时候淡出、有时候不淡出」。
 		// 这里保证淡出至少持续 MIN_FADE_MS，和内容的 120ms 过渡对齐。
-		const remain = Math.max(0, MIN_FADE_MS - (performance.now() - fadeStartedAt));
+		const remain = Math.max(
+			0,
+			MIN_FADE_MS - (performance.now() - fadeStartedAt),
+		);
 		window.setTimeout(() => setSidebarFading(false), remain);
 
 		// 过渡结束后再量一次，避免顶部组件未就绪时读到 offsetHeight=0 而误删 mb-4

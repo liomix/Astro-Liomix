@@ -1,12 +1,12 @@
 ---
 import { render } from "astro:content";
-import Markdown from "@/components/ui/Markdown.astro";
-import EncryptedPost from "@/components/features/post/EncryptedPost.astro";
-import KatexManager from "@/components/managers/KatexManager.astro";
-import License from "@/components/features/post/License.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import EncryptedPost from "@/components/features/post/EncryptedPost.astro";
+import License from "@/components/features/post/License.astro";
+import KatexManager from "@/components/managers/KatexManager.astro";
+import Markdown from "@/components/ui/Markdown.astro";
 import "@/styles/banner-post.css";
 import {
 	getRelatedPosts,
@@ -22,17 +22,17 @@ import {
 import { Icon } from "astro-icon/components";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import CoverImage from "@/components/ui/CoverImage.astro";
+import PostComments from "@/components/features/comment/PostComments.astro";
 import PostHeader from "@/components/features/post/PostHeader.astro";
 import PostMetadata from "@/components/features/post/PostMeta.astro";
 import RecommendedPost from "@/components/features/post/RecommendedPost.astro";
 import SeriesNav from "@/components/features/post/SeriesNav.astro";
 import ShareButton from "@/components/features/post/ShareButton.svelte";
 import SponsorButton from "@/components/features/sponsor/SponsorButton.astro";
-import PostComments from "@/components/features/comment/PostComments.astro";
-import CommentButton from "@/components/ui/CommentButton.astro";
-import LikeButton from "@/components/ui/LikeButton.astro";
 import SponsorDialog from "@/components/features/sponsor/SponsorDialog.svelte";
+import CommentButton from "@/components/ui/CommentButton.astro";
+import CoverImage from "@/components/ui/CoverImage.astro";
+import LikeButton from "@/components/ui/LikeButton.astro";
 import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
@@ -56,7 +56,8 @@ import { url } from "@/utils/url-utils";
 
 const sponsorQr = sponsorConfig.qrCode?.trim() || "";
 // 打赏入口：开关打开且配了收款码才显示。弹窗是唯一入口，站点没有独立的打赏页
-const showSponsorButton = sponsorConfig.showButtonInPost && sponsorQr.length > 0;
+const showSponsorButton =
+	sponsorConfig.showButtonInPost && sponsorQr.length > 0;
 const showPostActionCard = siteConfig.post.share || showSponsorButton;
 
 const SPONSOR_POP_ID = "post-sponsor-pop";
@@ -126,7 +127,8 @@ const coverImage =
 	)) ?? undefined;
 
 // 作者页已移除：author.url 指向站点首页，与首页 Person 的 @id 保持一致
-const authorUrl = toAbsoluteUrl("/", siteConfig.site_url) ?? siteConfig.site_url;
+const authorUrl =
+	toAbsoluteUrl("/", siteConfig.site_url) ?? siteConfig.site_url;
 
 // 作者实体：与首页的 Person 共用同一 @id（#person），author 用 @id 关联
 const authorAvatarUrl = await getAuthorAvatarUrl();

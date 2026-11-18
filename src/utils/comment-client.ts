@@ -14,7 +14,11 @@
  * 少写一处判断，关掉开关的站点就会在抽屉里显示「评论加载失败」。
  */
 import { commentApiConfig } from "@/config/commentApiConfig";
-import { ApiError, createApiClient, newIdempotencyKey } from "@/utils/api-client";
+import {
+	ApiError,
+	createApiClient,
+	newIdempotencyKey,
+} from "@/utils/api-client";
 
 /** 后端返回的单条评论（与 api/openapi.yaml 的 Comment 对应） */
 export interface ApiComment {
@@ -135,7 +139,9 @@ export async function fetchComments(
 ): Promise<CommentPage> {
 	if (!ENABLED) return { items: [], nextCursor: null };
 
-	const query = new URLSearchParams({ limit: String(commentApiConfig.pageSize) });
+	const query = new URLSearchParams({
+		limit: String(commentApiConfig.pageSize),
+	});
 	if (cursor) query.set("cursor", cursor);
 
 	const page = await client.request<{

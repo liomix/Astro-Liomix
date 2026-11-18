@@ -30,7 +30,11 @@ import { fileURLToPath } from "node:url";
 const PROJECT_ROOT = fileURLToPath(new URL("../..", import.meta.url));
 
 /** 默认缓存目录：项目根的 cache/weread（已 gitignore） */
-export const DEFAULT_CACHE_DIR: string = path.join(PROJECT_ROOT, "cache", "weread");
+export const DEFAULT_CACHE_DIR: string = path.join(
+	PROJECT_ROOT,
+	"cache",
+	"weread",
+);
 
 /** 被网关拒绝后暂停多久（秒），避免「越试越封」 */
 const DENIED_COOLDOWN = 15 * 60;
@@ -77,9 +81,21 @@ interface Cooldown {
 const memory = new Map<string, Entry>();
 const inflight = new Map<string, Promise<FetchOutcome<unknown>>>();
 
-type WereadCacheStats = { hit: number; stale: number; fetch: number; denied: number; skipped: number };
+type WereadCacheStats = {
+	hit: number;
+	stale: number;
+	fetch: number;
+	denied: number;
+	skipped: number;
+};
 
-const stats: WereadCacheStats = { hit: 0, stale: 0, fetch: 0, denied: 0, skipped: 0 };
+const stats: WereadCacheStats = {
+	hit: 0,
+	stale: 0,
+	fetch: 0,
+	denied: 0,
+	skipped: 0,
+};
 
 /** 缓存命中情况，dev 下打印一行用 */
 export function wereadCacheStats(): WereadCacheStats {
@@ -156,16 +172,18 @@ async function readEntry(dir: string, key: string): Promise<Entry | null> {
 	}
 }
 
-async function writeEntry(dir: string, key: string, value: unknown): Promise<void> {
+async function writeEntry(
+	dir: string,
+	key: string,
+	value: unknown,
+): Promise<void> {
 	const file = entryPath(dir, key);
 	try {
 		await fs.mkdir(dir, { recursive: true });
 		const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
-		await fs.writeFile(
-			tmp,
-			JSON.stringify({ savedAt: Date.now(), value }),
-			{ mode: 0o600 },
-		);
+		await fs.writeFile(tmp, JSON.stringify({ savedAt: Date.now(), value }), {
+			mode: 0o600,
+		});
 		// rename 是原子操作：并发构建时要么是旧文件，要么是新文件，不会读到半个 JSON
 		await fs.rename(tmp, file);
 	} catch {
@@ -195,11 +213,9 @@ async function writeCooldown(dir: string, reason: string): Promise<void> {
 			until: Date.now() + DENIED_COOLDOWN * 1000,
 			reason,
 		};
-		await fs.writeFile(
-			path.join(dir, COOLDOWN_FILE),
-			JSON.stringify(body),
-			{ mode: 0o600 },
-		);
+		await fs.writeFile(path.join(dir, COOLDOWN_FILE), JSON.stringify(body), {
+			mode: 0o600,
+		});
 	} catch {
 		// 忽略
 	}
@@ -255,7 +271,9 @@ export async function cachedCall<T>(
 	// 从磁盘读到的那份顺手放进内存，本次进程后续调用就不用再碰磁盘
 	if (!remembered && entry) memory.set(key, entry);
 
-	const age = entry ? (Date.now() - entry.savedAt) / 1000 : Number.POSITIVE_INFINITY;
+	const age = entry
+		? (Date.now() - entry.savedAt) / 1000
+		: Number.POSITIVE_INFINITY;
 
 	if (entry && age < ttl) {
 		stats.hit++;
@@ -308,11 +326,6 @@ export async function cachedCall<T>(
 	} finally {
 		inflight.delete(key);
 	}
-}
-
-/** 清空内存缓存（测试 / 手动刷新用） */
-export function clearWereadMemoryCache(): void {
-	memory.clear();
 }
 
 /**

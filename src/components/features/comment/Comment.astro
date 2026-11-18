@@ -47,16 +47,19 @@
  * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
  */
 import CommentSkeleton from "@/components/features/comment/CommentSkeleton.astro";
-import { avatarGradientOf, initialOf } from "@/components/features/comment/comment-user.ts";
+import {
+	avatarGradientOf,
+	initialOf,
+} from "@/components/features/comment/comment-user.ts";
 import { commentEmojiConfig } from "@/config/commentEmojiConfig";
 import { profileConfig } from "@/config/profileConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import {
 	avatarMotionOverride,
 	isVideoAvatar,
 	resolveRawAvatarUrl,
 } from "@/utils/avatar-utils";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
 // 组件自带样式：气泡/顶栏/输入栏在 comment.css，评论身份弹窗在 comment-info.css。
 // 后者要覆盖前者里的 .tg-head-avatar、给 .tg-composer 补 position，顺序不能反。
 import "@/styles/components/comment.css";
@@ -128,7 +131,6 @@ const ownerMotionUrl =
 /** 表情包：面板里一栏一个系列，只有一个系列时不渲染 tab 栏（见下方 markup） */
 const packs = commentEmojiConfig.packs;
 const showTabs = packs.length > 1;
-
 ---
 
 <div

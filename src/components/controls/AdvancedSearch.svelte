@@ -1,7 +1,9 @@
 <script lang="ts">
 import CardSkeleton from "@/components/ui/CardSkeleton.svelte";
 import { registerEmptyLottie } from "@/components/ui/empty-lottie";
+
 registerEmptyLottie();
+
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { onMount } from "svelte";

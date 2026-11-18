@@ -39,7 +39,8 @@ type MetaNode =
 
 const visibleTags = tags?.filter((tag) => tag.trim().length > 0) ?? [];
 // 阅读量只来自自建统计（siteStatsConfig），评论系统不再承担访问量
-const showViews = !!id && siteStatsConfig.enable && siteStatsConfig.articleViews;
+const showViews =
+	!!id && siteStatsConfig.enable && siteStatsConfig.articleViews;
 
 // 时间只显示一条：优先「更新于 相对时间」，与 PostCard 用同一套工具
 // formatRelativeTime 超过 6 年返回 null，此时回退成「更新于 YYYY-MM-DD」
@@ -54,7 +55,11 @@ const categoryText = category || i18n(I18nKey.uncategorized);
 // 元信息按行组织：条目与分隔线都由数据生成，增删/条件渲染不会留下多余分隔符
 const metaRows: MetaNode[][] = [
 	[
-		{ kind: "text", icon: "material-symbols:edit-calendar-outline-rounded", text: dateText },
+		{
+			kind: "text",
+			icon: "material-symbols:edit-calendar-outline-rounded",
+			text: dateText,
+		},
 		{
 			kind: "link",
 			icon: "material-symbols:folder-outline-rounded",
@@ -84,7 +89,10 @@ if (typeof minutes === "number") {
 }
 
 if (showViews) {
-	statsRow.push({ kind: "views", icon: "material-symbols:visibility-outline-rounded" });
+	statsRow.push({
+		kind: "views",
+		icon: "material-symbols:visibility-outline-rounded",
+	});
 }
 
 if (password) {

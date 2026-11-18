@@ -1,6 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import type { EChartsType } from "echarts/core";
+import { onMount } from "svelte";
 
 export let items: { name: string; count: number }[] = [];
 

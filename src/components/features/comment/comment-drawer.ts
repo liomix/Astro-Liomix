@@ -385,8 +385,8 @@ function prefetchWallpaper(): void {
 function prewarmDrawer(trigger: HTMLElement): boolean {
 	if (frame?.isConnected) return true;
 	// 地址挂在整条动态上（[data-dynamic-entry]），按钮本身只有 data-comment-open
-	const src = trigger.closest<HTMLElement>("[data-comment-src]")?.dataset
-		.commentSrc;
+	const src =
+		trigger.closest<HTMLElement>("[data-comment-src]")?.dataset.commentSrc;
 	if (!src) return false;
 	const target = ensureFrame(src);
 	if (!target) return false;

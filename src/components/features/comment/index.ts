@@ -12,8 +12,8 @@
 
 export { default as Comment } from "./Comment.astro";
 export { default as CommentSkeleton } from "./CommentSkeleton.astro";
-export { default as PostComments } from "./PostComments.astro";
+export * from "./comment-drawer";
 
 export * from "./comment-own";
 export * from "./comment-user";
-export * from "./comment-drawer";
+export { default as PostComments } from "./PostComments.astro";

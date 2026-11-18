@@ -1,567 +1,567 @@
 <script lang="ts">
-	/**
-	 * 留言墙：把 guestbook 这个 slug 下的评论渲染成一墙便利贴。
-	 *
-	 * 数据来源就是站内评论后端（comment-client），留言页只是一个换了呈现方式的
-	 * 评论区 —— 不新开表、不新开接口。点赞不自己实现：按钮渲染成原子组件的
-	 * `[data-like]` 结构，行为由 utils/likes.ts 接管（乐观更新、回滚、动画全在那里）。
-	 *
-	 * 这一层只管「取数 + 排布 + 写作弹层」；单张纸片是 GuestTag，
-	 * 取色 / 类型在 guestbook-tag.ts。
-	 */
-	import { onMount, tick } from "svelte";
-	import {
-		bindCommentDrawer,
-		COMMENT_EMAIL_MAX,
-		COMMENT_NAME_MAX,
-		deleteTokenOf,
-		forgetOwnComment,
-		getCommentUser,
-		identityKeyOf,
-		isValidEmail,
-		isValidName,
-		openCommentDrawer,
-		rememberOwnComment,
-		setCommentUser,
-	} from "@/components/features/comment";
-	import { registerDynamicLottieIcons } from "@/components/ui/lottie-icon";
-	import { commentApiConfig } from "@/config/commentApiConfig";
-	import { commentEmojiConfig } from "@/config/commentEmojiConfig";
-	import I18nKey from "@/i18n/i18nKey";
-	import { i18n } from "@/i18n/translation";
-	import type { CommentEmojiItem } from "@/types/commentEmojiConfig";
-	import { apiErrorMessage } from "@/utils/api-error-message";
-	import {
-		deleteComment,
-		fetchComments,
-		postComment,
-		type ApiComment,
-	} from "@/utils/comment-client";
-	import { formatDateToYYYYMMDD } from "@/utils/date-utils";
-	import {
-		emojiTokenOfSrc,
-		emojiTokenPattern,
-		resolveEmojiToken,
-	} from "@/utils/emoji-shortcode";
-	import { registerEmptyLottie } from "@/components/ui/empty-lottie";
-	import { isLikeApiEnabled } from "@/utils/like-client";
-	import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
-	import { showMessage } from "@/utils/message-pop";
-	import GuestTag from "./GuestTag.svelte";
-	import type { GuestTagItem } from "./guestbook-tag";
+/**
+ * 留言墙：把 guestbook 这个 slug 下的评论渲染成一墙便利贴。
+ *
+ * 数据来源就是站内评论后端（comment-client），留言页只是一个换了呈现方式的
+ * 评论区 —— 不新开表、不新开接口。点赞不自己实现：按钮渲染成原子组件的
+ * `[data-like]` 结构，行为由 utils/likes.ts 接管（乐观更新、回滚、动画全在那里）。
+ *
+ * 这一层只管「取数 + 排布 + 写作弹层」；单张纸片是 GuestTag，
+ * 取色 / 类型在 guestbook-tag.ts。
+ */
+import { onMount, tick } from "svelte";
+import {
+	bindCommentDrawer,
+	COMMENT_EMAIL_MAX,
+	COMMENT_NAME_MAX,
+	deleteTokenOf,
+	forgetOwnComment,
+	getCommentUser,
+	identityKeyOf,
+	isValidEmail,
+	isValidName,
+	openCommentDrawer,
+	rememberOwnComment,
+	setCommentUser,
+} from "@/components/features/comment";
+import { registerEmptyLottie } from "@/components/ui/empty-lottie";
+import { registerDynamicLottieIcons } from "@/components/ui/lottie-icon";
+import { commentApiConfig } from "@/config/commentApiConfig";
+import { commentEmojiConfig } from "@/config/commentEmojiConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import type { CommentEmojiItem } from "@/types/commentEmojiConfig";
+import { apiErrorMessage } from "@/utils/api-error-message";
+import {
+	type ApiComment,
+	deleteComment,
+	fetchComments,
+	postComment,
+} from "@/utils/comment-client";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import {
+	emojiTokenOfSrc,
+	emojiTokenPattern,
+	resolveEmojiToken,
+} from "@/utils/emoji-shortcode";
+import { isLikeApiEnabled } from "@/utils/like-client";
+import { bindLikeButtons, syncLikeStates } from "@/utils/likes";
+import { showMessage } from "@/utils/message-pop";
+import GuestTag from "./GuestTag.svelte";
+import type { GuestTagItem } from "./guestbook-tag";
 
-	interface Props {
-		/** 评论线程的 slug，默认就是留言板自己 */
-		slug?: string;
+interface Props {
+	/** 评论线程的 slug，默认就是留言板自己 */
+	slug?: string;
+}
+
+let { slug = "guestbook" }: Props = $props();
+
+const apiEnabled = commentApiConfig.enable;
+const likeEnabled = isLikeApiEnabled();
+
+let loading = $state(true);
+let failed = $state(false);
+let notes = $state<GuestTagItem[]>([]);
+/** 下一页游标；null = 已经到底 */
+let cursor = $state<string | null>(null);
+let hasMore = $state(false);
+let loadingMore = $state(false);
+
+let composerOpen = $state(false);
+let submitting = $state(false);
+let formName = $state("");
+let formEmail = $state("");
+let formError = $state("");
+/** 编辑器纯文本长度：挡「表情把 1000 字顶爆」，也用来判断正文是否为空 */
+let bodyLength = $state(0);
+
+/* 表情面板：数据与评论区共用 commentEmojiConfig，一份配置两处使用 */
+const packs = commentEmojiConfig.packs;
+const bodyMax = 1000;
+let emojiOpen = $state(false);
+let activePackId = $state(packs[0]?.id ?? "");
+let editorEl = $state<HTMLElement | null>(null);
+
+/** 当前系列；配置为空时是 undefined，面板整块不渲染 */
+const activePack = $derived(
+	packs.find((pack) => pack.id === activePackId) ?? packs[0],
+);
+
+/**
+ * 当前抽屉里那条留言。
+ * 抽屉里的 iframe 是独立文档，拿不到这里的数据，所以它加载完会发
+ * `guest-parent-request` 来要一次（见 onThreadMessage）。
+ */
+let activeParent: GuestTagItem | null = null;
+
+/** 骨架便签的高度，长短不一才像真的墙 */
+const skeletonHeights = [8, 10.5, 7, 9, 7.5, 11];
+
+const labels = {
+	nameRequired: i18n(I18nKey.commentInfoNameRequired),
+	emailInvalid: i18n(I18nKey.commentInfoEmailInvalid),
+	bodyRequired: i18n(I18nKey.guestbookBodyRequired),
+	deleteConfirm: i18n(I18nKey.guestbookDeleteConfirm),
+	submitted: i18n(I18nKey.guestbookSubmitted),
+	retractFailed: i18n(I18nKey.commentChatRetractFailed),
+	network: i18n(I18nKey.apiErrorNetwork),
+	request: i18n(I18nKey.apiErrorRequest),
+	server: i18n(I18nKey.apiErrorServer),
+	unknown: i18n(I18nKey.apiErrorUnknown),
+};
+
+function errorText(error: unknown): string {
+	return apiErrorMessage(error, {
+		network: labels.network,
+		request: labels.request,
+		server: labels.server,
+		unknown: labels.unknown,
+	});
+}
+
+/**
+ * 让点赞模块对齐刚渲染出来的按钮。
+ *
+ * utils/likes 是按 DOM 上的 `[data-like]` 工作的，必须等 Svelte 把节点插进
+ * 文档之后再调一次；已经问过的 id 它自己会跳过，不会重复请求。
+ */
+async function syncLikes(): Promise<void> {
+	await tick();
+	syncLikeStates();
+}
+
+/** 一页评论 → 墙上的便签（回复折进父级的计数，不上墙） */
+function toNotes(items: ApiComment[]): GuestTagItem[] {
+	// 回复数只能按「这一页看到的」统计：后端按游标分页，拿不到全量
+	const replyCount = new Map<string, number>();
+	for (const item of items) {
+		if (item.parentId) {
+			replyCount.set(item.parentId, (replyCount.get(item.parentId) ?? 0) + 1);
+		}
 	}
+	return items
+		.filter((item) => !item.parentId)
+		.map((item) => ({
+			id: item.id,
+			body: item.body,
+			createdAt: item.createdAt,
+			dateLabel: formatDateToYYYYMMDD(item.createdAt),
+			author: item.author.name,
+			isOwner: item.author.isOwner === true,
+			replies: replyCount.get(item.id) ?? 0,
+			// 真实点赞数由 utils/likes 批量读回来再画上，这里只给初值
+			likes: 0,
+			liked: false,
+			mine: deleteTokenOf(item.id) !== "",
+			pending: item.status !== "approved",
+		}));
+}
 
-	let { slug = "guestbook" }: Props = $props();
+async function load(): Promise<void> {
+	if (!apiEnabled) {
+		loading = false;
+		notes = [];
+		return;
+	}
+	loading = true;
+	failed = false;
+	try {
+		const page = await fetchComments(slug);
+		cursor = page.nextCursor;
+		hasMore = !!page.nextCursor;
+		notes = toNotes(page.items);
+		await syncLikes();
+	} catch {
+		failed = true;
+	} finally {
+		loading = false;
+	}
+}
 
-	const apiEnabled = commentApiConfig.enable;
-	const likeEnabled = isLikeApiEnabled();
+/** 追加更早的一页。游标是「上一页最后一条」，插进来多少都不影响下一页从哪开始 */
+async function loadMore(): Promise<void> {
+	if (!cursor || loadingMore) return;
+	loadingMore = true;
+	try {
+		const page = await fetchComments(slug, cursor);
+		cursor = page.nextCursor;
+		hasMore = !!page.nextCursor;
+		notes = [...notes, ...toNotes(page.items)];
+		await syncLikes();
+	} catch {
+		showMessage(labels.network, { type: "error" });
+	} finally {
+		loadingMore = false;
+	}
+}
 
-	let loading = $state(true);
-	let failed = $state(false);
-	let notes = $state<GuestTagItem[]>([]);
-	/** 下一页游标；null = 已经到底 */
-	let cursor = $state<string | null>(null);
-	let hasMore = $state(false);
-	let loadingMore = $state(false);
+/**
+ * 把编辑器内容读回源文本：文字原样、`<br>` 转换行、表情图转短码。
+ *
+ * 与 Comment.astro 的 readComposer 同一套规则 —— 两边发出去的都是短码，
+ * 渲染端只需认一种格式。认不出来的图片直接丢掉：输入框里只该有表情图，
+ * 一张来路不明的图没有对应的文字表达，写进正文就是坏数据。
+ */
+function readComposer(root: HTMLElement): string {
+	let out = "";
+	const walk = (node: Node): void => {
+		for (const child of Array.from(node.childNodes)) {
+			if (child.nodeType === Node.TEXT_NODE) {
+				out += (child.textContent ?? "").replace(/\u00a0/g, " ");
+				continue;
+			}
+			if (child.nodeName === "BR") {
+				out += "\n";
+				continue;
+			}
+			if (child instanceof HTMLImageElement) {
+				const token =
+					child.dataset.tgEmojiToken ??
+					emojiTokenOfSrc(
+						child.dataset.tgEmojiSrc ?? child.getAttribute("src") ?? "",
+					);
+				if (token) out += token;
+				continue;
+			}
+			walk(child);
+		}
+	};
+	walk(root);
+	return out;
+}
 
-	let composerOpen = $state(false);
-	let submitting = $state(false);
-	let formName = $state("");
-	let formEmail = $state("");
-	let formError = $state("");
-	/** 编辑器纯文本长度：挡「表情把 1000 字顶爆」，也用来判断正文是否为空 */
-	let bodyLength = $state(0);
+/**
+ * 用源文本重建编辑器内容。
+ *
+ * 为什么不在光标处直接 insertNode：Chrome 会给 contenteditable 补占位 `<br>`，
+ * 直接插图之后那个 br 就卡在两张图中间 —— 表情会一张一行地竖着排。
+ * 改成「读源文本 → 整块重建」，DOM 结构永远只有三样：文本、`<br>`、表情图，
+ * 不会再有浏览器自己加的节点。
+ */
+function renderSource(text: string): void {
+	const root = editorEl;
+	if (!root) return;
 
-	/* 表情面板：数据与评论区共用 commentEmojiConfig，一份配置两处使用 */
-	const packs = commentEmojiConfig.packs;
-	const bodyMax = 1000;
-	let emojiOpen = $state(false);
-	let activePackId = $state(packs[0]?.id ?? "");
-	let editorEl = $state<HTMLElement | null>(null);
+	const frag = document.createDocumentFragment();
+	const pattern = emojiTokenPattern();
+	let last = 0;
 
-	/** 当前系列；配置为空时是 undefined，面板整块不渲染 */
-	const activePack = $derived(
-		packs.find((pack) => pack.id === activePackId) ?? packs[0],
-	);
-
-	/**
-	 * 当前抽屉里那条留言。
-	 * 抽屉里的 iframe 是独立文档，拿不到这里的数据，所以它加载完会发
-	 * `guest-parent-request` 来要一次（见 onThreadMessage）。
-	 */
-	let activeParent: GuestTagItem | null = null;
-
-	/** 骨架便签的高度，长短不一才像真的墙 */
-	const skeletonHeights = [8, 10.5, 7, 9, 7.5, 11];
-
-	const labels = {
-		nameRequired: i18n(I18nKey.commentInfoNameRequired),
-		emailInvalid: i18n(I18nKey.commentInfoEmailInvalid),
-		bodyRequired: i18n(I18nKey.guestbookBodyRequired),
-		deleteConfirm: i18n(I18nKey.guestbookDeleteConfirm),
-		submitted: i18n(I18nKey.guestbookSubmitted),
-		retractFailed: i18n(I18nKey.commentChatRetractFailed),
-		network: i18n(I18nKey.apiErrorNetwork),
-		request: i18n(I18nKey.apiErrorRequest),
-		server: i18n(I18nKey.apiErrorServer),
-		unknown: i18n(I18nKey.apiErrorUnknown),
+	const appendText = (chunk: string): void => {
+		chunk.split("\n").forEach((part, index) => {
+			if (index > 0) frag.append(document.createElement("br"));
+			if (part) frag.append(document.createTextNode(part));
+		});
 	};
 
-	function errorText(error: unknown): string {
-		return apiErrorMessage(error, {
-			network: labels.network,
-			request: labels.request,
-			server: labels.server,
-			unknown: labels.unknown,
-		});
-	}
-
-	/**
-	 * 让点赞模块对齐刚渲染出来的按钮。
-	 *
-	 * utils/likes 是按 DOM 上的 `[data-like]` 工作的，必须等 Svelte 把节点插进
-	 * 文档之后再调一次；已经问过的 id 它自己会跳过，不会重复请求。
-	 */
-	async function syncLikes(): Promise<void> {
-		await tick();
-		syncLikeStates();
-	}
-
-	/** 一页评论 → 墙上的便签（回复折进父级的计数，不上墙） */
-	function toNotes(items: ApiComment[]): GuestTagItem[] {
-		// 回复数只能按「这一页看到的」统计：后端按游标分页，拿不到全量
-		const replyCount = new Map<string, number>();
-		for (const item of items) {
-			if (item.parentId) {
-				replyCount.set(item.parentId, (replyCount.get(item.parentId) ?? 0) + 1);
-			}
+	for (const match of text.matchAll(pattern)) {
+		const index = match.index ?? 0;
+		appendText(text.slice(last, index));
+		const emoji = resolveEmojiToken(match[0]);
+		if (emoji) {
+			const img = document.createElement("img");
+			img.src = emoji.src;
+			img.alt = emoji.alt;
+			img.className = "composer-input__emoji";
+			img.dataset.tgEmojiToken = match[0];
+			frag.append(img);
+		} else {
+			appendText(match[0]);
 		}
-		return items
-			.filter((item) => !item.parentId)
-			.map((item) => ({
-				id: item.id,
-				body: item.body,
-				createdAt: item.createdAt,
-				dateLabel: formatDateToYYYYMMDD(item.createdAt),
-				author: item.author.name,
-				isOwner: item.author.isOwner === true,
-				replies: replyCount.get(item.id) ?? 0,
-				// 真实点赞数由 utils/likes 批量读回来再画上，这里只给初值
+		last = index + match[0].length;
+	}
+	appendText(text.slice(last));
+
+	root.replaceChildren(frag);
+}
+
+/** 光标在源文本里的偏移：把「内容起点到光标」这段复制出来，按 readComposer 量长度 */
+function caretOffset(): number {
+	const root = editorEl;
+	const selection = window.getSelection();
+	if (!root || !selection || selection.rangeCount === 0) return bodyLength;
+
+	const range = selection.getRangeAt(0);
+	if (!root.contains(range.startContainer)) return bodyLength;
+
+	const before = range.cloneRange();
+	before.selectNodeContents(root);
+	before.setEnd(range.startContainer, range.startOffset);
+
+	const holder = document.createElement("div");
+	holder.append(before.cloneContents());
+	return readComposer(holder).length;
+}
+
+/** 把光标放回源文本的某个偏移上（表情图按短码长度算一格） */
+function setCaretAt(offset: number): void {
+	const root = editorEl;
+	const selection = window.getSelection();
+	if (!root || !selection) return;
+
+	let remain = offset;
+	const range = document.createRange();
+
+	const walk = (parent: Node): boolean => {
+		for (const child of Array.from(parent.childNodes)) {
+			if (child.nodeType === Node.TEXT_NODE) {
+				const text = child.textContent ?? "";
+				if (remain <= text.length) {
+					range.setStart(child, remain);
+					return true;
+				}
+				remain -= text.length;
+				continue;
+			}
+			if (child.nodeName === "BR") {
+				if (remain === 0) {
+					range.setStartBefore(child);
+					return true;
+				}
+				remain -= 1;
+				continue;
+			}
+			if (child instanceof HTMLImageElement) {
+				const length = (child.dataset.tgEmojiToken ?? "").length;
+				if (remain <= length) {
+					// 落在短码范围内：光标放到图后面，接着写就接在这张图之后
+					range.setStartAfter(child);
+					return true;
+				}
+				remain -= length;
+				continue;
+			}
+			if (walk(child)) return true;
+		}
+		return false;
+	};
+
+	if (walk(root)) range.collapse(true);
+	else {
+		// 偏移到底（或结构不认识）：光标放末尾
+		range.selectNodeContents(root);
+		range.collapse(false);
+	}
+	selection.removeAllRanges();
+	selection.addRange(range);
+}
+
+/** 在光标处插一段**源文本**（换行、粘贴、表情短码都走这里），然后重建 */
+function insertTextAtCaret(chunk: string): void {
+	const root = editorEl;
+	if (!root) return;
+	const text = readComposer(root);
+	const at = caretOffset();
+	const next = text.slice(0, at) + chunk + text.slice(at);
+
+	renderSource(next);
+	bodyLength = next.length;
+	if (formError) formError = "";
+	root.focus({ preventScroll: true });
+	setCaretAt(at + chunk.length);
+}
+
+function syncBody(): void {
+	if (!editorEl) return;
+	bodyLength = readComposer(editorEl).length;
+	if (formError) formError = "";
+}
+
+// contenteditable 默认会把剪贴板里的整段 HTML 塞进来（样式、链接全跟着进来），
+// 只收纯文本
+function onPaste(event: ClipboardEvent): void {
+	const text = event.clipboardData?.getData("text/plain");
+	if (text == null) return;
+	event.preventDefault();
+	insertTextAtCaret(text);
+}
+
+// Enter 换行、Ctrl/⌘+Enter 发送。默认行为会插 <div> 或 <br>，两种都可能；
+// 自己走源文本，重建之后只会有一种结构
+function onKeydown(event: KeyboardEvent): void {
+	if (event.key !== "Enter" || event.isComposing) return;
+	if (event.ctrlKey || event.metaKey) {
+		event.preventDefault();
+		void submit();
+		return;
+	}
+	event.preventDefault();
+	insertTextAtCaret("\n");
+}
+
+/**
+ * 把表情插到光标处：输入框里放的是**图**（短码只是发送时的载体）。
+ * 尺寸统一取 commentEmojiConfig.size（24px），和评论区气泡里一致。
+ */
+function insertEmoji(item: CommentEmojiItem): void {
+	const token = emojiTokenOfSrc(item.src);
+	if (!token) return;
+	if (bodyLength + token.length > bodyMax) return;
+	insertTextAtCaret(token);
+}
+
+function openComposer(): void {
+	if (!apiEnabled) {
+		showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
+		return;
+	}
+	const user = getCommentUser();
+	if (user) {
+		formName = user.name;
+		formEmail = user.email;
+	}
+	formError = "";
+	emojiOpen = false;
+	composerOpen = true;
+}
+
+/**
+ * 评论按钮：从右侧抽出这条留言的评论抽屉。
+ *
+ * 抽屉里装的是 `/guestbook/thread/`，线程 slug 由 path 推出来
+ * （`/guestbook/<id>/` → `guestbook-<id>`）；被评论的那条留言由本页在
+ * iframe 就绪后 postMessage 递过去，所以抽屉一打开就能看到「在评论什么」。
+ */
+function openReply(note: GuestTagItem, trigger: HTMLElement): void {
+	if (!apiEnabled) {
+		showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
+		return;
+	}
+	activeParent = note;
+	const path = `/guestbook/${encodeURIComponent(note.id)}/`;
+	openCommentDrawer(
+		`/guestbook/thread/?embed=1&path=${encodeURIComponent(path)}`,
+		trigger,
+	);
+}
+
+function closeComposer(): void {
+	if (submitting) return;
+	composerOpen = false;
+	emojiOpen = false;
+	formError = "";
+}
+
+async function submit(): Promise<void> {
+	const name = formName.trim();
+	const email = formEmail.trim();
+	const body = (editorEl ? readComposer(editorEl) : "").trim();
+
+	if (!isValidName(name)) {
+		formError = labels.nameRequired;
+		return;
+	}
+	if (!isValidEmail(email)) {
+		formError = labels.emailInvalid;
+		return;
+	}
+	if (!body) {
+		formError = labels.bodyRequired;
+		return;
+	}
+
+	submitting = true;
+	formError = "";
+	setCommentUser({ name, email });
+	try {
+		const created = await postComment(slug, { author: { name, email }, body });
+		// 凭据只在创建响应里出现一次，先落盘再判断要不要上图
+		rememberOwnComment(
+			created.id,
+			created.deleteToken,
+			identityKeyOf({ name, email }),
+		);
+
+		const pending = created.status !== "approved";
+		// 待审核也先上图（带标记），刷新后它会消失 —— 这比「发完什么都没发生」可解释
+		notes = [
+			{
+				id: created.id,
+				body: created.body,
+				createdAt: created.createdAt,
+				dateLabel: formatDateToYYYYMMDD(created.createdAt),
+				author: created.author.name,
+				isOwner: created.author.isOwner === true,
+				replies: 0,
 				likes: 0,
 				liked: false,
-				mine: deleteTokenOf(item.id) !== "",
-				pending: item.status !== "approved",
-			}));
-	}
-
-	async function load(): Promise<void> {
-		if (!apiEnabled) {
-			loading = false;
-			notes = [];
-			return;
-		}
-		loading = true;
-		failed = false;
-		try {
-			const page = await fetchComments(slug);
-			cursor = page.nextCursor;
-			hasMore = !!page.nextCursor;
-			notes = toNotes(page.items);
-			await syncLikes();
-		} catch {
-			failed = true;
-		} finally {
-			loading = false;
-		}
-	}
-
-	/** 追加更早的一页。游标是「上一页最后一条」，插进来多少都不影响下一页从哪开始 */
-	async function loadMore(): Promise<void> {
-		if (!cursor || loadingMore) return;
-		loadingMore = true;
-		try {
-			const page = await fetchComments(slug, cursor);
-			cursor = page.nextCursor;
-			hasMore = !!page.nextCursor;
-			notes = [...notes, ...toNotes(page.items)];
-			await syncLikes();
-		} catch {
-			showMessage(labels.network, { type: "error" });
-		} finally {
-			loadingMore = false;
-		}
-	}
-
-	/**
-	 * 把编辑器内容读回源文本：文字原样、`<br>` 转换行、表情图转短码。
-	 *
-	 * 与 Comment.astro 的 readComposer 同一套规则 —— 两边发出去的都是短码，
-	 * 渲染端只需认一种格式。认不出来的图片直接丢掉：输入框里只该有表情图，
-	 * 一张来路不明的图没有对应的文字表达，写进正文就是坏数据。
-	 */
-	function readComposer(root: HTMLElement): string {
-		let out = "";
-		const walk = (node: Node): void => {
-			for (const child of Array.from(node.childNodes)) {
-				if (child.nodeType === Node.TEXT_NODE) {
-					out += (child.textContent ?? "").replace(/\u00a0/g, " ");
-					continue;
-				}
-				if (child.nodeName === "BR") {
-					out += "\n";
-					continue;
-				}
-				if (child instanceof HTMLImageElement) {
-					const token =
-						child.dataset.tgEmojiToken ??
-						emojiTokenOfSrc(
-							child.dataset.tgEmojiSrc ?? child.getAttribute("src") ?? "",
-						);
-					if (token) out += token;
-					continue;
-				}
-				walk(child);
-			}
-		};
-		walk(root);
-		return out;
-	}
-
-	/**
-	 * 用源文本重建编辑器内容。
-	 *
-	 * 为什么不在光标处直接 insertNode：Chrome 会给 contenteditable 补占位 `<br>`，
-	 * 直接插图之后那个 br 就卡在两张图中间 —— 表情会一张一行地竖着排。
-	 * 改成「读源文本 → 整块重建」，DOM 结构永远只有三样：文本、`<br>`、表情图，
-	 * 不会再有浏览器自己加的节点。
-	 */
-	function renderSource(text: string): void {
-		const root = editorEl;
-		if (!root) return;
-
-		const frag = document.createDocumentFragment();
-		const pattern = emojiTokenPattern();
-		let last = 0;
-
-		const appendText = (chunk: string): void => {
-			chunk.split("\n").forEach((part, index) => {
-				if (index > 0) frag.append(document.createElement("br"));
-				if (part) frag.append(document.createTextNode(part));
-			});
-		};
-
-		for (const match of text.matchAll(pattern)) {
-			const index = match.index ?? 0;
-			appendText(text.slice(last, index));
-			const emoji = resolveEmojiToken(match[0]);
-			if (emoji) {
-				const img = document.createElement("img");
-				img.src = emoji.src;
-				img.alt = emoji.alt;
-				img.className = "composer-input__emoji";
-				img.dataset.tgEmojiToken = match[0];
-				frag.append(img);
-			} else {
-				appendText(match[0]);
-			}
-			last = index + match[0].length;
-		}
-		appendText(text.slice(last));
-
-		root.replaceChildren(frag);
-	}
-
-	/** 光标在源文本里的偏移：把「内容起点到光标」这段复制出来，按 readComposer 量长度 */
-	function caretOffset(): number {
-		const root = editorEl;
-		const selection = window.getSelection();
-		if (!root || !selection || selection.rangeCount === 0) return bodyLength;
-
-		const range = selection.getRangeAt(0);
-		if (!root.contains(range.startContainer)) return bodyLength;
-
-		const before = range.cloneRange();
-		before.selectNodeContents(root);
-		before.setEnd(range.startContainer, range.startOffset);
-
-		const holder = document.createElement("div");
-		holder.append(before.cloneContents());
-		return readComposer(holder).length;
-	}
-
-	/** 把光标放回源文本的某个偏移上（表情图按短码长度算一格） */
-	function setCaretAt(offset: number): void {
-		const root = editorEl;
-		const selection = window.getSelection();
-		if (!root || !selection) return;
-
-		let remain = offset;
-		const range = document.createRange();
-
-		const walk = (parent: Node): boolean => {
-			for (const child of Array.from(parent.childNodes)) {
-				if (child.nodeType === Node.TEXT_NODE) {
-					const text = child.textContent ?? "";
-					if (remain <= text.length) {
-						range.setStart(child, remain);
-						return true;
-					}
-					remain -= text.length;
-					continue;
-				}
-				if (child.nodeName === "BR") {
-					if (remain === 0) {
-						range.setStartBefore(child);
-						return true;
-					}
-					remain -= 1;
-					continue;
-				}
-				if (child instanceof HTMLImageElement) {
-					const length = (child.dataset.tgEmojiToken ?? "").length;
-					if (remain <= length) {
-						// 落在短码范围内：光标放到图后面，接着写就接在这张图之后
-						range.setStartAfter(child);
-						return true;
-					}
-					remain -= length;
-					continue;
-				}
-				if (walk(child)) return true;
-			}
-			return false;
-		};
-
-		if (walk(root)) range.collapse(true);
-		else {
-			// 偏移到底（或结构不认识）：光标放末尾
-			range.selectNodeContents(root);
-			range.collapse(false);
-		}
-		selection.removeAllRanges();
-		selection.addRange(range);
-	}
-
-	/** 在光标处插一段**源文本**（换行、粘贴、表情短码都走这里），然后重建 */
-	function insertTextAtCaret(chunk: string): void {
-		const root = editorEl;
-		if (!root) return;
-		const text = readComposer(root);
-		const at = caretOffset();
-		const next = text.slice(0, at) + chunk + text.slice(at);
-
-		renderSource(next);
-		bodyLength = next.length;
-		if (formError) formError = "";
-		root.focus({ preventScroll: true });
-		setCaretAt(at + chunk.length);
-	}
-
-	function syncBody(): void {
-		if (!editorEl) return;
-		bodyLength = readComposer(editorEl).length;
-		if (formError) formError = "";
-	}
-
-	// contenteditable 默认会把剪贴板里的整段 HTML 塞进来（样式、链接全跟着进来），
-	// 只收纯文本
-	function onPaste(event: ClipboardEvent): void {
-		const text = event.clipboardData?.getData("text/plain");
-		if (text == null) return;
-		event.preventDefault();
-		insertTextAtCaret(text);
-	}
-
-	// Enter 换行、Ctrl/⌘+Enter 发送。默认行为会插 <div> 或 <br>，两种都可能；
-	// 自己走源文本，重建之后只会有一种结构
-	function onKeydown(event: KeyboardEvent): void {
-		if (event.key !== "Enter" || event.isComposing) return;
-		if (event.ctrlKey || event.metaKey) {
-			event.preventDefault();
-			void submit();
-			return;
-		}
-		event.preventDefault();
-		insertTextAtCaret("\n");
-	}
-
-	/**
-	 * 把表情插到光标处：输入框里放的是**图**（短码只是发送时的载体）。
-	 * 尺寸统一取 commentEmojiConfig.size（24px），和评论区气泡里一致。
-	 */
-	function insertEmoji(item: CommentEmojiItem): void {
-		const token = emojiTokenOfSrc(item.src);
-		if (!token) return;
-		if (bodyLength + token.length > bodyMax) return;
-		insertTextAtCaret(token);
-	}
-
-	function openComposer(): void {
-		if (!apiEnabled) {
-			showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
-			return;
-		}
-		const user = getCommentUser();
-		if (user) {
-			formName = user.name;
-			formEmail = user.email;
-		}
-		formError = "";
-		emojiOpen = false;
-		composerOpen = true;
-	}
-
-	/**
-	 * 评论按钮：从右侧抽出这条留言的评论抽屉。
-	 *
-	 * 抽屉里装的是 `/guestbook/thread/`，线程 slug 由 path 推出来
-	 * （`/guestbook/<id>/` → `guestbook-<id>`）；被评论的那条留言由本页在
-	 * iframe 就绪后 postMessage 递过去，所以抽屉一打开就能看到「在评论什么」。
-	 */
-	function openReply(note: GuestTagItem, trigger: HTMLElement): void {
-		if (!apiEnabled) {
-			showMessage(i18n(I18nKey.commentChatDisabled), { type: "info" });
-			return;
-		}
-		activeParent = note;
-		const path = `/guestbook/${encodeURIComponent(note.id)}/`;
-		openCommentDrawer(
-			`/guestbook/thread/?embed=1&path=${encodeURIComponent(path)}`,
-			trigger,
-		);
-	}
-
-	function closeComposer(): void {
-		if (submitting) return;
-		composerOpen = false;
-		emojiOpen = false;
-		formError = "";
-	}
-
-	async function submit(): Promise<void> {
-		const name = formName.trim();
-		const email = formEmail.trim();
-		const body = (editorEl ? readComposer(editorEl) : "").trim();
-
-		if (!isValidName(name)) {
-			formError = labels.nameRequired;
-			return;
-		}
-		if (!isValidEmail(email)) {
-			formError = labels.emailInvalid;
-			return;
-		}
-		if (!body) {
-			formError = labels.bodyRequired;
-			return;
-		}
-
-		submitting = true;
-		formError = "";
-		setCommentUser({ name, email });
-		try {
-			const created = await postComment(slug, { author: { name, email }, body });
-			// 凭据只在创建响应里出现一次，先落盘再判断要不要上图
-			rememberOwnComment(
-				created.id,
-				created.deleteToken,
-				identityKeyOf({ name, email }),
-			);
-
-			const pending = created.status !== "approved";
-			// 待审核也先上图（带标记），刷新后它会消失 —— 这比「发完什么都没发生」可解释
-			notes = [
-				{
-					id: created.id,
-					body: created.body,
-					createdAt: created.createdAt,
-					dateLabel: formatDateToYYYYMMDD(created.createdAt),
-					author: created.author.name,
-					isOwner: created.author.isOwner === true,
-					replies: 0,
-					likes: 0,
-					liked: false,
-					mine: true,
-					pending,
-				},
-				...notes,
-			];
-			if (pending) {
-				showMessage(labels.submitted, { type: "info" });
-			}
-
-			if (editorEl) editorEl.innerHTML = "";
-			bodyLength = 0;
-			composerOpen = false;
-		} catch (error) {
-			formError = errorText(error);
-		} finally {
-			submitting = false;
-		}
-	}
-
-	async function remove(note: GuestTagItem): Promise<void> {
-		const token = deleteTokenOf(note.id);
-		if (!token) return;
-		if (!window.confirm(labels.deleteConfirm)) return;
-		try {
-			await deleteComment(note.id, token);
-			forgetOwnComment(note.id);
-			notes = notes.filter((item) => item.id !== note.id);
-		} catch {
-			showMessage(labels.retractFailed, { type: "error" });
-		}
-	}
-
-	/**
-	 * 抽屉里的 iframe 是独立文档，拿不到这里的 notes —— 它加载完会来要一次
-	 * 父留言（`guest-parent-request`），这边把当前那条回过去。
-	 */
-	function onThreadMessage(event: MessageEvent): void {
-		if (event.origin !== window.location.origin) return;
-		if (event.data?.type !== "guest-parent-request") return;
-		const parent = activeParent;
-		const frame = document.querySelector<HTMLIFrameElement>(
-			".comment-drawer-frame",
-		);
-		if (!parent || !frame?.contentWindow) return;
-		frame.contentWindow.postMessage(
-			{
-				type: "guest-parent",
-				parent: {
-					author: parent.author,
-					dateLabel: parent.dateLabel,
-					body: parent.body,
-				},
+				mine: true,
+				pending,
 			},
-			window.location.origin,
-		);
+			...notes,
+		];
+		if (pending) {
+			showMessage(labels.submitted, { type: "info" });
+		}
+
+		if (editorEl) editorEl.innerHTML = "";
+		bodyLength = 0;
+		composerOpen = false;
+	} catch (error) {
+		formError = errorText(error);
+	} finally {
+		submitting = false;
 	}
+}
 
-	onMount(() => {
-		registerEmptyLottie();
-		// 爱心 / 气泡是 <dynamic-lottie-icon> 自己画的：先注册元素，再绑点赞委托
-		registerDynamicLottieIcons();
-		bindLikeButtons();
-		// 评论抽屉的外壳与全局事件（点外面收起、Esc、iframe 里的关闭按钮）
-		bindCommentDrawer();
-		window.addEventListener("message", onThreadMessage);
-		void load();
+async function remove(note: GuestTagItem): Promise<void> {
+	const token = deleteTokenOf(note.id);
+	if (!token) return;
+	if (!window.confirm(labels.deleteConfirm)) return;
+	try {
+		await deleteComment(note.id, token);
+		forgetOwnComment(note.id);
+		notes = notes.filter((item) => item.id !== note.id);
+	} catch {
+		showMessage(labels.retractFailed, { type: "error" });
+	}
+}
 
-		// Esc 关掉写作层：弹层挡住整页时，键盘用户不该只能找到那个 ×
-		const onKeydown = (event: KeyboardEvent): void => {
-			if (event.key === "Escape" && composerOpen) closeComposer();
-		};
-		window.addEventListener("keydown", onKeydown);
-		return () => {
-			window.removeEventListener("keydown", onKeydown);
-			window.removeEventListener("message", onThreadMessage);
-		};
-	});
+/**
+ * 抽屉里的 iframe 是独立文档，拿不到这里的 notes —— 它加载完会来要一次
+ * 父留言（`guest-parent-request`），这边把当前那条回过去。
+ */
+function onThreadMessage(event: MessageEvent): void {
+	if (event.origin !== window.location.origin) return;
+	if (event.data?.type !== "guest-parent-request") return;
+	const parent = activeParent;
+	const frame = document.querySelector<HTMLIFrameElement>(
+		".comment-drawer-frame",
+	);
+	if (!parent || !frame?.contentWindow) return;
+	frame.contentWindow.postMessage(
+		{
+			type: "guest-parent",
+			parent: {
+				author: parent.author,
+				dateLabel: parent.dateLabel,
+				body: parent.body,
+			},
+		},
+		window.location.origin,
+	);
+}
+
+onMount(() => {
+	registerEmptyLottie();
+	// 爱心 / 气泡是 <dynamic-lottie-icon> 自己画的：先注册元素，再绑点赞委托
+	registerDynamicLottieIcons();
+	bindLikeButtons();
+	// 评论抽屉的外壳与全局事件（点外面收起、Esc、iframe 里的关闭按钮）
+	bindCommentDrawer();
+	window.addEventListener("message", onThreadMessage);
+	void load();
+
+	// Esc 关掉写作层：弹层挡住整页时，键盘用户不该只能找到那个 ×
+	const onKeydown = (event: KeyboardEvent): void => {
+		if (event.key === "Escape" && composerOpen) closeComposer();
+	};
+	window.addEventListener("keydown", onKeydown);
+	return () => {
+		window.removeEventListener("keydown", onKeydown);
+		window.removeEventListener("message", onThreadMessage);
+	};
+});
 </script>
 
 <section class="guestbook-wall" data-guestbook-wall>

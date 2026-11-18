@@ -75,7 +75,8 @@ function getLines(
 	maxWidth: number,
 ): string[] {
 	const units =
-		text.match(/[A-Za-z0-9@#%&$^*_+.,:;!?'"()\/[\]{}|<>\\=~`-]+|\s+|[\s\S]/g) ?? [];
+		text.match(/[A-Za-z0-9@#%&$^*_+.,:;!?'"()/[\]{}|<>\\=~`-]+|\s+|[\s\S]/g) ??
+		[];
 	const lines: string[] = [];
 	let line = "";
 
@@ -155,7 +156,10 @@ function ellipsize(
 ): string {
 	if (ctx.measureText(`${line}…`).width <= maxWidth) return `${line}…`;
 	const chars = Array.from(line);
-	while (chars.length > 0 && ctx.measureText(`${chars.join("")}…`).width > maxWidth)
+	while (
+		chars.length > 0 &&
+		ctx.measureText(`${chars.join("")}…`).width > maxWidth
+	)
 		chars.pop();
 	return chars.length ? `${chars.join("")}…` : "…";
 }
@@ -622,7 +626,8 @@ const shareTargets = [
 onMount(() => {
 	// 点击空白处或按 Esc 收起
 	const onDocClick = (e: MouseEvent) => {
-		if (dockOpen && dockEl && !dockEl.contains(e.target as Node)) dockOpen = false;
+		if (dockOpen && dockEl && !dockEl.contains(e.target as Node))
+			dockOpen = false;
 	};
 	const onKeydown = (e: KeyboardEvent) => {
 		if (e.key === "Escape") {

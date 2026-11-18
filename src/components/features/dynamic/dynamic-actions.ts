@@ -42,7 +42,9 @@ export function syncDynamicLikeStates(root: ParentNode = document): void {
 	// 评论数不依赖点赞状态，单独刷一遍（模板克隆出来的条目初始只有占位 0）
 	root
 		.querySelectorAll<HTMLElement>("[data-comment-open]")
-		.forEach((button) => paintCommentCount(button));
+		.forEach((button) => {
+			paintCommentCount(button);
+		});
 }
 
 function toggleComments(button: HTMLElement): void {

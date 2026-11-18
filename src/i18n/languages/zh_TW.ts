@@ -123,7 +123,8 @@ export const zh_TW: Translation = {
 	[Key.commentChatRetract]: "撤回",
 	[Key.commentChatRetracted]: "已撤回",
 	[Key.commentChatRetractFailed]: "撤回失敗，請稍後再試",
-	[Key.commentChatRetractReplies]: "這則留言下還有回覆，撤回會一併刪除，確定嗎？",
+	[Key.commentChatRetractReplies]:
+		"這則留言下還有回覆，撤回會一併刪除，確定嗎？",
 	[Key.commentChatMe]: "我",
 	// 接口失败兜底：按 code 归类，不把后端的英文 title 直接给用户
 	[Key.dynamicLoadFailed]: "動態載入失敗，請重新整理",

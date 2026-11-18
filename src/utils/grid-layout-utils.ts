@@ -131,13 +131,21 @@ export function applyPurityModes(targetUrl: string): void {
 	// 导航页：隐藏多标签栏与除 keepWidgets 外的卡片
 	const navPaths = readNavPurityPaths();
 	if (navPaths) {
-		setPurityAttr(host, "data-nav-purity", matchesPathScope(pathname, navPaths));
+		setPurityAttr(
+			host,
+			"data-nav-purity",
+			matchesPathScope(pathname, navPaths),
+		);
 	}
 
 	// 宽幅页面：隐藏侧栏与多标签栏，列几何收成单列（正文真正变宽）
 	const widePaths = readWidePagePaths();
 	if (widePaths && widePageConfig.enable) {
-		setPurityAttr(host, "data-wide-page", matchesPathScope(pathname, widePaths));
+		setPurityAttr(
+			host,
+			"data-wide-page",
+			matchesPathScope(pathname, widePaths),
+		);
 	}
 
 	// 文章页：只留目录（目录卡已配在左栏），标签栏竖排搬进右列

@@ -54,7 +54,8 @@ onMount(() => {
 	const onClick = (event: MouseEvent) => {
 		// 保留 Ctrl/⌘/Shift/中键等原生打开新标签页的行为
 		if (event.button !== 0) return;
-		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+			return;
 		const target = event.target as HTMLElement | null;
 		if (!target?.closest(selector)) return;
 		// 捕获阶段截住：Swup 的链接代理在冒泡阶段，不拦会先跳页

@@ -57,7 +57,10 @@ export async function fetchLikeTallies(
 ): Promise<LikeTally[]> {
 	if (!likeApiConfig.enable || slugs.length === 0) return [];
 
-	const unique = Array.from(new Set(slugs.filter(Boolean))).slice(0, MAX_TALLY_SLUGS);
+	const unique = Array.from(new Set(slugs.filter(Boolean))).slice(
+		0,
+		MAX_TALLY_SLUGS,
+	);
 	const query = new URLSearchParams({ slugs: unique.join(",") });
 	const body = await client.request<TalliesPayload>(
 		`/api/v1/posts/likes?${query.toString()}`,

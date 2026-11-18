@@ -24,8 +24,8 @@ if (!siteConfig.pages.guestbook || !commentApiConfig.enable) {
 }
 
 const contact = (
-	profileConfig.links.find((link) => link.name.toLowerCase() === "email")?.url ||
-	""
+	profileConfig.links.find((link) => link.name.toLowerCase() === "email")
+		?.url || ""
 ).replace(/^mailto:/, "");
 ---
 

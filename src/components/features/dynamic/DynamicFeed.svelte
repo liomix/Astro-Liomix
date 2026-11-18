@@ -1,14 +1,16 @@
 <script lang="ts">
 import { onMount, tick } from "svelte";
-import ClientPagination from "@/components/ui/ClientPagination.svelte";
-import {
-	registerDynamicActions,
-	syncDynamicLikeStates,
-} from "@/components/features/dynamic/dynamic-actions.ts";
 import {
 	closeCommentDrawer,
 	openCommentDrawer,
 } from "@/components/features/comment/comment-drawer";
+import {
+	registerDynamicActions,
+	syncDynamicLikeStates,
+} from "@/components/features/dynamic/dynamic-actions.ts";
+import CardSkeleton from "@/components/ui/CardSkeleton.svelte";
+import ClientPagination from "@/components/ui/ClientPagination.svelte";
+import { registerEmptyLottie } from "@/components/ui/empty-lottie";
 import { commentApiConfig } from "@/config/commentApiConfig";
 import { fetchCommentCounts, slugOfPath } from "@/utils/comment-client";
 import { formatDynamicDate } from "@/utils/date-utils";
@@ -17,8 +19,6 @@ import { dynamicAnchor } from "@/utils/dynamic-utils";
 import { likeCountOf } from "@/utils/likes";
 import { fetchMemos } from "@/utils/memos-adapter";
 import { formatCompactNumber } from "@/utils/number-utils";
-import CardSkeleton from "@/components/ui/CardSkeleton.svelte";
-import { registerEmptyLottie } from "@/components/ui/empty-lottie";
 import { registerDynamicGallery } from "./dynamic-gallery";
 
 type DynamicImage = {
@@ -301,9 +301,7 @@ function createItem(entry: DynamicData) {
 	// 点赞 / 评论基数：数据里带了就写进按钮，卡片上的数字和页头统计用的是同一份
 	const likeButton = root.querySelector<HTMLElement>("[data-like]");
 	if (likeButton) likeButton.dataset.likeBase = String(entry.likes ?? 0);
-	const commentButton = root.querySelector<HTMLElement>(
-		"[data-comment-open]",
-	);
+	const commentButton = root.querySelector<HTMLElement>("[data-comment-open]");
 	if (commentButton) {
 		commentButton.dataset.commentBase = String(commentCountOf(entry));
 	}

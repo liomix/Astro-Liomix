@@ -44,7 +44,8 @@ function positionPanel(panel: HTMLElement): void {
 	// 按钮被隐藏（收起/不可见）时保留上次位置，避免面板跳到左上角
 	if (rect.width === 0 && rect.height === 0) return;
 
-	const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+	const viewportWidth =
+		document.documentElement.clientWidth || window.innerWidth;
 	const viewportHeight = window.innerHeight;
 
 	panel.style.right = `${Math.max(VIEWPORT_MARGIN, viewportWidth - rect.right)}px`;

@@ -68,7 +68,9 @@ export function readOwnComments(): Set<string> {
  * 不能只用邮箱：改资料时很多人只改昵称，邮箱不动 —— 那样指纹不变，
  * 换身份后旧气泡就不会重新排。任何一个字段变了，就是另一个人。
  */
-export function identityKeyOf(user: { name: string; email: string } | null): string {
+export function identityKeyOf(
+	user: { name: string; email: string } | null,
+): string {
 	if (!user) return "";
 	return `${user.name.trim().toLowerCase()}\u0000${user.email.trim().toLowerCase()}`;
 }
@@ -77,7 +79,8 @@ export function identityKeyOf(user: { name: string; email: string } | null): str
 export function readOwnIdentities(): Map<string, string> {
 	const parsed = readJSON(OWN_IDENTITY_KEY);
 	const out = new Map<string, string>();
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return out;
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+		return out;
 	for (const [id, identity] of Object.entries(parsed)) {
 		if (typeof identity === "string" && identity !== "") out.set(id, identity);
 	}

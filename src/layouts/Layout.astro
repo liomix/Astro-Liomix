@@ -1,20 +1,17 @@
 ---
+import SakuraEffect from "@/components/features/effects/SakuraEffect.astro";
+import WavesEffect from "@/components/features/effects/WavesEffect.astro";
+import MusicManager from "@/components/features/music/MusicManager.astro";
+import MusicPlayerView from "@/components/features/music/MusicPlayerView.astro";
+import NowPlayingCard from "@/components/features/music/NowPlayingCard.svelte";
 import PostViewCounter from "@/components/features/stats/PostViewCounter.astro";
 import SiteVisitCounter from "@/components/features/stats/SiteVisitCounter.astro";
 import CodeGroupManager from "@/components/managers/CodeGroupManager.astro";
 import FancyboxManager from "@/components/managers/FancyboxManager.astro";
 import FontManager from "@/components/managers/FontManager.astro";
 import GithubCardManager from "@/components/managers/GithubCardManager.astro";
-import MusicManager from "@/components/features/music/MusicManager.astro";
-import MusicPlayerView from "@/components/features/music/MusicPlayerView.astro";
-import NowPlayingCard from "@/components/features/music/NowPlayingCard.svelte";
-import SakuraEffect from "@/components/features/effects/SakuraEffect.astro";
-import WavesEffect from "@/components/features/effects/WavesEffect.astro";
-import ConfigCarrier from "@/components/shell/ConfigCarrier.astro";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
 import BrowserChrome from "@/components/shell/BrowserChrome.astro";
-
+import ConfigCarrier from "@/components/shell/ConfigCarrier.astro";
 import {
 	backgroundWallpaperConfig,
 	displaySettingsConfig,
@@ -33,6 +30,8 @@ import {
 	PAGE_WIDTH,
 } from "@/constants/constants";
 import { defaultFavicons } from "@/constants/icon";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import type { Favicon } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
 import { getAuthorAvatarUrl, getSiteLogo } from "@/utils/schema-image";
@@ -81,7 +80,8 @@ const isHomePageCheck = isHomePage(Astro.url.pathname);
 const configHue = siteConfig.themeColor.hue;
 
 // 全屏壁纸布局：classic 为文档流旧版，hero 为固定首屏新版
-const fullscreenLayout = backgroundWallpaperConfig.fullscreen?.layout ?? "classic";
+const fullscreenLayout =
+	backgroundWallpaperConfig.fullscreen?.layout ?? "classic";
 
 // 子菜单 / 浮动面板的毛玻璃模糊度：跟随 navbar.blur，但不受壁纸模式影响，
 // 且带一个最小值 —— 导航栏可以用 blur: 0 关掉毛玻璃，面板则始终保留毛玻璃。

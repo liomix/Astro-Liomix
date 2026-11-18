@@ -1,5 +1,6 @@
 ---
 import ImageWrapper from "@/components/ui/ImageWrapper.astro";
+import Skeleton from "@/components/ui/Skeleton.astro";
 import { coverImageConfig } from "@/config";
 import type { ImageFormat, ResponsiveImageLayout } from "@/types/config";
 import {
@@ -9,7 +10,6 @@ import {
 } from "@/utils/image-utils";
 import { getLqipProps } from "@/utils/lqip-utils";
 import { url } from "@/utils/url-utils";
-import Skeleton from "@/components/ui/Skeleton.astro";
 
 interface Props {
 	id?: string;

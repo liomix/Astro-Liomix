@@ -115,13 +115,16 @@ const modeIcon = $derived(modeIcons[playMode] ?? modeIcons[0]);
 const modeLabel = $derived(modeLabels[playMode] ?? modeLabels[0]);
 // 曲名与歌手合成一行，和参考版式一致：「歌名 - 歌手」
 const displayTitle = $derived(
-	track?.artist ? `${track.name || fallbackTitle} - ${track.artist}` : track?.name || fallbackTitle,
+	track?.artist
+		? `${track.name || fallbackTitle} - ${track.artist}`
+		: track?.name || fallbackTitle,
 );
 // 当前歌词：LRC 的间奏行常常是空串，向上找回最近一句，别让歌词行闪成空白
 const lyricText = $derived.by(() => {
 	// 静音自动播放（浏览器拦截带声音的自动播放时的兜底）优先提示怎么出声
 	if (autoplayMuted) return labelTapForSound;
-	if (lyricStatus === "loading" && lyrics.length === 0) return labelLoadingLyric;
+	if (lyricStatus === "loading" && lyrics.length === 0)
+		return labelLoadingLyric;
 	if (lyrics.length === 0) return labelNoLyric;
 	for (let i = Math.max(0, lrcIndex); i >= 0; i--) {
 		const text = (lyrics[i]?.text ?? "").trim();
@@ -365,9 +368,8 @@ onMount(() => {
 		syncFromManager();
 	};
 	const handlePlayState = (event: Event): void => {
-		isPlaying = !!(
-			event as CustomEvent<{ isPlaying?: boolean }>
-		).detail?.isPlaying;
+		isPlaying = !!(event as CustomEvent<{ isPlaying?: boolean }>).detail
+			?.isPlaying;
 		if (isPlaying) hasTrack = true;
 		// 停止播放时顺手收起播放列表，避免「没在播却挂着列表」
 		if (!isPlaying) {
@@ -381,9 +383,8 @@ onMount(() => {
 		}
 	};
 	const handleTrack = (event: Event): void => {
-		const detail = (
-			event as CustomEvent<{ track?: Track; index?: number }>
-		).detail;
+		const detail = (event as CustomEvent<{ track?: Track; index?: number }>)
+			.detail;
 		if (typeof detail?.index === "number") currentIndex = detail.index;
 		if (detail?.track) {
 			track = detail.track;

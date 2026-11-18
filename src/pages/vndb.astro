@@ -9,6 +9,7 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/media-grid.css";
+import EmptyState from "@/components/ui/EmptyState.astro";
 import type { VndbUlistEntry } from "@/types/vndb";
 import { formatDateI18n } from "@/utils/date-utils";
 import { isVndbNsfw } from "@/utils/nsfw-utils";
@@ -17,7 +18,6 @@ import {
 	fetchVndbUlist,
 	type VndbTab,
 } from "@/utils/vndb-utils";
-import EmptyState from "@/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.vndb) {

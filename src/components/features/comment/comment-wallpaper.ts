@@ -207,7 +207,10 @@ async function paint(chat: HTMLElement, id: string): Promise<void> {
 	const token = ++paintToken;
 	const src = getChatWallpaperSrc(id);
 
-	const [player, data] = await Promise.all([loadPlayer(), loadWallpaperData(src)]);
+	const [player, data] = await Promise.all([
+		loadPlayer(),
+		loadWallpaperData(src),
+	]);
 	// 页面已经切走 / 又换了另一张 / 壁纸已卸载：别把动画挂到孤儿节点上
 	if (token !== paintToken || !chat.isConnected) return;
 	if (!data) return;

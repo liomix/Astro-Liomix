@@ -7,13 +7,13 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/media-grid.css";
+import EmptyState from "@/components/ui/EmptyState.astro";
 import type {
 	UserSubjectCollection,
 	UserSubjectCollectionResponse,
 } from "@/types/bangumi";
 import { formatDateI18n } from "@/utils/date-utils";
 import { filterNsfw, isBangumiNsfw } from "@/utils/nsfw-utils";
-import EmptyState from "@/components/ui/EmptyState.astro";
 
 //参考：霞葉 https://kasuha.com/posts/fuwari-enhance-ep2/
 

@@ -54,9 +54,7 @@ export const COMMENT_WALLPAPER_STORAGE_KEY = "commentWallpaper";
  * 按 id 取壁纸，取不到就回退默认那张（再取不到就第一张）。
  * 传 null / undefined 表示「默认」。
  */
-export function getCommentWallpaper(
-	id?: string | null,
-): CommentWallpaperItem {
+export function getCommentWallpaper(id?: string | null): CommentWallpaperItem {
 	const { wallpapers, defaultId } = commentWallpaperConfig;
 	return (
 		wallpapers.find((item) => item.id === id) ??

@@ -5,8 +5,9 @@
  * 点击、弹窗、无障碍语义都在外层 SponsorButton.astro 的 <button> 上，
  * 所以这里整体 pointer-events: none + aria-hidden。
  */
-import coinData from "@/assets/lottie/coin.json";
+
 import { onMount } from "svelte";
+import coinData from "@/assets/lottie/coin.json";
 
 /** 静止帧：第 110 帧是日元硬币刚翻到正面，正好当「不播动效」的静态图 */
 const FRAME_IDLE = 110;

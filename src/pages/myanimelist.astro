@@ -7,6 +7,7 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/common.css";
 import "@/styles/pages/media-grid.css";
+import EmptyState from "@/components/ui/EmptyState.astro";
 import type { MalListItem } from "@/types/mal";
 import { formatDateI18n } from "@/utils/date-utils";
 import {
@@ -15,7 +16,6 @@ import {
 	type MalListKind,
 } from "@/utils/mal-utils";
 import { filterNsfw, isMalNsfw } from "@/utils/nsfw-utils";
-import EmptyState from "@/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.mal) {

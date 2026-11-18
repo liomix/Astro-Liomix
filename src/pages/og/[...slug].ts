@@ -6,7 +6,10 @@ import type { FontDetails } from "takumi-js";
 import { ImageResponse } from "takumi-js/response";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
-import { hasVideoExtension, isAnimatedImageBuffer } from "@/utils/image-animation";
+import {
+	hasVideoExtension,
+	isAnimatedImageBuffer,
+} from "@/utils/image-animation";
 import { removeFileExtension } from "@/utils/url-utils";
 
 export const prerender = true;
