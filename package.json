@@ -11,6 +11,8 @@
     "start": "astro dev",
     "check": "astro check",
     "check:secrets": "npx tsx scripts/check-secrets.ts",
+    "check:budget": "npx tsx scripts/check-js-budget.ts",
+    "test": "node --import tsx --test src/utils/*.test.ts",
     "build": "npx tsx scripts/generate-github-card-data.ts && npx tsx scripts/generate-lqips.ts && npx tsx scripts/generate-vndb-covers.ts && astro build --force && npx tsx scripts/check-secrets.ts && npx tsx scripts/prune-pio-assets.ts && npx tsx scripts/subset-fonts.ts && npx tsx scripts/minify-inline-scripts.ts && npx tsx scripts/run-pagefind.ts",
     "preview": "astro preview",
     "astro": "astro",

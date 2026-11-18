@@ -86,7 +86,7 @@ const hideSidebarOnPostPage =
 <style lang="stylus">
 .floating-toc-wrapper
 	position: relative
-	z-index: 999
+	z-index: var(--z-floating)
 	overflow: visible
 	/* 面板与滚动容器共用这一处高度，避免两处 max-height 走散把底部条目裁掉 */
 	/* unquote 必需：Stylus 自带同名数学函数 min()，直接写会在编译期报错 */
@@ -104,7 +104,7 @@ const hideSidebarOnPostPage =
 	box-sizing: border-box
 	backdrop-filter: blur(20px)
 	-webkit-backdrop-filter: blur(20px)
-	z-index: 1001
+	z-index: var(--z-toc)
 	max-height: var(--floating-toc-max-h)
 	
 	&.show

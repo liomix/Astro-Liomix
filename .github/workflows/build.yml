@@ -40,6 +40,12 @@ jobs:
       - name: Run Astro Check
         run: pnpm astro check
 
+      - name: Run TypeScript check
+        run: pnpm type-check
+
+      - name: Run unit tests
+        run: pnpm test
+
   build:
     strategy:
       matrix:
@@ -63,5 +69,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Astro Build
-        run: pnpm astro build
+      - name: Run full build
+        run: pnpm build
+
+      - name: Check first-screen JS budget
+        run: pnpm check:budget

@@ -11,7 +11,7 @@ interface Props {
 const processedLinks = Astro.props.links;
 const navTitle = siteConfig.navbar.title || siteConfig.title;
 ---
-<div id="nav-menu-panel" class:list={["float-panel-closed absolute inset-x-0 z-1100"]} data-floating-panel data-floating-panel-trigger="nav-menu-switch" data-floating-panel-scroll-lock data-floating-panel-close-delay="300" inert aria-hidden="true">
+<div id="nav-menu-panel" class:list={["float-panel-closed absolute inset-x-0 z-[var(--z-panel)]"]} data-floating-panel data-floating-panel-trigger="nav-menu-switch" data-floating-panel-scroll-lock data-floating-panel-close-delay="300" inert aria-hidden="true">
     <!-- 一个滑动容器保证内容、毛玻璃和遮罩边缘处于同一合成坐标系。 -->
     <div class="mobile-menu-motion">
     <div class="mobile-menu-glass" aria-hidden="true"></div>

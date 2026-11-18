@@ -90,18 +90,23 @@ export function toAbsoluteUrl(site: URL, path: string): string {
  * 复用 AstroContainer + 渲染器（MDX/Svelte），密码文章跳过渲染改用提示文案。
  * 保持「先剥离 XML 非法字符、后 sanitize」的顺序，确保 RSS 输出与旧版逐字节一致。
  */
+/** feed 里最多放多少篇：全文模式下每条都带正文，不设上限等于把全站塞进一个 XML */
+export const FEED_MAX_ENTRIES = 30;
+
 export async function renderFeedEntries(
 	posts: CollectionEntry<"posts">[],
 	opts: { includeContent?: boolean } = {},
 ): Promise<FeedEntry[]> {
 	const { includeContent = true } = opts;
+	// 先截断再渲染：多余的条目不该触发 AstroContainer，白花构建时间
+	const limited = posts.slice(0, FEED_MAX_ENTRIES);
 	const renderers = await loadRenderers([
 		getMDXRenderer(),
 		getSvelteRenderer(),
 	]);
 	const container = await AstroContainer.create({ renderers });
 	const entries: FeedEntry[] = [];
-	for (const post of posts) {
+	for (const post of limited) {
 		const link = url(`/posts/${post.id}/`);
 		const updated = post.data.updated ?? post.data.published;
 		const base: Omit<FeedEntry, "content" | "isPasswordProtected"> = {

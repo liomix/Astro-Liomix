@@ -90,7 +90,7 @@ function serializeMenus(menus: Props["config"]["menus"]) {
 
 <div
 	id="l2d-widget-container"
-	style="position: fixed; z-index: 999;"
+	style="position: fixed; z-index: var(--z-floating);"
 	data-models={JSON.stringify(modelConfigs)}
 	data-position={config.position || "bottom-left"}
 	data-size={JSON.stringify(config.size || 300)}

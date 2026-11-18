@@ -1,5 +1,7 @@
 enum I18nKey {
 	home = "home",
+	/** 跳过导航直达正文：键盘用户进入页面后的第一个焦点 */
+	skipToContent = "skipToContent",
 	about = "about",
 	archive = "archive",
 	search = "search",

@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | 框架 | [Astro](https://astro.build)（静态输出，`CF_WORKERS` 时切 Cloudflare 适配器） | 7.3.2 |
 | 交互岛 | [Svelte](https://svelte.dev)（runes / `$state` / `$props`）+ `@astrojs/svelte` | 5.57 / 9.0 |
-| 语言 | TypeScript（`strictNullChecks`，`tsc --noEmit --isolatedDeclarations` 校验） | 6.0 |
+| 语言 | TypeScript（`strict: true`，`tsc --noEmit --isolatedDeclarations` 校验） | 6.0 |
 | 运行时 | Node.js ≥ 22.23，包管理 pnpm（`preinstall` 强制） | pnpm 11.22 |
 | 格式化 / Lint | [Biome](https://biomejs.dev)（tab 缩进、双引号） | 2.6 |
 

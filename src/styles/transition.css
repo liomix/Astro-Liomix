@@ -139,7 +139,7 @@ html.is-changing #mobile-bottom-sidebar {
     left: 0;
     width: 100%;
     height: var(--progress-height);
-    z-index: 9999;
+    z-index: var(--z-top);
     pointer-events: none;
     background: var(--primary);
     box-shadow: 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent);

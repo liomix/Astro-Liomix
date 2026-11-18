@@ -138,7 +138,7 @@ const {
 <WallpaperSection state={banner} backgroundImages={backgroundImages} title={title} bannerPostMeta={bannerPostMeta} />
 
 <!-- Main content -->
-<div id="content-panel" class="content-panel absolute w-full z-30 pointer-events-none">
+<div id="content-panel" tabindex="-1" class="content-panel absolute w-full z-30 pointer-events-none outline-none">
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
     <div id="content-panel-inner" class="relative w-full xl:w-[92vw] max-w-(--page-width) mx-auto pointer-events-auto" style={gridColumnStyle} data-nav-purity={navPurityActive ? "true" : "false"} data-article-purity={articlePurityConfig.enable && isPostPage ? "true" : "false"} data-wide-page={widePageActive ? "true" : "false"}>
         {/* 列几何唯一真源 = computeGridColumns()，SSR 写在父级 #content-panel-inner 上

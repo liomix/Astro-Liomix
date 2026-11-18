@@ -11,6 +11,8 @@ import NowPlayingCard from "@/components/features/music/NowPlayingCard.svelte";
 import SakuraEffect from "@/components/features/effects/SakuraEffect.astro";
 import WavesEffect from "@/components/features/effects/WavesEffect.astro";
 import ConfigCarrier from "@/components/shell/ConfigCarrier.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import BrowserChrome from "@/components/shell/BrowserChrome.astro";
 
 import {
@@ -523,6 +525,8 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
       },
     ]}
   >
+    {/* 键盘用户的第一个焦点：跳过导航直达正文（视觉上只在聚焦时出现） */}
+    <a class="skip-link" href="#content-panel">{i18n(I18nKey.skipToContent)}</a>
     <BrowserChrome />
     <!-- 首帧前按运行时壁纸模式翻转卡片透明类（布局已由 data-wallpaper-mode 属性规则接管） -->
     <script is:inline>

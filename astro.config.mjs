@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { setMaxListeners } from "node:events";
 import cloudflare from "@astrojs/cloudflare";
 import { unified } from "@astrojs/markdown-remark";
@@ -14,6 +16,7 @@ import icon from "astro-icon";
 import { pluginLanguageLogo } from "ec-lang-logo"; /* Language Logo */
 import { pluginCollapsible } from "expressive-code-collapsible"; /* Collapsible */
 import { pluginLanguageBadge } from "expressive-code-language-badge"; /* Language Badge */
+import matter from "gray-matter";
 import katex from "katex";
 import "katex/dist/contrib/mhchem.mjs"; // 加载 mhchem 扩展
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
@@ -54,6 +57,42 @@ import { remarkPlantuml } from "./src/plugins/remark-plantuml.js";
 import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 import { remarkWikiLink } from "./src/plugins/remark-wiki-link.js";
 import { collectUsedFontCssVars } from "./src/utils/font-helper";
+
+
+/**
+ * 文章 URL → 最后修改时间。
+ * sitemap 的 lastmod 只有拿到真实日期才有意义，这里直接读 frontmatter（构建期，一次扫描）。
+ * 没有 updated 就用 published；两者都没有（例如草稿）就不写 lastmod。
+ */
+function collectPostLastmod() {
+	const map = new Map();
+	const postsRoot = path.resolve("src/content/posts");
+	const walk = (dir) => {
+		if (!fs.existsSync(dir)) return;
+		for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+			const full = path.join(dir, entry.name);
+			if (entry.isDirectory()) {
+				walk(full);
+				continue;
+			}
+			if (!/\.mdx?$/.test(entry.name)) continue;
+			const { data } = matter(fs.readFileSync(full, "utf8"));
+			const slug =
+				data.slug ??
+				path
+					.relative(postsRoot, full)
+					.replace(/\\/g, "/")
+					.replace(/\.mdx?$/, "");
+			const date = data.updated ?? data.published;
+			if (!date) continue;
+			map.set(`/posts/${slug}/`, new Date(date).toISOString());
+		}
+	};
+	walk(postsRoot);
+	return map;
+}
+
+const postLastmod = collectPostLastmod();
 
 if (process.env.NODE_ENV === "development") {
 	setMaxListeners(20);
@@ -283,6 +322,12 @@ export default defineConfig({
 					return false;
 				}
 				return true;
+			},
+			// 只有文章有真实日期可写；其它页面交给 sitemap 默认行为
+			serialize: (item) => {
+				const lastmod = postLastmod.get(new URL(item.url).pathname);
+				if (lastmod) item.lastmod = lastmod;
+				return item;
 			},
 		}),
 		mdx(),

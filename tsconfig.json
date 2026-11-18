@@ -7,7 +7,7 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "strictNullChecks": true,
+    "strict": true,
     "allowJs": false,
     "declaration": true,
     "noUncheckedSideEffectImports": false,

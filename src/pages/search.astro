@@ -10,6 +10,10 @@ const description = "";
 ---
 
 <MainGridLayout title={title} description={description}>
+    <Fragment slot="head">
+        {/* 搜索结果是客户端拼的，收录它只会得到一页空壳 */}
+        <meta name="robots" content="noindex, follow" />
+    </Fragment>
     <div class="min-h-[80vh]">
         <AdvancedSearch client:load title={title} description={description} />
     </div>
