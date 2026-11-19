@@ -1,6 +1,6 @@
 // LQIP 方案来源: https://blog.cosine.ren/post/astro-lqip-implementation
 
-import lqipData from "@constants/lqips.json";
+import lqipData from "@/data/lqips.json";
 
 const lqips: Record<string, string> = lqipData as Record<string, string>;
 

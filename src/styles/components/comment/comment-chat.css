@@ -1,0 +1,532 @@
+/* ---------------- 壁纸 ---------------- */
+
+/* 铺满聊天区的最底层，canvas 由 comment-wallpaper.ts 塞进来。
+   顶栏与输入栏的 backdrop-filter 采样的就是它 —— 全在同一个文档里，天然成立，
+   不需要任何跨 iframe 的透明技巧。
+
+   这一层**不做淡入**：画布挂上去画的就是末帧成品，任何 opacity 过渡都只是凭空
+   多演几百毫秒的「底色 → 壁纸」，看起来就是那块白色过渡。
+   垫底色也不再是聊天底色，而是这张壁纸自己的主色（--tg-wallpaper-tint，由
+   CommentLayout 的内联脚本按访客选中的那张写进 <html>；深色下不写，回退聊天底色）
+   —— 万一 canvas 还差一两帧才画上，露出来的也是壁纸的色调，而不是一块白 */
+.tg-wallpaper {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+	background-color: var(--tg-wallpaper-tint, var(--tg-chat-bg));
+}
+
+/* 换壁纸时新层先透明叠在旧层上：画完末帧再显形，中间透出的就是下面那张旧壁纸。
+   不让它一开始就带着垫底色，否则会有一帧纯色盖在旧图上 —— 那又是一次「闪一下」 */
+.tg-wallpaper[data-pending="true"] {
+	background-color: transparent;
+}
+
+.tg-wallpaper canvas {
+	display: block;
+	width: 100%;
+	height: 100%;
+	transform-origin: 50% 50%;
+}
+
+/* 素材的「涂鸦生长」只播一遍（首帧空、末帧满，循环会回绕成每秒闪一次空白）。
+   播完停在末帧后，用一层极缓的缩放 + 位移维持「活着」的感觉：26 秒一个来回，
+   幅度压在 6% 内，有呼吸感又不会让人盯着看 */
+.tg-wallpaper[data-bloom="done"] canvas {
+	animation: tg-wallpaper-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes tg-wallpaper-drift {
+	from {
+		transform: scale(1) translate3d(0, 0, 0);
+	}
+
+	to {
+		transform: scale(1.06) translate3d(-1.2%, -0.8%, 0);
+	}
+}
+
+/* 夜间：不叠黑纱、也不给 canvas 挂 filter。
+   压暗要压的是「明度」而不是「往画面上盖东西」—— 盖一层半透明黑会把色相一起洗掉，
+   看起来是一块脏灰；挂 filter 又会让 canvas 整块变成不透明层。
+   照 Telegram Web K 处理深色壁纸的路子：深色底 + 只降 canvas 的不透明度。
+   底色在上面 .tg-wallpaper 里就是 --tg-chat-bg（两套主题同一条规则），
+   画布没出来时露的是聊天底色；这里只负责把画布压到 0.5 ——
+   涂鸦的粉紫还在，只是整体沉下去，深色气泡不至于发灰 */
+html.dark .tg-wallpaper canvas {
+	opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-wallpaper canvas {
+		animation: none;
+	}
+}
+
+/* ---------------- 顶栏 ---------------- */
+
+/* 头像 + 昵称 / 联系方式 + 关闭。底色半透明 + backdrop-filter，糊的就是下面那层壁纸 ——
+   这就是「顶栏用壁纸的高斯模糊」。z-index 2 压在壁纸（0）与消息区（1）之上 */
+.tg-head {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 0.55rem;
+	padding: 0.45rem 0.45rem 0.45rem 0.6rem;
+	border-bottom: 1px solid var(--tg-divider);
+	background: color-mix(in srgb, var(--tg-panel) 55%, transparent);
+	-webkit-backdrop-filter: blur(18px) saturate(1.6);
+	backdrop-filter: blur(18px) saturate(1.6);
+}
+
+/* 没有头像图时的首字母彩圆，和消息里对方头像同一套画法 */
+.tg-head-avatar {
+	display: inline-flex;
+	width: 2.1rem;
+	height: 2.1rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	border-radius: 9999px;
+	/* 渐变色由评论身份按邮箱哈希算出来（comment-user.ts 的 avatarGradientOf），
+	   写在 .tg-chat 的 --avatar-from / --avatar-to 上。
+	   先铺一层纯色打底：万一浏览器不认 oklch，渐变整条失效，还有这个蓝兜着 */
+	background-color: #3f7fe0;
+	background-image: linear-gradient(
+		140deg,
+		var(--avatar-from, #7cc0f8),
+		var(--avatar-to, #3f7fe0)
+	);
+	color: #fff;
+	font-size: 0.88rem;
+	font-weight: 600;
+	line-height: 1;
+	user-select: none;
+}
+
+/* 有真实头像图时把渐变撤掉、图片铺满整圆 —— 这条规则在 comment-info.css 里，
+   按 [data-has-image="true"] 判断（头像现在由评论身份算出来，不是站点固定头像） */
+
+.tg-head-avatar img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.tg-head-text {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.08rem;
+}
+
+.tg-head-title {
+	overflow: hidden;
+	font-size: 0.9rem;
+	font-weight: 600;
+	line-height: 1.2;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 昵称下面那行联系方式：抽屉窄的时候省略号截断 */
+.tg-head-sub {
+	overflow: hidden;
+	color: var(--tg-meta);
+	font-size: 0.7rem;
+	line-height: 1.15;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 关闭按钮常驻 DOM，只在装在评论抽屉里时显示（html[data-embedded] 由 CommentLayout
+   在首屏绘制前按地址栏的 embed 参数打上）。默认 display:none 而不是 hidden 属性：
+   .tg-head-close 自己声明了 display，作者样式会盖掉 UA 的 [hidden] */
+.tg-head-close {
+	display: none;
+	width: 1.9rem;
+	height: 1.9rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+html[data-embedded] .tg-head-close {
+	display: inline-flex;
+}
+
+.tg-head-close svg {
+	width: 1.05rem;
+	height: 1.05rem;
+}
+
+.tg-head-close:hover {
+	background: color-mix(in srgb, var(--tg-accent) 12%, transparent);
+	color: var(--tg-accent);
+}
+
+.tg-head-close:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+/* ---------------- 消息区 ---------------- */
+
+.tg-scroll {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.6rem 0.7rem 0.85rem;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+/* 这个页面不画任何滚动条（消息列表、输入框、表情面板、代码块都一样）：
+   内容照旧能滚，只是不显示轨道和滑块，观感更接近客户端 */
+.tg-chat,
+.tg-chat * {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.tg-chat *::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
+/* 日期分隔：居中的小胶囊 */
+.tg-day {
+	display: flex;
+	justify-content: center;
+	margin: 0.35rem 0 0.5rem;
+}
+
+/* 上面那条 display 会盖掉 UA 的 [hidden]，得自己声明回来 */
+.tg-day[hidden] {
+	display: none;
+}
+
+.tg-day span {
+	padding: 0.15rem 0.6rem;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-text) 24%, transparent);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+:root.dark .tg-day span {
+	background: color-mix(in srgb, #000 42%, transparent);
+	color: #dfe6ec;
+}
+
+/* 「加载更早」：贴着消息区顶部的一颗小胶囊。
+   和日期分隔线一样居中，但可点，所以要有一层底色把自己从壁纸上拎出来 */
+.tg-more {
+	display: flex;
+	justify-content: center;
+	padding: 0.4rem 0 0.2rem;
+}
+
+.tg-more[hidden] {
+	display: none;
+}
+
+.tg-more-btn {
+	padding: 0.22rem 0.8rem;
+	border: none;
+	border-radius: 9999px;
+	background: color-mix(in srgb, var(--tg-text) 18%, transparent);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.5;
+	cursor: pointer;
+	transition: background-color 0.18s ease, opacity 0.18s ease;
+}
+
+.tg-more-btn:hover {
+	background: color-mix(in srgb, var(--tg-text) 32%, transparent);
+}
+
+.tg-more-btn:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+:root.dark .tg-more-btn {
+	background: color-mix(in srgb, #000 40%, transparent);
+	color: #dfe6ec;
+}
+
+:root.dark .tg-more-btn:hover {
+	background: color-mix(in srgb, #000 56%, transparent);
+}
+
+/* 评论接口被关掉时（commentApiConfig.enable = false）：只剩壁纸和顶栏。
+   输入栏收起来而不是置灰 —— 一个永远点不动的输入框更像故障 */
+.tg-chat[data-tg-disabled="true"] .tg-bottom {
+	display: none;
+}
+
+/* 消息区的状态占位：加载中 / 还没有评论 / 加载失败。
+   上下留 auto 让它在空列表里站到中间，不至于顶在分隔线下面 */
+.tg-state {
+	display: flex;
+	justify-content: center;
+	margin: auto 0;
+	padding: 1.2rem 0.75rem;
+	color: var(--tg-meta);
+	font-size: 0.78rem;
+	line-height: 1.5;
+	text-align: center;
+}
+
+.tg-state[data-tg-state="failed"] {
+	color: #d9534f;
+}
+
+/* 加载态是一块骨架屏：铺满消息区、顶端对齐，不再居中那一行字 */
+.tg-state--skeleton {
+	display: block;
+	margin: 0;
+	padding: 0.9rem 0.75rem 0;
+	color: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	text-align: left;
+}
+
+/* 空态多一张插画：插画在上、文案在下。尺寸跟着面板走 ——
+   抽屉里窄，文章页嵌在正文里宽，所以用 clamp 而不是固定像素 */
+.tg-state[data-tg-state="empty"] {
+	flex-direction: column;
+	align-items: center;
+	/* 插画和文案都居中：横轴靠 align-items，文字靠 text-align，别只居中一个 */
+	justify-content: center;
+	gap: 0.35rem;
+	text-align: center;
+}
+
+.tg-state[data-tg-state="empty"] empty-lottie {
+	display: block;
+	width: clamp(80px, 14vw, 120px);
+	height: clamp(80px, 14vw, 120px);
+}
+
+/* 时间旁边那一小截：待审核 / 发送失败。
+   宽度不固定，但白名单里的字号要小到不跟时间抢视线 */
+.tg-pending {
+	margin-left: 0.25rem;
+	color: var(--tg-meta);
+	font-size: 0.65rem;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.tg-row.is-failed .tg-pending {
+	color: #d9534f;
+}
+
+/* 一行消息：靠左 / 靠右。头像与气泡底边对齐（Telegram 头像贴在本条消息底部） */
+.tg-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.35rem;
+	max-width: 100%;
+}
+
+.tg-row--in {
+	justify-content: flex-start;
+}
+
+.tg-row--out {
+	justify-content: flex-end;
+}
+
+/* 同一个人连发时后几条不露头像，但头像位一直占着（见 .tg-avatar 规则），
+   气泡因此不会左右跳。分组用 class 表达，撤回 / 新消息后脚本重排即可 */
+.tg-row--in:not(.tg-row--tail) .tg-avatar {
+	visibility: hidden;
+}
+
+/* 昵称同理：只有一组的第一条显示，其余不占高度 */
+.tg-row--in:not(.tg-row--head) .tg-author {
+	display: none;
+}
+
+/* 头像 + （昵称 / 气泡）这一列 */
+.tg-col {
+	display: flex;
+	min-width: 0;
+	max-width: 84%;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.12rem;
+}
+
+.tg-row--out .tg-col {
+	max-width: 82%;
+	align-items: flex-end;
+}
+
+/* 对方没有头像时的首字母彩圆：Telegram 默认按用户分配一组渐变，
+   这里给 4 种色调，按昵称哈希固定一种（同一个名字永远同一种，不会随顺序变） */
+.tg-avatar {
+	display: inline-flex;
+	width: 2.25rem;
+	height: 2.25rem;
+	flex: 0 0 2.25rem;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	background: linear-gradient(140deg, #7cc0f8, #3f7fe0);
+	color: #fff;
+	font-size: 0.82rem;
+	font-weight: 600;
+	line-height: 1;
+	user-select: none;
+}
+
+.tg-avatar--0 {
+	background: linear-gradient(140deg, #f5a9a9, #e06c6c);
+}
+
+.tg-avatar--1 {
+	background: linear-gradient(140deg, #a8e096, #5cb85c);
+}
+
+.tg-avatar--2 {
+	background: linear-gradient(140deg, #bcb0f2, #7c6fce);
+}
+
+.tg-avatar--3 {
+	background: linear-gradient(140deg, #f7cc83, #e39428);
+}
+
+/* 昵称：群聊里显示在气泡上方，颜色跟头像同一色调 */
+.tg-author {
+	max-width: 100%;
+	overflow: hidden;
+	color: #cf5f5f;
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 站长：用博客头像 + 光环头饰代替文字标记。
+   头饰先入 DOM、头像后入，靠层叠顺序只露出头顶那圈光环，脸不被糊住；
+   头饰是纯装饰，aria-hidden，也不吃指针事件。 */
+.tg-avatar--owner {
+	position: relative;
+	background: none;
+	overflow: visible;
+}
+
+.tg-owner-face {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+	object-fit: cover;
+}
+
+.tg-owner-halo {
+	position: absolute;
+	z-index: 0;
+	/* 负数=往头顶上方提。光环要刚好压在头顶，不是飘在天上，所以只提三分之一头高 */
+	top: -22%;
+	left: 50%;
+	width: 168%;
+	height: auto;
+	transform: translateX(-50%);
+	pointer-events: none;
+	user-select: none;
+}
+
+.tg-author--1 {
+	color: #4a9e46;
+}
+
+.tg-author--2 {
+	color: #7c6fce;
+}
+
+.tg-author--3 {
+	color: #c8811e;
+}
+
+:root.dark .tg-author {
+	color: #f09292;
+}
+
+:root.dark .tg-author--1 {
+	color: #82c97a;
+}
+
+:root.dark .tg-author--2 {
+	color: #ab9ee8;
+}
+
+:root.dark .tg-author--3 {
+	color: #e8b563;
+}
+
+/* 气泡：文字与时间用 flex 换行排版，短消息时间在右下同一行、
+   长消息自动掉到下一行右对齐 —— 跟 Telegram 的内联时间一致 */
+.tg-bubble {
+	display: flex;
+	max-width: 100%;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 0 0.3rem;
+	padding: 0.4rem 0.55rem 0.3rem;
+	border-radius: 17px;
+	background: var(--tg-in-bubble);
+	box-shadow: 0 1px 1px rgb(0 0 0 / 0.06);
+	word-break: break-word;
+	animation: tg-message-in 0.18s ease-out both;
+}
+
+.tg-row--in .tg-bubble {
+	/* 靠发送者一侧（左下）收成小角 */
+	border-bottom-left-radius: 6px;
+}
+
+.tg-row--out .tg-bubble {
+	border-bottom-right-radius: 6px;
+	background: var(--tg-out-bubble);
+}
+
+/* 正文全是 Markdown 渲染出来的 HTML（换行已经是 <br> / 段落了），
+   这里不能再叠 pre-wrap，否则会多出一倍行高 */
+.tg-text {
+	flex: 1 1 auto;
+	min-width: 0;
+}

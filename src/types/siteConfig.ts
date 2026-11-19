@@ -7,7 +7,7 @@ import type {
 	WALLPAPER_FULLSCREEN,
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
-} from "../constants/constants";
+} from "../config/constants";
 import type { ImmersiveReadingConfig } from "./immersiveReadingConfig";
 import type { NsfwMode } from "./nsfw";
 

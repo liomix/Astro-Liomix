@@ -1,8 +1,8 @@
 import * as path from "node:path";
 import type { ImageMetadata } from "astro";
+import { defaultFavicons } from "@/config/icon";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
-import { defaultFavicons } from "@/constants/icon";
 import { hasVideoExtension } from "@/utils/image-animation";
 import { url } from "./url-utils";
 

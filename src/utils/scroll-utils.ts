@@ -3,7 +3,7 @@ import {
 	BANNER_HEIGHT,
 	BANNER_HEIGHT_HOME,
 	BANNER_HEIGHT_NON_HOME,
-} from "@/constants/constants";
+} from "@/config/constants";
 import { isBannerMode, isFullscreenMode } from "@/utils/banner-utils";
 import { updateSidebarStickySpacing } from "@/utils/grid-layout-utils";
 

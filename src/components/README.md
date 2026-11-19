@@ -18,16 +18,16 @@ src/components/
 │  └─ sponsor/                打赏：SponsorButton / SponsorButtonLottie / SponsorPop
 ├─ ui/                        纯展示原子：AvatarImage / Badge / CoverImage / Icon / Skeleton / ServerPagination / TabGroup / Timeline / EmptyState / LikeButton / CommentButton / SidebarDialog
 ├─ shell/                     全站外壳：Navbar / Footer / Sidebar / TabBar / WallpaperSection / DropdownMenu / FloatingControls / ToastHost
-├─ sidebar/                   侧栏卡片（纯卡片）：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo
+├─ widgets/                   吃站点数据的卡片：Profile / Announcement / Calendar / Categories / Tags / Welcome / SiteInfo
 ├─ controls/                  交互控件：Search / AdvancedSearch / FilterControls / ArchivePanel / FloatingControls / TOC / 设置
-├─ managers/                  只装行为的运行时管理器：Fancybox / Katex / GithubCard / CodeGroup / FontManager
-└─ mdx/                       MDX 文章组件出口（仅 index.ts 桶；图标在 ui/icons.ts）
+├─ integrations/              第三方挂载（挂一次就完）：Fancybox / Katex / GithubCard / CodeGroup / Font
+└─ mdx.ts                     MDX 文章组件出口（桶文件；图标在 ui/icons.ts）
 ```
 
 ## 约定
 
 - 命名：组件 `PascalCase`；**`features/<domain>/` 里的 `.ts` 一律以领域名为前缀**（`comment-user.ts`、`dynamic-actions.ts`、`guestbook-tag.ts`），
-  保证在全局搜索结果里能一眼看出它属于哪个功能。`mdx/index.ts` 是桶文件，`index` 本身即是例外。
+  保证在全局搜索结果里能一眼看出它属于哪个功能。`components/mdx.ts` 是桶文件，天然是例外。
 - import 路径形态（别名 / 相对 / `import.meta.glob` 索引 / 迁移扫描）统一见
   [`docs/博客规范补充.md`](../../docs/博客规范补充.md) §1；本文件不再重述，避免两处走样。
 - 组件只负责画。取数、请求、状态机放 `src/utils/` 或父组件；点赞统一走 `utils/likes.ts`，别再写第二份。
@@ -37,5 +37,5 @@ src/components/
 - 需要 `client:*` 水合的组件从具体文件直接 import，不要经过桶文件（否则水合判定拿不到真实组件模块）。
 - 同目录**禁止同名不同扩展**（`X.astro` 与 `X.svelte` 并存会让编辑器自动导入选错）。
 - 组件内 `<style>` 是 unlayered，优先级高于 `@layer utilities`；要压 Tailwind 的规则写在组件里。
-- 领域目录暂不强制 `index.ts` 桶文件，只有被多处消费的（`mdx/`）才需要。
+- 领域目录不强制 `index.ts` 桶文件，只有被多处消费的（`components/mdx.ts`）才需要。
 - 新增页面级组件：先问「它属于哪个领域」；`ui/` 只放不依赖站点数据的原子。

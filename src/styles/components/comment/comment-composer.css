@@ -1,0 +1,404 @@
+/* ---------------- 输入栏 ---------------- */
+
+/* 表情面板挂在这一层上，面板往上弹（bottom:100%），不影响消息区高度。
+   z-index 2 与顶栏同级：两者都压在壁纸之上，接缝处不会漏出未模糊的底 */
+.tg-bottom {
+	position: relative;
+	z-index: 2;
+	flex: none;
+}
+
+/* 输入栏和顶栏用同一套毛玻璃，糊的都是下面那层壁纸。
+   这里不能再用不透明的 --tg-panel，否则壁纸会在这一条上被硬切掉 */
+.tg-composer {
+	position: relative;
+	z-index: 1; /* 压住表情面板的滑出动画，让面板像是从输入栏后面升起来 */
+	display: flex;
+	align-items: flex-end;
+	gap: 0.2rem;
+	padding: 0.45rem 0.5rem;
+	border-top: 1px solid var(--tg-divider);
+	background: color-mix(in srgb, var(--tg-panel) 55%, transparent);
+	-webkit-backdrop-filter: blur(22px) saturate(1.6);
+	backdrop-filter: blur(22px) saturate(1.6);
+}
+
+/* 左侧回形针（发送图片），Telegram 里这个图标是主题蓝 */
+.tg-tool {
+	display: inline-flex;
+	width: 2rem;
+	height: 2rem;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-accent);
+	cursor: pointer;
+	transition: background-color 0.16s ease;
+}
+
+.tg-tool svg {
+	width: 1.35rem;
+	height: 1.35rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.7;
+}
+
+.tg-tool:hover {
+	background: color-mix(in srgb, var(--tg-accent) 12%, transparent);
+}
+
+.tg-input-wrap {
+	position: relative;
+	display: flex;
+	flex: 1;
+	min-width: 0;
+}
+
+/* 输入框：单行时是个胶囊，内容变多自动往上长（最多约 5 行，再多就内部滚动）。
+   现在是 contenteditable（不是 textarea）—— 贴纸要能像 QQ 那样排在文字里，
+   textarea 放不了图片。换行靠脚本插 <br>，所以这里用 pre-wrap 保留它 */
+.tg-input {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 2.1rem;
+	max-height: 7.4rem;
+	/* 右侧留出表情按钮的位置，文字不会压到图标上 */
+	padding: 0.45rem 2.2rem 0.45rem 0.8rem;
+	border: 0;
+	border-radius: 1.05rem;
+	background: var(--tg-input-bg);
+	color: var(--tg-text);
+	font: inherit;
+	font-size: 0.85rem;
+	line-height: 1.4;
+	/* 光标也染成主题色，不然默认黑光标和输入框对不上 */
+	caret-color: var(--tg-accent);
+	resize: none;
+	overflow-y: auto;
+	outline: none;
+	/* 自己插的 <br> 要当换行用，长串英文也要能在框内折行 */
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+/* 占位文案：div 上的 ::placeholder 是无效的，改成空态伪元素。
+   脚本用 data-empty 控制，比 :empty 可靠（只剩一个 <br> 时 :empty 就不成立了） */
+.tg-input--rich[data-empty="true"]::before {
+	content: attr(data-placeholder);
+	color: var(--tg-meta);
+	pointer-events: none;
+}
+
+.tg-input:focus-visible {
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--tg-accent) 45%, transparent);
+}
+
+/* 输入框右侧的表情按钮（贴在里面，和 Telegram 一致） */
+.tg-emoji {
+	position: absolute;
+	right: 0.12rem;
+	bottom: 0.15rem;
+	display: inline-flex;
+	width: 1.8rem;
+	height: 1.8rem;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+.tg-emoji svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-width: 1.7;
+}
+
+.tg-emoji:hover {
+	color: var(--tg-accent);
+}
+
+.tg-chat[data-emoji-open="true"] .tg-emoji {
+	color: var(--tg-accent);
+}
+
+/* 选文件用的隐藏 input，不参与布局 */
+.tg-file {
+	display: none;
+}
+
+/* 表情面板：从输入栏上方弹出，和键盘一样占满宽度。
+   上面是可滚动的表情包网格（超过这个高度就在面板内部滚，不会顶走消息区），
+   底部是系列 tab（只有一个系列时组件不渲染 tab 栏） */
+.tg-emoji-panel {
+	position: absolute;
+	right: 0;
+	bottom: 100%;
+	left: 0;
+	display: flex;
+	max-height: 28vh;
+	flex-direction: column;
+	overflow: hidden;
+	border-top: 1px solid var(--tg-divider);
+	background: var(--tg-panel);
+	box-shadow: 0 -10px 26px -22px rgb(0 0 0 / 0.6);
+	/* 弹出：从输入栏后面往上顶出来，easeOutQuint 收尾，落地干脆不拖沓 */
+	animation: tg-panel-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.tg-emoji-panel[hidden] {
+	display: none;
+}
+
+.tg-emoji-body {
+	flex: 1;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.tg-emoji-grid {
+	display: grid;
+	grid-template-columns: repeat(8, 1fr);
+	gap: 0.1rem;
+	padding: 0.4rem;
+}
+
+/* 作者样式里的 display 会盖掉 UA 的 [hidden] 规则，得显式写一遍 */
+.tg-emoji-grid[hidden] {
+	display: none;
+}
+
+/* 底部 tab 栏：窄屏放不下时可以横向滚（滚动条由上面的全局规则统一隐藏） */
+.tg-emoji-tabs {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 0.05rem;
+	padding: 0.2rem 0.35rem;
+	border-top: 1px solid var(--tg-divider);
+	overflow-x: auto;
+}
+
+.tg-emoji-tab {
+	display: inline-flex;
+	min-width: 1.9rem;
+	height: 1.9rem;
+	flex: 1 1 0;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease;
+}
+
+.tg-emoji-tab-icon {
+	width: 1.15rem;
+	height: 1.15rem;
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	stroke-width: 1.6;
+}
+
+.tg-emoji-tab:hover {
+	color: var(--tg-text);
+}
+
+/* 选中的分类：图标染成主题蓝 + 一层淡底，和 Telegram 底部 tab 的高亮一致 */
+.tg-emoji-tab[aria-selected="true"] {
+	background: color-mix(in srgb, var(--tg-accent) 14%, transparent);
+	color: var(--tg-accent);
+}
+
+.tg-emoji-tab:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+.tg-emoji-item {
+	height: 2.1rem;
+	padding: 0;
+	border: 0;
+	border-radius: 0.5rem;
+	background: transparent;
+	font-size: 1.15rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.tg-emoji-item:hover {
+	background: var(--tg-input-bg);
+}
+
+.tg-emoji-item:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: -2px;
+}
+
+/* 格子里放的是一张图（外面套 .tg-emoji-item 保持统一的格子尺寸和 hover）：
+   图片按 contain 填满格子，尺寸完全由格子决定 —— 多大的素材都一样大、一样 hover、
+   一样有选中框；面板里多大不写在配置里 */
+.tg-emoji-item img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	pointer-events: none;
+	-webkit-user-drag: none;
+	user-select: none;
+}
+
+/* 有图时按钮改成 flex 居中（纯文本 emoji 靠 button 默认的居中，两者视觉一致） */
+.tg-emoji-item:has(img) {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+@keyframes tg-panel-in {
+	from {
+		opacity: 0;
+		/* 相对自身高度的位移：面板高多少就藏多深，视觉上是从输入栏里升出来 */
+		transform: translateY(38%);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+/* 发出去的图片：气泡只留 3px 边，时间压在图片右下角 */
+.tg-bubble--photo {
+	position: relative;
+	padding: 3px;
+}
+
+.tg-photo {
+	display: block;
+	width: auto;
+	max-width: 100%;
+	max-height: 14rem;
+	height: auto;
+	border-radius: 14px;
+}
+
+.tg-bubble--photo .tg-meta {
+	position: absolute;
+	right: 0.4rem;
+	bottom: 0.35rem;
+	padding: 0.05rem 0.32rem;
+	border-radius: 9999px;
+	background: rgb(0 0 0 / 0.34);
+	color: #fff;
+}
+
+/* 表情包 = 一行里的图片（输入框里和气泡里共用一套尺寸）。
+   像 QQ 那样压在文字里：垂直位置略低于基线，四周只留一点点缝；
+   透明底、不裁切，多大的素材都按 contain 塞进同一个正方形 */
+.tg-emoji-inline {
+	width: var(--tg-emoji-size, 24px);
+	height: var(--tg-emoji-size, 24px);
+	object-fit: contain;
+	-webkit-user-drag: none;
+	user-select: none;
+}
+
+/* 气泡里的通用 img 规则是 display:block + 0.6rem 圆角（见上面「Markdown 里的图片」），
+   表情必须按更高特异性压回行内，否则它会独占一行、还会被裁圆角 */
+.tg-text--md img.tg-emoji-inline,
+.tg-input--rich img.tg-emoji-inline {
+	display: inline-block;
+	margin: 0 0.08rem;
+	border-radius: 0;
+	background: none;
+	vertical-align: -0.45em;
+}
+
+/* 发送按钮：纸飞机常驻（不做语音入口，空输入时是灰的，有文字才点亮成蓝色） */
+.tg-send {
+	display: inline-flex;
+	flex: none;
+	width: 2.1rem;
+	height: 2.1rem;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--tg-meta);
+	cursor: pointer;
+	transition:
+		background-color 0.16s ease,
+		color 0.16s ease,
+		transform 0.16s ease;
+}
+
+.tg-send svg {
+	width: 1.3rem;
+	height: 1.3rem;
+}
+
+.tg-send-plane {
+	display: block;
+}
+
+.tg-chat[data-has-text="true"] .tg-send {
+	background: var(--tg-accent);
+	color: #fff;
+}
+
+/* 空输入时没有可发的内容，不做 hover 变色，免得像是在暗示可点 */
+.tg-chat[data-has-text="false"] .tg-send {
+	cursor: default;
+}
+
+.tg-chat[data-has-text="true"] .tg-send:hover {
+	color: #fff;
+	background: color-mix(in srgb, var(--tg-accent) 88%, #000);
+}
+
+.tg-send:focus-visible {
+	outline: 2px solid var(--tg-accent);
+	outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tg-bubble {
+		animation: none;
+	}
+
+	.tg-emoji-panel {
+		animation: none;
+	}
+
+	.tg-send {
+		transition: none;
+	}
+}

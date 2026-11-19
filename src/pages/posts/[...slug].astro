@@ -5,7 +5,7 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import EncryptedPost from "@/components/features/post/EncryptedPost.astro";
 import License from "@/components/features/post/License.astro";
-import KatexManager from "@/components/managers/KatexManager.astro";
+import KatexManager from "@/components/integrations/KatexManager.astro";
 import Markdown from "@/components/ui/Markdown.astro";
 import "@/styles/banner-post.css";
 import {
@@ -14,17 +14,16 @@ import {
 	getSortedPosts,
 } from "@utils/content-utils";
 import {
-	getCategoryUrl,
 	getFileDirFromPath,
 	getPostUrlBySlug,
 	removeFileExtension,
 } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 import PostComments from "@/components/features/comment/PostComments.astro";
 import PostHeader from "@/components/features/post/PostHeader.astro";
 import PostMetadata from "@/components/features/post/PostMeta.astro";
+import { buildPostPagePayload } from "@/components/features/post/post-page-data";
 import RecommendedPost from "@/components/features/post/RecommendedPost.astro";
 import SeriesNav from "@/components/features/post/SeriesNav.astro";
 import ShareButton from "@/components/features/post/ShareButton.svelte";
@@ -33,25 +32,12 @@ import SponsorDialog from "@/components/features/sponsor/SponsorDialog.svelte";
 import CommentButton from "@/components/ui/CommentButton.astro";
 import CoverImage from "@/components/ui/CoverImage.astro";
 import LikeButton from "@/components/ui/LikeButton.astro";
-import { coverImageConfig } from "@/config/coverImageConfig";
 import { licenseConfig } from "@/config/licenseConfig";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
 import { siteStatsConfig } from "@/config/siteStatsConfig";
 import { sponsorConfig } from "@/config/sponsorConfig";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
-import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
-import {
-	getAuthorAvatarUrl,
-	getSiteLogo,
-	toAbsoluteImageInfo,
-} from "@/utils/schema-image";
-import {
-	buildBreadcrumbList,
-	buildPersonEntity,
-	buildPublisherEntity,
-	toAbsoluteUrl,
-} from "@/utils/schema-utils";
 import { url } from "@/utils/url-utils";
 
 const sponsorQr = sponsorConfig.qrCode?.trim() || "";
@@ -88,123 +74,22 @@ const bannerPostMeta = {
 	minutes: remarkPluginFrontmatter.minutes,
 };
 
-// 处理随机图：如果image为"api"，则从配置的API获取随机图
-const processedImage = processCoverImageSync(entry.data.image, entry.id);
-const apiUrls = getApiUrlList(entry.data.image, entry.id);
-const showPostCover = Boolean(processedImage && coverImageConfig.enableInPost);
-const usePostCoverOverlay =
-	showPostCover && (coverImageConfig.enableInPostOverlay ?? true);
-
-const getDirectImageUrl = (src: string | undefined): string | null => {
-	if (!src) return null;
-	if (
-		src.startsWith("http://") ||
-		src.startsWith("https://") ||
-		src.startsWith("//") ||
-		src.startsWith("data:")
-	) {
-		return src;
-	}
-	return src.startsWith("/") ? url(src) : null;
-};
-
-// 海报优先复用页面上已经优化过的图片，本地源路径不再单独导入。
-const posterCoverUrl = showPostCover ? null : getDirectImageUrl(processedImage);
-const posterCoverSelector = showPostCover ? "#post-cover img" : null;
-const posterAvatarUrl = getDirectImageUrl(profileConfig.avatar);
-const posterAvatarSelector = profileConfig.avatar
-	? ".profile-avatar-image img"
-	: null;
-
-dayjs.extend(utc);
-
-const coverBasePath = getFileDirFromPath(entry.filePath || "");
-const coverImage =
-	(await toAbsoluteImageInfo(
-		processedImage,
-		coverBasePath,
-		siteConfig.site_url,
-	)) ?? undefined;
-
-// 作者页已移除：author.url 指向站点首页，与首页 Person 的 @id 保持一致
-const authorUrl =
-	toAbsoluteUrl("/", siteConfig.site_url) ?? siteConfig.site_url;
-
-// 作者实体：与首页的 Person 共用同一 @id（#person），author 用 @id 关联
-const authorAvatarUrl = await getAuthorAvatarUrl();
-const authorPerson = buildPersonEntity({
-	site: siteConfig.site_url,
-	profileConfig,
-	authorUrl,
-	avatarUrl: authorAvatarUrl,
-	description: profileConfig.bio,
+const {
+	processedImage,
+	apiUrls,
+	showPostCover,
+	usePostCoverOverlay,
+	coverImage,
+	posterCoverUrl,
+	posterCoverSelector,
+	posterAvatarUrl,
+	posterAvatarSelector,
+	jsonLd,
+} = await buildPostPagePayload({
+	entry,
+	pageUrl: Astro.url.toString(),
+	wordCount: remarkPluginFrontmatter.words,
 });
-
-// publisher 实体（Organization，含真实 logo），article 的 publisher 用其 @id 关联
-const publisher = buildPublisherEntity({
-	site: siteConfig.site_url,
-	siteConfig,
-	logo: await getSiteLogo(),
-});
-
-const breadcrumbItems = [
-	{
-		name: i18n(I18nKey.home),
-		url: toAbsoluteUrl("/", siteConfig.site_url) ?? siteConfig.site_url,
-	},
-];
-if (entry.data.category) {
-	breadcrumbItems.push({
-		name: entry.data.category,
-		url:
-			toAbsoluteUrl(getCategoryUrl(entry.data.category), siteConfig.site_url) ??
-			siteConfig.site_url,
-	});
-}
-breadcrumbItems.push({ name: entry.data.title, url: Astro.url.toString() });
-
-const breadcrumbList = buildBreadcrumbList(breadcrumbItems);
-
-const jsonLd = {
-	"@context": "https://schema.org",
-	"@graph": [
-		{
-			"@type": "BlogPosting",
-			headline: entry.data.title,
-			description: entry.data.description || entry.data.title,
-			keywords: entry.data.tags.length ? entry.data.tags.join(", ") : undefined,
-			author: { "@id": authorPerson["@id"] },
-			publisher: { "@id": publisher["@id"] },
-			...(coverImage
-				? {
-						image: {
-							"@type": "ImageObject",
-							url: coverImage.url,
-							contentUrl: coverImage.url,
-							...(coverImage.width ? { width: coverImage.width } : {}),
-							...(coverImage.height ? { height: coverImage.height } : {}),
-						},
-					}
-				: {}), // 优化：有封面才输出，避免 image:null
-			datePublished: entry.data.published.toISOString(),
-			...(entry.data.category ? { articleSection: entry.data.category } : {}),
-			...(remarkPluginFrontmatter.words
-				? { wordCount: remarkPluginFrontmatter.words }
-				: {}),
-			...(entry.data.updated
-				? { dateModified: entry.data.updated.toISOString() }
-				: {}),
-			mainEntityOfPage: { "@type": "WebPage", "@id": Astro.url.toString() },
-			url: Astro.url.toString(),
-			inLanguage: entry.data.lang
-				? entry.data.lang.replace("_", "-")
-				: siteConfig.lang.replace("_", "-"),
-		},
-		authorPerson,
-		publisher,
-		breadcrumbList,
-	],
-};
 
 const relatedPosts = await getRelatedPosts(entry, 5);
 const seriesData = await getSeriesPosts(entry);

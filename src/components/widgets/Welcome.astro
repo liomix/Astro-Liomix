@@ -116,7 +116,7 @@ const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
 <script>
   // 中文欢迎语的「本地梗」数据（src/data/welcome-cn.json）。下面那段是 is:inline
   // 脚本，不能 import，所以在模块脚本里挂一次全局；JSON 跟着组件一起打包。
-  import welcomeCn from "@/data/welcome-cn.json";
+  import welcomeCn from "@/i18n/welcome-cn.json";
 
   (window as unknown as { __welcomeCn?: unknown }).__welcomeCn = welcomeCn;
   // 内联脚本可能已经先跑起来了，用事件告诉它数据到了

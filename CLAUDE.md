@@ -19,7 +19,7 @@ Firefly is a feature-rich static blog theme built on **Astro 7** with **Svelte 5
 | `pnpm format` | Biome format |
 | `pnpm new-post <filename>` | Scaffold a new blog post |
 | `pnpm new-dynamic` (`new-d`) | Scaffold a new dynamic (microblog) entry |
-| `pnpm lqips` | Regenerate LQIP data into `src/constants/lqips.json` |
+| `pnpm lqips` | Regenerate LQIP data into `src/data/lqips.json` |
 
 Package manager is **pnpm** (enforced). Node.js >= 22 required.
 
@@ -62,7 +62,7 @@ Defined in `src/content.config.ts`:
 
 ### Key Directories
 
-- `src/components/` — shared layer on top (`ui/` atoms, `shell/` chrome, `sidebar/` cards, `controls/`, `managers/` behavior installers, `mdx/` barrel) and everything feature-specific under `features/<domain>/` (`comment/`, `post/`, `dynamic/`, `guestbook/`, `media/`, `books/`, `music/`, `effects/`, `stats/`, `sponsor/`). Rule of thumb: deleting a feature should touch one directory. See `src/components/README.md`.
+- `src/components/` — shared layer on top (`ui/` atoms, `controls/`, `shell/` chrome, `widgets/` data-driven cards, `integrations/` vendor mounts, `mdx.ts` barrel) and everything feature-specific under `features/<domain>/` (`comment/`, `post/`, `dynamic/`, `guestbook/`, `media/`, `books/`, `music/`, `effects/`, `stats/`, `sponsor/`). Rule of thumb: deleting a feature should touch one directory. See `src/components/README.md`.
 - `src/plugins/` — 15 custom remark/rehype plugins (Mermaid, PlantUML, KaTeX, GitHub cards, reading time, wiki links, etc.)
 - `src/i18n/` — translation keys in `i18nKey.ts`, language files in `languages/*.ts`, lookup via `translation.ts`
 - `src/utils/` — content sorting, crypto (encrypted posts), date formatting, image processing/LQIP, TOC generation
@@ -71,7 +71,7 @@ Defined in `src/content.config.ts`:
 
 ### Path Aliases (tsconfig.json)
 
-`@components/*`, `@assets/*`, `@constants/*`, `@utils/*`, `@i18n/*`, `@layouts/*` → `./src/<dir>/*`; `@/*` → `./src/*`
+`@components/*`, `@assets/*`, `@utils/*`, `@i18n/*`, `@layouts/*` → `./src/<dir>/*`; `@/*` → `./src/*`
 
 ## Code Style
 
@@ -85,7 +85,7 @@ Defined in `src/content.config.ts`:
 
 Multi-step: `scripts/generate-lqips.ts` → `scripts/generate-vndb-covers.ts` → `astro build` → `scripts/prune-pio-assets.ts` → `scripts/subset-fonts.ts` → `scripts/minify-inline-scripts.ts` → `pagefind --site dist`
 
-LQIP data is generated into `src/constants/lqips.json` and committed — regenerate with `pnpm lqips`. Icon data lives in `src/constants/icons-data.json` (committed, Biome-ignored, consumed by `src/components/ui/Icon.svelte`) but has no generator script in the current build.
+LQIP data is generated into `src/data/lqips.json` and committed — regenerate with `pnpm lqips`. Icon data lives in `src/data/icons-data.json` (committed, Biome-ignored, consumed by `src/components/ui/Icon.svelte`) but has no generator script in the current build.
 
 `generate-vndb-covers.ts` downloads VNDB cover art into `public/vndb-covers/` (gitignored, skips files that already exist). It no-ops unless `siteConfig.vndb` has a `userId`, `downloadCovers: true`, and `mode: "static"`.
 

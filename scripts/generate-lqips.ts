@@ -7,7 +7,7 @@ import sharp from "sharp";
 
 const SRC_DIR = "src";
 const PUBLIC_DIR = "public";
-const OUTPUT_FILE = "src/constants/lqips.json";
+const OUTPUT_FILE = "src/data/lqips.json";
 // 需要忽略的目录（相对于项目根目录）
 const IGNORE_DIRS = [
 	"public/favicon/**",

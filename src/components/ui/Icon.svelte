@@ -9,7 +9,7 @@
 
 import Iconify, { addCollection } from "@iconify/svelte/offline";
 
-import iconsData from "@/constants/icons-data.json";
+import iconsData from "@/data/icons-data.json";
 
 // 注册图标集合（模块加载时执行一次）
 let collectionsAdded = false;

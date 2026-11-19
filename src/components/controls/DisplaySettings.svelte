@@ -1,14 +1,4 @@
 <script lang="ts">
-import {
-	DARK_MODE,
-	LIGHT_MODE,
-	SCHEDULED_MODE,
-	SYSTEM_MODE,
-	WALLPAPER_BANNER,
-	WALLPAPER_FULLSCREEN,
-	WALLPAPER_NONE,
-	WALLPAPER_OVERLAY,
-} from "@constants/constants";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { originFromElement } from "@utils/light-dark-switch";
@@ -72,6 +62,16 @@ import {
 	dynamicConfig,
 	siteConfig,
 } from "@/config";
+import {
+	DARK_MODE,
+	LIGHT_MODE,
+	SCHEDULED_MODE,
+	SYSTEM_MODE,
+	WALLPAPER_BANNER,
+	WALLPAPER_FULLSCREEN,
+	WALLPAPER_NONE,
+	WALLPAPER_OVERLAY,
+} from "@/config/constants";
 import type {
 	FullscreenWallpaperLayout,
 	LightDarkMode,

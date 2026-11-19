@@ -9,7 +9,7 @@ import {
 	LIGHT_MODE,
 	SCHEDULED_MODE,
 	SYSTEM_MODE,
-} from "@/constants/constants";
+} from "@/config/constants";
 import type { LightDarkMode } from "@/types/config.ts";
 import { originFromElement } from "@/utils/light-dark-switch";
 import { getStoredTheme, resolveTheme, setTheme } from "@/utils/setting-utils";

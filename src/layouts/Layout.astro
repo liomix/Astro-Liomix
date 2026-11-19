@@ -6,10 +6,10 @@ import MusicPlayerView from "@/components/features/music/MusicPlayerView.astro";
 import NowPlayingCard from "@/components/features/music/NowPlayingCard.svelte";
 import PostViewCounter from "@/components/features/stats/PostViewCounter.astro";
 import SiteVisitCounter from "@/components/features/stats/SiteVisitCounter.astro";
-import CodeGroupManager from "@/components/managers/CodeGroupManager.astro";
-import FancyboxManager from "@/components/managers/FancyboxManager.astro";
-import FontManager from "@/components/managers/FontManager.astro";
-import GithubCardManager from "@/components/managers/GithubCardManager.astro";
+import CodeGroupManager from "@/components/integrations/CodeGroupManager.astro";
+import FancyboxManager from "@/components/integrations/FancyboxManager.astro";
+import FontManager from "@/components/integrations/FontManager.astro";
+import GithubCardManager from "@/components/integrations/GithubCardManager.astro";
 import BrowserChrome from "@/components/shell/BrowserChrome.astro";
 import ConfigCarrier from "@/components/shell/ConfigCarrier.astro";
 import {
@@ -28,8 +28,8 @@ import {
 	BANNER_HEIGHT_NON_HOME,
 	BANNER_HEIGHT_NON_HOME_MIN,
 	PAGE_WIDTH,
-} from "@/constants/constants";
-import { defaultFavicons } from "@/constants/icon";
+} from "@/config/constants";
+import { defaultFavicons } from "@/config/icon";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import type { Favicon } from "@/types/config";

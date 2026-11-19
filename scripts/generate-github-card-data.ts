@@ -3,7 +3,7 @@ import path from "node:path";
 import { glob } from "glob";
 import { isValidGithubRepository } from "../src/utils/github-card-utils";
 
-const OUTPUT_FILE = "src/constants/github-card-data.json";
+const OUTPUT_FILE = "src/data/github-card-data.json";
 const CONTENT_GLOB = "src/content/**/*.{md,mdx}";
 const GITHUB_DIRECTIVE_PATTERN =
 	/::github\s*\{[^}]*\brepo\s*=\s*["']([^"']+)["'][^}]*\}/g;
