@@ -1,4 +1,5 @@
 ---
+import CommentLayout from "@/layouts/CommentLayout.astro";
 /**
  * 留言评论抽屉的内容页（也支持直接访问）。
  *
@@ -10,14 +11,14 @@
  * 父留言的内容不写进 URL（正文可能上千字），而是由父窗口在 iframe 就绪后
  * postMessage 过来；直接打开这一页时没有父留言，只显示评论区。
  */
-import Comment from "@/components/features/comment/Comment.astro";
-import { profileConfig, siteConfig } from "@/config";
-import { commentApiConfig } from "@/config/commentApiConfig";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
-import CommentLayout from "@/layouts/CommentLayout.astro";
+import Comment from "@/shared/components/comments/Comment.astro";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { commentApiConfig } from "@/shared/lib/comments/config";
 // 评论页的 html/body 归零样式与动态评论页共用
-import "@/styles/pages/dynamic-comments.css";
+import "@/features/dynamic/styles/dynamic-comments.css";
 
 if (!siteConfig.pages.guestbook || !commentApiConfig.enable) {
 	return Astro.redirect("/404/");
@@ -59,10 +60,10 @@ const contact = (
 	import {
 		applyWallpaperTint,
 		setChatWallpaper,
-	} from "@/components/features/comment/comment-wallpaper.ts";
-	import I18nKey from "@/i18n/i18nKey";
-	import { i18n } from "@/i18n/translation";
-	import { emojiTokensToHtml } from "@/utils/emoji-shortcode";
+	} from "@/shared/lib/comments/comment-wallpaper";
+	import I18nKey from "@/shared/i18n/i18nKey";
+	import { i18n } from "@/shared/i18n/translation";
+	import { emojiTokensToHtml } from "@/shared/lib/comments/emoji-shortcode";
 
 	interface GuestParent {
 		author?: string;

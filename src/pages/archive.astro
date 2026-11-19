@@ -1,8 +1,8 @@
 ---
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
-import ArchivePanel from "@/components/controls/ArchivePanel.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import ArchivePanel from "@/shared/components/controls/ArchivePanel.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
 ---
 
 <MainGridLayout title={i18n(I18nKey.archive)}>

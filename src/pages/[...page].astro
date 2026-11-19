@@ -1,13 +1,13 @@
 ---
 import type { GetStaticPaths } from "astro";
-import PostPage from "@/components/features/post/PostPage.astro";
-import ServerPagination from "@/components/ui/ServerPagination.astro";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import PostPage from "@/features/post/components/PostPage.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/banner-home.css";
-import { getSortedPosts } from "@/utils/content-utils";
+import ServerPagination from "@/shared/components/ui/ServerPagination.astro";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/banner/banner-home.css";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	// 使用配置中的文章数量

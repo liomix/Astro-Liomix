@@ -1,0 +1,1607 @@
+---
+import { profileConfig } from "@/shared/config/profileConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import {
+	avatarGradientOf,
+	initialOf,
+} from "@/shared/lib/comments/comment-user";
+import { commentEmojiConfig } from "@/shared/lib/comments/config";
+import {
+	avatarMotionOverride,
+	isVideoAvatar,
+	resolveRawAvatarUrl,
+} from "@/shared/lib/media/avatar";
+/**
+ * 评论组件（原子组件）：一条评论线程的完整界面 —— 顶栏、消息区、输入栏、表情面板。
+ * ---------------------------------------------------------------------------
+ * 两个地方用它，靠 props 区分形态，行为是同一份：
+ *   1. 动态页的动态评论（/dynamic/comments/，装在 iframe 抽屉里，closable 默认 true）；
+ *   2. 文章页的文章评论（PostComments 内嵌在正文下方，closable=false，直接给 slug）。
+ * 线程就是 slug：动态页从 path 推算（dynamic-<id>），文章页由调用方直接传文章 slug。
+ * 样式由组件自己带（styles/components/comment.css + comment-info.css），
+ * 内部逻辑在 components/comment/ 下，外面不需要再引任何东西。
+ *
+ * 按 Telegram Android 客户端的私聊页复刻：
+ *   气泡 17px 圆角 + 靠发送者一侧的 6px 小角（源码 SharedConfig.bubbleRadius = 17，
+ *   近侧角 Math.min(6, bubbleRadius)）；对方白/深灰气泡靠左、自己浅绿/蓝气泡靠右；
+ *   时间贴在气泡右下角（不放已读回执的双勾）；底部是输入栏，右侧纸飞机
+ *   （空输入时灰、有文字才点亮成蓝色）。表情面板放的是自定义表情包：
+ *   数据来自 config/commentEmojiConfig.ts 登记的 JSON（一份 JSON = 一个 tab），
+ *   点一下插进输入框，和文字一起发出去。
+ *
+ * 群聊式头像：对方消息左侧跟一个首字母彩圆（Telegram 没有用户头像时的默认画法），
+ * 连发多条只在最后一条下方露头像、只在第一条上方显示昵称 —— 和 Telegram 分组规则一致。
+ *
+ * 所有消息（拉回来的评论和自己发出去的）都按 GitHub Flavored Markdown 解析
+ * （粗体、斜体、删除线、行内代码 / 代码块、列表、引用、链接、表格、换行），
+ * 解析结果先过一遍标签白名单再塞进气泡，避免脚本注入。
+ * 代码块会补一条「语言 + 复制」的顶栏：marked 只吐标准的 <pre><code class="language-x">，
+ * 顶栏和复制按钮在消毒之后由 DOM 拼（见 decorateCodeBlocks），白名单不用为 button 开口子。
+ * 输入框是会自动长高的 textarea：Enter 发送、Shift+Enter 换行，方便写多行 Markdown。
+ *
+ * 消息来自自建后端（`/api/v1/posts/{slug}/comments`）：打开时按当前动态的 slug
+ * 拉一遍已审核评论，发送时 POST 一条并把气泡追加到本地。新评论默认 pending，
+ * 因此本地气泡上带「待审核」；刷新后它不会立刻回来，审核通过才会出现在列表里。
+ * slug 由 `slugOfPath()` 从 `data-tg-path` 算出（`/dynamic/<id>/` → `dynamic-<id>`），
+ * 所以每条动态是一个独立的评论线程，抽屉切换动态时会重新拉取。
+ * 回复关系也在这一层还原：带 parentId 的那条会按父评论画出引用块（点它跳回原
+ * 消息），父评论不在已加载的消息里时不画 —— 编一个指向空处的引用比没有更糟。
+ *
+ * 列表是分页的：一次只拉 `commentApiConfig.pageSize` 条（最新的那些），顶上留一个
+ * 「加载更早」，滚到顶也会自动接着拉。聊天读法是最新的在下面，所以补历史要往
+ * 前插并保持视口不动，否则每点一次整屏都会跳。
+ *
+ * 自己发出去的评论可以撤回：创建响应里的 deleteToken 只够删这一条，存在
+ * localStorage 里（见 comment-own.ts），右键菜单的「撤回」拿它去调后端。
+ * `commentApiConfig.enable` 关掉时这一页不动任何网络请求，输入栏收起、只显示空态。
+ *
+ * 图片附件按钮暂不开放：后端还没有上传接口，blob: 地址过不了正文的 URL 白名单，
+ * 放出来只会得到「本地看着发出去了、刷新就没了」的假象。
+ */
+import CommentSkeleton from "./CommentSkeleton.astro";
+// 组件自带样式：气泡/顶栏/输入栏在 comment.css，评论身份弹窗在 comment-info.css。
+// 后者要覆盖前者里的 .tg-head-avatar、给 .tg-composer 补 position，顺序不能反。
+import "@/shared/styles/components/comment/comment.css";
+import "@/shared/styles/components/comment/comment-info.css";
+
+interface Props {
+	/** 消息数据来源，挂到 data 属性上并据此算出评论线程的 slug */
+	path?: string;
+	/** 默认昵称：访客还没设置过身份时，顶栏与弹窗先填这个值 */
+	name?: string;
+	/** 默认邮箱：同上，来自站点配置里的 Email 链接 */
+	contact?: string;
+	/** 关闭按钮的无障碍文案 */
+	closeLabel?: string;
+	/**
+	 * 直接指定评论线程的 slug，跳过「从 path 推算」那一步。
+	 * 文章页内嵌时用文章的 slug：那里没有 /dynamic/<id>/ 这种地址可算。
+	 */
+	slug?: string;
+	/**
+	 * 是否显示顶栏的关闭按钮，默认显示（抽屉里需要）。
+	 * 内嵌在文章页时没有「关闭」这个动作，设成 false。
+	 */
+	closable?: boolean;
+}
+
+const {
+	path = "/dynamic/",
+	name = "",
+	contact = "",
+	closeLabel = "Close",
+	slug = "",
+	closable = true,
+} = Astro.props;
+
+/** 没有头像图时用首字母彩圆，和 Telegram 无头像账号的画法一致（与弹窗共用 initialOf） */
+const initial = initialOf(name);
+
+/**
+ * 首屏就先按默认邮箱把渐变色算好：脚本要等模块加载完才跑，
+ * 这一帧里头像得已经是「这个身份的颜色」，不能先蓝一下再变。
+ * 访客保存过自己的邮箱时，脚本会把它换成自己的那对色。
+ */
+const avatarPaint = avatarGradientOf(contact || name);
+
+/**
+ * 站长的气泡用博客头像，并在头像下面垫一层头饰（avatar-pendant.png，224×224）。
+ *
+ * 「下面」是字面意思：头饰先渲染、头像盖在上面，所以只露出头顶那圈光环和翅膀，
+ * 脸不会被糊住。两张图都走 ?url 直出原始文件，不经过图片优化。
+ */
+const ownerAvatarUrl = resolveRawAvatarUrl(
+	profileConfig.avatarPoster || profileConfig.avatar || "",
+);
+const ownerHaloUrl = resolveRawAvatarUrl(
+	"assets/images/avatar/avatar-pendant.png",
+);
+
+/**
+ * 站长的头像支持动图/视频：视频走 <video>（静音、循环、自动播放、playsinline，
+ * 否则手机浏览器不自动播），动图走 <img> 本身就动。
+ * avatarMotion: "never" 时仍然只给静帧，和站点头像的开关保持一致。
+ */
+const ownerMotionUrl =
+	avatarMotionOverride() !== false && isVideoAvatar(profileConfig.avatar ?? "")
+		? resolveRawAvatarUrl(profileConfig.avatar ?? "")
+		: "";
+
+/** 表情包：面板里一栏一个系列，只有一个系列时不渲染 tab 栏（见下方 markup） */
+const packs = commentEmojiConfig.packs;
+const showTabs = packs.length > 1;
+---
+
+<div
+	class="tg-chat"
+	data-tg-chat
+	data-tg-path={path}
+	data-tg-slug={slug}
+	style={`--avatar-from:${avatarPaint.from};--avatar-to:${avatarPaint.to};--tg-emoji-size:${commentEmojiConfig.size}px`}
+	data-tg-label-copy={i18n(I18nKey.commentChatCopy)}
+	data-tg-label-copied={i18n(I18nKey.commentChatCopied)}
+	data-tg-label-code={i18n(I18nKey.commentChatCode)}
+	data-tg-label-retracted={i18n(I18nKey.commentChatRetracted)}
+	data-tg-label-retract-failed={i18n(I18nKey.commentChatRetractFailed)}
+	data-tg-label-retract-replies={i18n(I18nKey.commentChatRetractReplies)}
+	data-tg-label-load-more={i18n(I18nKey.commentChatLoadMore)}
+	data-tg-label-disabled={i18n(I18nKey.commentChatDisabled)}
+	data-tg-label-me={i18n(I18nKey.commentChatMe)}
+	data-tg-label-empty={i18n(I18nKey.commentChatEmpty)}
+	data-tg-label-load-failed={i18n(I18nKey.commentChatLoadFailed)}
+	data-tg-label-send-failed={i18n(I18nKey.commentChatSendFailed)}
+	data-tg-owner-avatar={ownerAvatarUrl}
+	data-tg-owner-halo={ownerHaloUrl}
+	data-tg-owner-motion={ownerMotionUrl}
+	data-tg-label-send-unconfirmed={i18n(I18nKey.commentChatSendUnconfirmed)}
+	data-tg-api-network={i18n(I18nKey.apiErrorNetwork)}
+	data-tg-api-request={i18n(I18nKey.apiErrorRequest)}
+	data-tg-api-server={i18n(I18nKey.apiErrorServer)}
+	data-tg-api-unknown={i18n(I18nKey.apiErrorUnknown)}
+	data-tg-default-name={name}
+	data-tg-default-email={contact}
+	data-tg-ci-sub-empty={i18n(I18nKey.commentInfoSubEmpty)}
+	data-tg-ci-name-required={i18n(I18nKey.commentInfoNameRequired)}
+	data-tg-ci-email-invalid={i18n(I18nKey.commentInfoEmailInvalid)}
+	data-identity-ready="false"
+>
+	{/* 壁纸画在聊天页自己身上：顶栏、消息区、输入栏同处一个文档，
+	    顶栏与输入栏的 backdrop-filter 直接采样它 —— 不需要任何跨文档技巧 */}
+	<div class="tg-wallpaper" data-tg-wallpaper aria-hidden="true"></div>
+
+	<header class="tg-head">
+		{/* 顶栏整块就是「我的评论身份」入口：点开是 CommentInfoPop。
+		    头像/昵称/邮箱由脚本按 localStorage 里存的身份覆盖这里的初始值，
+		    初始值取站点配置（昵称 + Email 链接），这样没设置过的访客也不是一片空白 */}
+		<button
+			type="button"
+			class="tg-head-id"
+			data-ci-open
+			aria-haspopup="dialog"
+			aria-label={i18n(I18nKey.commentInfoOpen)}
+		>
+			<span
+				class="tg-head-avatar"
+				data-ci-head-avatar
+				data-has-image="false"
+				aria-hidden="true"
+			>
+				<img data-avatar-img alt="" decoding="async" hidden />
+				<span data-avatar-initial>{initial}</span>
+			</span>
+			<span class="tg-head-text">
+				<span class="tg-head-title" data-ci-head-name>{name}</span>
+				<span class="tg-head-sub" data-ci-head-sub>{contact}</span>
+			</span>
+			<span class="tg-head-edit" aria-hidden="true">
+				<svg viewBox="0 0 24 24" focusable="false">
+					{/* 铅笔 + 笔杆分界线：线稿比原来那支实心笔更轻，小尺寸下轮廓也不会糊成一团 */}
+					<path
+						d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					/>
+					<path
+						d="M15 5l4 4"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</span>
+		</button>
+		{
+			/* 关闭按钮常驻 DOM，只在「装在抽屉里」时显示：
+			   这一页是预渲染的静态路由，查询参数到不了服务端，
+			   显隐由 CommentLayout 在首屏前打的 html[data-embedded] 标记决定。
+			   内嵌在文章页时（closable=false）连 DOM 都不留。 */
+			closable && <button
+				type="button"
+				class="tg-head-close"
+				data-tg-close
+				title={closeLabel}
+				aria-label={closeLabel}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+					<path
+						d="M6 6 18 18M18 6 6 18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</button>
+		}
+	</header>
+
+	<div class="tg-scroll" data-tg-scroll>
+		{/* 「加载更早」：分页只先拉最新一页，历史在用户往上滚时才补。
+		    常驻 DOM、默认 hidden，脚本按还有没有下一页开关 */}
+		<div class="tg-more" data-tg-more hidden>
+			<button type="button" class="tg-more-btn" data-tg-load-more>
+				{i18n(I18nKey.commentChatLoadMore)}
+			</button>
+		</div>
+
+		{/* 分隔线先藏着：消息是异步拉回来的，直接显示「今天」会在空列表上闪一下，
+		    加载成功后只要日期确实都是今天，脚本再把它露出来 */}
+		<div class="tg-day" data-tg-day hidden>
+			<span>{i18n(I18nKey.commentChatToday)}</span>
+		</div>
+
+		{/* 消息由脚本按后端评论渲染：这里只留状态占位，避免首屏一片空白。
+		    加载中是骨架屏（CommentSkeleton，形状跟聊天气泡一致），数据回来后脚本把
+		    这块整个摘掉；空列表 / 请求失败换成对应提示。 */}
+		<div class="tg-state tg-state--skeleton" data-tg-state="loading">
+			<CommentSkeleton rows={4} />
+		</div>
+	</div>
+
+	<div class="tg-bottom">
+		{/* 回复预览条：和 Telegram 输入框上方那条一样 —— 左侧竖线 + 名字 + 摘要，
+		    发送后引用块会嵌进新气泡顶部。由 CommentRightclickPop 控制显隐 */}
+		<div class="tg-reply" data-tg-reply hidden>
+			<span class="tg-reply-line" aria-hidden="true"></span>
+			<span class="tg-reply-body">
+				<span class="tg-reply-name" data-tg-reply-name></span>
+				<span class="tg-reply-text" data-tg-reply-text></span>
+			</span>
+			<button
+				type="button"
+				class="tg-reply-close"
+				data-tg-reply-cancel
+				aria-label={i18n(I18nKey.tabClose)}
+				title={i18n(I18nKey.tabClose)}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						d="M6 6 18 18M18 6 6 18"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+					/>
+				</svg>
+			</button>
+		</div>
+
+		<div class="tg-emoji-panel" data-tg-emoji-panel hidden>
+			<div class="tg-emoji-body" data-tg-emoji-body>
+				{/* 一个系列一栏：网格结构与 emoji 时期的完全一样（8 列、.tg-emoji-item 格子），
+				    只是格子里放的是一张图，点一下插进输入框，能和文字排在同一行 */}
+				{packs.map((pack, index) => (
+					<div
+						class="tg-emoji-grid"
+						id={`tg-emoji-pack-${pack.id}`}
+						data-tg-emoji-cat={pack.id}
+						hidden={index !== 0}
+					>
+						{pack.items.map((item) => (
+							<button
+								type="button"
+								class="tg-emoji-item"
+								data-tg-emoji-src={item.src}
+								data-tg-emoji-name={item.name}
+								title={item.name}
+								aria-label={item.name}
+							>
+								<img src={item.src} alt="" loading="lazy" decoding="async" />
+							</button>
+						))}
+					</div>
+				))}
+			</div>
+
+			{/* 只有一个系列时不显示 tab 栏：一栏的「分类」没有意义，还会白占一行高度 */}
+			{
+				showTabs && (
+					<div class="tg-emoji-tabs" role="tablist">
+						{packs.map((pack, index) => (
+							<button
+								type="button"
+								class="tg-emoji-tab"
+								role="tab"
+								data-tg-emoji-tab={pack.id}
+								aria-selected={index === 0 ? "true" : "false"}
+								aria-controls={`tg-emoji-pack-${pack.id}`}
+								title={pack.label}
+								aria-label={pack.label}
+							>
+								<svg class="tg-emoji-tab-icon" viewBox="0 0 24 24" aria-hidden="true">
+									{/* 表情包：方角 + 右上卷边 + 笑脸，和 Telegram 的表情包 tab 同义 */}
+									<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" />
+									<path d="M15 3v4a2 2 0 0 0 2 2h4" />
+									<path d="M8.6 13.2h.01M15.4 13.2h.01" />
+									<path d="M9.8 16.1c.55.4 1.3.6 2.2.6s1.65-.2 2.2-.6" />
+								</svg>
+							</button>
+						))}
+					</div>
+				)
+			}
+		</div>
+
+		<form class="tg-composer" data-tg-composer>
+			<button
+				type="button"
+				class="tg-tool"
+				data-tg-attach
+				title={i18n(I18nKey.commentChatAttach)}
+				aria-label={i18n(I18nKey.commentChatAttach)}
+			>
+				<svg viewBox="0 0 24 24" aria-hidden="true">
+					<path
+						d="M20.4 11.3 12 19.7a5.6 5.6 0 0 1-7.9-7.9l8.6-8.6a3.7 3.7 0 0 1 5.3 5.3l-8.5 8.5a1.9 1.9 0 0 1-2.6-2.6l7.6-7.6"
+					/>
+				</svg>
+			</button>
+
+			<div class="tg-input-wrap">
+				{/* 用 contenteditable 而不是 textarea：贴纸要能像 QQ 那样直接排在文字里。
+				    textarea 只能放纯文本，图片塞不进去，也就没法做「前排 🐱」这种效果。
+				    代价是换行、光标、取值都得自己处理，见脚本里的 insertAtCaret / readComposer */}
+				<div
+					class="tg-input tg-input--rich"
+					role="textbox"
+					aria-multiline="true"
+					contenteditable="true"
+					spellcheck="false"
+					data-tg-input
+					data-empty="true"
+					data-placeholder={i18n(I18nKey.commentChatPlaceholder)}
+					aria-label={i18n(I18nKey.commentChatPlaceholder)}
+				></div>
+				<button
+					type="button"
+					class="tg-emoji"
+					data-tg-emoji
+					aria-expanded="false"
+					title={i18n(I18nKey.commentChatEmoji)}
+					aria-label={i18n(I18nKey.commentChatEmoji)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<circle cx="12" cy="12" r="8.6"></circle>
+						<path d="M8.6 14.3a4.2 4.2 0 0 0 6.8 0"></path>
+						<circle cx="9.2" cy="10" r="0.9" fill="currentColor" stroke="none"
+						></circle>
+						<circle cx="14.8" cy="10" r="0.9" fill="currentColor" stroke="none"
+						></circle>
+					</svg>
+				</button>
+			</div>
+
+			<button class="tg-send" type="submit" aria-label={i18n(I18nKey.commentChatSend)} data-tg-send>
+				<svg class="tg-send-plane" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M3.4 20.4 21 12 3.4 3.6l3.1 7.2 9 1.2-9 1.2z" fill="currentColor" />
+				</svg>
+			</button>
+
+			<input
+				type="file"
+				accept="image/*"
+				class="tg-file"
+				data-tg-file
+				tabindex="-1"
+				aria-hidden="true"
+			/>
+
+			{/* 身份没填完时这层盖住整条输入栏，点它直接打开 CommentInfoPop。
+			    用覆盖层而不是逐个控件绑事件：textarea 被 disabled 之后根本不派发
+			    点击事件，包一层最省事，表情 / 附件 / 发送也一并挡住 */}
+			<button
+				type="button"
+				class="tg-composer-lock"
+				data-ci-open
+				aria-haspopup="dialog"
+			>
+				{i18n(I18nKey.commentInfoLocked)}
+			</button>
+		</form>
+	</div>
+
+	{/* CommentInfoPop：评论信息弹窗。铺满整个聊天页（.tg-chat 是 position: relative），
+	    和顶栏、输入栏同处一个文档，主题变量直接可用，不涉及任何跨 iframe 通信 */}
+	<div class="ci-pop" data-ci-pop hidden>
+		<div class="ci-mask" data-ci-mask></div>
+		<div
+			class="ci-card"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="comment-info-title"
+		>
+			<div class="ci-head">
+				<span class="ci-title" id="comment-info-title">
+					{i18n(I18nKey.commentInfoTitle)}
+				</span>
+				<button
+					type="button"
+					class="ci-close"
+					data-ci-close
+					aria-label={i18n(I18nKey.tabClose)}
+					title={i18n(I18nKey.tabClose)}
+				>
+					<svg viewBox="0 0 24 24" aria-hidden="true">
+						<path
+							d="M6 6 18 18M18 6 6 18"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</button>
+			</div>
+
+			<div class="ci-body">
+				{/* 头像单独一行、居中：它是这张卡片的视觉主体，说明文字已经去掉 */}
+				<div class="ci-avatar-row">
+					<span class="ci-avatar" data-ci-avatar data-has-image="false">
+						<img data-avatar-img alt="" decoding="async" hidden />
+						<span data-avatar-initial>?</span>
+					</span>
+				</div>
+
+				<label class="ci-field">
+					<span class="ci-label">{i18n(I18nKey.commentInfoName)}</span>
+					<input
+						class="ci-input"
+						type="text"
+						name="comment-name"
+						maxlength="24"
+						autocomplete="nickname"
+						data-ci-name
+						placeholder={i18n(I18nKey.commentInfoNamePlaceholder)}
+					/>
+				</label>
+
+				<label class="ci-field">
+					<span class="ci-label">{i18n(I18nKey.commentInfoEmail)}</span>
+					<input
+						class="ci-input"
+						type="email"
+						name="comment-email"
+						maxlength="64"
+						autocomplete="email"
+						data-ci-email
+						placeholder={i18n(I18nKey.commentInfoEmailPlaceholder)}
+					/>
+				</label>
+
+				<p class="ci-error" data-ci-error hidden></p>
+			</div>
+
+			<div class="ci-foot">
+				<button type="button" class="ci-btn" data-ci-cancel>
+					{i18n(I18nKey.commentInfoCancel)}
+				</button>
+				<button type="button" class="ci-btn ci-btn--primary" data-ci-save>
+					{i18n(I18nKey.commentInfoSave)}
+				</button>
+			</div>
+		</div>
+	</div>
+
+	{/* CommentRightclickPop：消息右键菜单（复制 / 回复 / 撤回）。
+	    没有遮罩，贴着指针 fixed 定位，超出视口由脚本翻转；三项之间的分隔线
+	    和 Telegram 的菜单一致，删除（撤回）单独一组并用危险色。
+	    撤回只能删自己发的消息，所以这一组单独包起来，脚本按 data-tg-side 开关。
+	    焦点落在菜单本身（tabindex=-1）而不是第一项：右键一开菜单就高亮「复制」
+	    很扎眼，键盘用户按 ↓ 再进第一项即可 */}
+	<div
+		class="ctx-pop"
+		data-ctx-pop
+		role="menu"
+		tabindex="-1"
+		aria-hidden="true"
+		hidden
+	>
+		<button
+			type="button"
+			class="ctx-item"
+			role="menuitem"
+			data-ctx-action="copy"
+		>
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+				<rect x="9" y="9" width="10.4" height="10.4" rx="2.2"></rect>
+				<path d="M14.6 5.6H6.9A2.3 2.3 0 0 0 4.6 7.9v7.7"></path>
+			</svg>
+			<span class="ctx-label">{i18n(I18nKey.commentChatCopy)}</span>
+		</button>
+
+		<button
+			type="button"
+			class="ctx-item"
+			role="menuitem"
+			data-ctx-action="reply"
+		>
+			<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+				<path d="M9.3 7.2 4.6 11.9l4.7 4.7"></path>
+				<path d="M4.6 11.9h9.6a4.9 4.9 0 0 1 0 9.8h-1.7"></path>
+			</svg>
+			<span class="ctx-label">{i18n(I18nKey.commentChatReply)}</span>
+		</button>
+
+		<div class="ctx-own-only" data-ctx-own-only hidden>
+			<span class="ctx-sep" aria-hidden="true"></span>
+
+			<button
+				type="button"
+				class="ctx-item ctx-item--danger"
+				role="menuitem"
+				data-ctx-action="retract"
+			>
+				<svg class="ctx-icon" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M5.2 7.4h13.6"></path>
+					<path d="M9.6 7.4V5.6a1.4 1.4 0 0 1 1.4-1.4h2a1.4 1.4 0 0 1 1.4 1.4v1.8"></path>
+					<path d="M6.7 7.4l.8 11a1.6 1.6 0 0 0 1.6 1.5h5.8a1.6 1.6 0 0 0 1.6-1.5l.8-11"></path>
+					<path d="M10.4 11v5.6M13.6 11v5.6"></path>
+				</svg>
+				<span class="ctx-label">{i18n(I18nKey.commentChatRetract)}</span>
+			</button>
+		</div>
+	</div>
+
+	{/* 轻提示：复制成功、撤回后各闪一次，2s 内自己收走 */}
+	<div class="tg-toast" data-tg-toast role="status" aria-live="polite" hidden></div>
+</div>
+
+<!-- 对方（别的访客）的气泡模板：昵称、头像色调、正文、时间都由脚本填 -->
+<template data-tg-in-template>
+	<div class="tg-row tg-row--in" data-tg-side="in">
+		<span class="tg-avatar tg-avatar--0" aria-hidden="true"></span>
+		<div class="tg-col">
+			<span class="tg-author tg-author--0"></span>
+			<div class="tg-bubble">
+				<div class="tg-text tg-text--md" data-tg-markdown></div>
+				<span class="tg-meta">
+					<span class="tg-time"></span>
+					<span class="tg-pending" hidden>{i18n(I18nKey.commentChatPending)}</span>
+				</span>
+			</div>
+		</div>
+	</div>
+</template>
+
+<!-- 自己发出去的气泡模板，脚本克隆用。pending 标记与对方那份同款：
+     后端对所有人都是先 pending，审核通过后才出现在别人的列表里 -->
+<template data-tg-out-template>
+	<div class="tg-row tg-row--out" data-tg-side="out">
+		<div class="tg-col">
+			<div class="tg-bubble">
+				<div class="tg-text tg-text--md"></div>
+				<span class="tg-meta">
+					<span class="tg-time"></span>
+					<span class="tg-pending" hidden>{i18n(I18nKey.commentChatPending)}</span>
+				</span>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script>
+	import {
+		initCommentRightclickPop,
+		summarizeMarkdown,
+		summarizeMarkdownHtml,
+	} from "@/shared/lib/comments/comment-rightclick-pop";
+	import { initCommentInfo } from "@/shared/lib/comments/comment-info";
+	import {
+		identityKeyOf,
+		readOwnComments,
+		readOwnIdentities,
+		rememberOwnComment,
+	} from "@/shared/lib/comments/comment-own";
+	import {
+		getCommentUser,
+		initialOf,
+		watchCommentUserStorage,
+	} from "@/shared/lib/comments/comment-user";
+	import { mountChatWallpaper } from "@/shared/lib/comments/comment-wallpaper";
+	import {
+		apiErrorMessage,
+		isAbortedRequest,
+		type ApiErrorLabels,
+	} from "@/shared/lib/http/api-error-message";
+	import { ApiError } from "@/shared/lib/http/api-client";
+	import { copyText } from "@/shared/lib/clipboard";
+	import { registerEmptyLottie } from "@/shared/components/ui/empty-lottie";
+	import {
+		type CodeLabels,
+		clockOf,
+		formatTime,
+		isToday,
+		paintEmptyPlaceholder,
+		setMarkdown,
+		toneOf,
+	} from "@/shared/lib/comments/comment-render";
+	import {
+		type ApiComment,
+		type CommentPage,
+		fetchComments,
+		isCommentApiEnabled,
+		postComment,
+		slugOfPath,
+	} from "@/shared/lib/comments/comment-client";
+	import { emojiTokenOfSrc } from "@/shared/lib/comments/emoji-shortcode";
+
+
+	function init() {
+		const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
+		if (!chat) return;
+
+		// 空态插画要在这个页面上可用（文章页与抽屉是两份文档，各注册一次）
+		registerEmptyLottie();
+
+		// 壁纸垫在最底层：顶栏与输入栏的毛玻璃都从它上面采样
+		mountChatWallpaper(chat);
+
+		// 接口被关掉时这一页只剩壁纸：不拉数据、不绑输入栏，也不显示「加载失败」——
+		// 那会让人以为服务挂了，而实际上是站点主动关的。输入栏由 CSS 收起，
+		// 没有数据源时回复 / 撤回这些动作本来也没有对象
+		if (!isCommentApiEnabled()) {
+			chat.dataset.tgDisabled = "true";
+			const state = chat.querySelector<HTMLElement>("[data-tg-state]");
+			if (state) {
+				state.dataset.tgState = "empty";
+				paintEmptyPlaceholder(state, chat.dataset.tgLabelDisabled || "");
+			}
+			return;
+		}
+
+		// 评论身份（昵称 / 邮箱 / 头像）与弹窗：放在其余初始化之前，
+		// 它会决定输入栏是不是锁着，晚了会先闪一下「可以输入」的状态。
+		// 先挂 storage 监听：抽屉（iframe）与主页面是两个文档，身份在另一边改过时
+		// 只能靠 storage 事件传进来，再走同一条 commentUserChange 更新顶栏
+		watchCommentUserStorage();
+		initCommentInfo(chat);
+
+		// 这一页是预渲染的静态路由，构建期拿不到 ?path=，只能在这里按地址栏补一次
+		const pathParam = new URLSearchParams(window.location.search).get("path");
+		if (pathParam) chat.dataset.tgPath = pathParam;
+
+		// 消息右键菜单（CommentRightclickPop）：复制 / 回复 / 撤回。
+		// 必须在 toBottom 之前：初始化会先把已撤回的消息从列表里摘掉，
+		// 滚动位置得按最终列表算；也要在 ?path= 落定之后，拉数据用的就是它
+		const rightclickPop = initCommentRightclickPop(chat);
+
+		const scroller = chat.querySelector<HTMLElement>("[data-tg-scroll]");
+		const form = chat.querySelector<HTMLFormElement>("[data-tg-composer]");
+		const composer = chat.querySelector<HTMLElement>("[data-tg-input]");
+		const emojiButton = chat.querySelector<HTMLButtonElement>("[data-tg-emoji]");
+		const emojiPanel = chat.querySelector<HTMLElement>("[data-tg-emoji-panel]");
+		const attachButton = chat.querySelector<HTMLButtonElement>("[data-tg-attach]");
+		const fileInput = chat.querySelector<HTMLInputElement>("[data-tg-file]");
+		const inTemplate = document.querySelector<HTMLTemplateElement>(
+			"[data-tg-in-template]",
+		);
+		const template = document.querySelector<HTMLTemplateElement>(
+			"[data-tg-out-template]",
+		);
+		if (!scroller || !form || !composer || !inTemplate || !template) return;
+
+		// 代码块顶栏与几处状态文案由服务端按当前语言渲染，避免在客户端再引一套 i18n
+		const labels: CodeLabels = {
+			copy: chat.dataset.tgLabelCopy || "Copy",
+			copied: chat.dataset.tgLabelCopied || "Copied",
+			code: chat.dataset.tgLabelCode || "Code",
+		};
+
+		const textLabels = {
+			empty: chat.dataset.tgLabelEmpty || "No comments yet",
+			loadFailed: chat.dataset.tgLabelLoadFailed || "Failed to load comments",
+			sendFailed: chat.dataset.tgLabelSendFailed || "Failed to send",
+			/**
+			 * 超时 / 连接中断：请求可能已经在服务端执行成功了，只是响应没回来。
+			 * 这时说「发送失败，请重试」会诱导用户再发一条 —— 与「被拒绝」必须分开说。
+			 */
+			sendUnconfirmed:
+				chat.dataset.tgLabelSendUnconfirmed || "Result unconfirmed",
+			disabled: chat.dataset.tgLabelDisabled || "Comments are closed",
+			/**
+			 * 接口失败的兜底文案。后端只给机器可读的 code，用户看到的话由这里决定 ——
+			 * 直接把后端的 "Request validation failed" 弹出来，用户只会以为网站坏了。
+			 */
+			api: {
+				network: chat.dataset.tgApiNetwork || "Network error, please try again",
+				request: chat.dataset.tgApiRequest || "Some input was rejected",
+				server: chat.dataset.tgApiServer || "Service unavailable",
+				unknown: chat.dataset.tgApiUnknown || "Something went wrong",
+			} satisfies ApiErrorLabels,
+		};
+
+		// 复制按钮用事件委托：消息是后插进来的，不能逐条绑
+		chat.addEventListener("click", (event) => {
+			const target = event.target as Element | null;
+			const button = target?.closest<HTMLButtonElement>("[data-tg-copy]");
+			if (!button) return;
+			const code = button.closest(".tg-code")?.querySelector("code");
+			if (!code) return;
+
+			const source = (code.textContent ?? "").replace(/\s+$/, "");
+			void copyText(source).then((ok) => {
+				if (!ok) return;
+				button.textContent = labels.copied;
+				button.dataset.copied = "true";
+				window.setTimeout(() => {
+					button.textContent = labels.copy;
+					button.dataset.copied = "false";
+				}, 1600);
+			});
+		});
+
+		const toBottom = () => {
+			scroller.scrollTop = scroller.scrollHeight;
+		};
+
+		/* ---------------- 评论数据 ---------------- */
+
+		const stateNode = chat.querySelector<HTMLElement>("[data-tg-state]");
+		const dayNode = chat.querySelector<HTMLElement>("[data-tg-day]");
+		const moreNode = chat.querySelector<HTMLElement>("[data-tg-more]");
+		const moreButton = chat.querySelector<HTMLButtonElement>("[data-tg-load-more]");
+		// 加载态是块骨架屏，切过一次状态后 DOM 就被换掉了 —— 先把它的 HTML 留一份，
+		// 下次再进加载态（换筛选、重新拉取）时原样贴回去
+		const loadingHtml = stateNode?.innerHTML ?? "";
+		const moreText = moreButton?.textContent?.trim() ?? "";
+		const ownIds = readOwnComments();
+		/** 每条自己评论发表时用的身份，用来判断「现在还是不是同一个人」 */
+		const ownIdentities = readOwnIdentities();
+		/** 当前身份：改资料时（commentUserChange）会重新算 */
+		let myIdentity = identityKeyOf(getCommentUser());
+		/** 老记录里没有身份时用昵称兜底 */
+		let myName = (getCommentUser()?.name ?? "").trim();
+		/**
+		 * 这条评论现在算不算「我的」。
+		 *
+		 * id 在集合里只说明这台设备发过它；还要发表时的身份和当前身份一致，
+		 * 否则把资料从 A 换成 B 之后，A 的气泡会一直赖在右边。
+		 * 老记录没存身份，按「就是当前身份」处理，保持原来的行为。
+		 */
+		const isMine = (comment: ApiComment): boolean => {
+			if (!ownIds.has(comment.id)) return false;
+			const posted = ownIdentities.get(comment.id);
+			if (posted) return posted === myIdentity;
+			// 加身份记录之前发的评论：按昵称认。至少改了昵称之后它回到左边，
+			// 而不是永远赖在右边 —— 老数据没法知道当时用的是哪个邮箱。
+			return (comment.author.name || "").trim() === myName;
+		};
+		/** 站长的头像与头饰；任一缺失就退回首字母彩圆，不硬画 */
+		const ownerAvatarSrc = chat.dataset.tgOwnerAvatar || "";
+		const ownerHaloSrc = chat.dataset.tgOwnerHalo || "";
+		/** 有视频就用视频，没有就是静态图 */
+		const ownerMotionSrc = chat.dataset.tgOwnerMotion || "";
+
+		/**
+		 * 站长令牌：只在站长自己的浏览器里存一次。
+		 *
+		 * 后端拿它和后台配置的值比对，对了才把这条记成站长评论；普通访客用站长邮箱
+		 * 评论会被要求输入令牌，输错了就只当访客 —— 所以这不是权限，是一个口令。
+		 */
+		const OWNER_KEY_STORAGE = "firefly-owner-key";
+		const readOwnerKey = (): string => {
+			try {
+				return localStorage.getItem(OWNER_KEY_STORAGE) ?? "";
+			} catch {
+				return "";
+			}
+		};
+		const writeOwnerKey = (key: string): void => {
+			try {
+				localStorage.setItem(OWNER_KEY_STORAGE, key);
+			} catch {
+				// 隐私模式写不进去：这次能用，刷新后要重新输，不影响发送
+			}
+		};
+
+		/** 当前线程的 slug：抽屉每换一条动态就递一个新的 path 过来 */
+		// 文章页内嵌时 slug 由 SSR 直接给（文章的 slug）；抽屉里才从 path 推算
+		let slug =
+			chat.dataset.tgSlug || slugOfPath(chat.dataset.tgPath || "/dynamic/");
+		/** 并发保护：切动态时上一个请求可能后到，只认最后一次 */
+		let loadToken = 0;
+
+		/**
+		 * 已加载消息的索引（id → 评论），跨页累积。
+		 * 回复的父评论可能落在上一页，只按当前这一页找会漏掉引用块。
+		 */
+		let byID = new Map<string, ApiComment>();
+		/**
+		 * 下一页的游标，null 表示已经到底。
+		 *
+		 * 用游标而不是 offset：翻页期间有人发评论时，offset 会整体错位，
+		 * 下一页要么重复一条、要么跳过一条；游标记的是「上一页最后一条」，插多少都不影响。
+		 */
+		let nextCursor: string | null = null;
+		/** 正在进行的请求，换线程时中止它 —— 旧响应回来也不该覆盖新线程 */
+		let loadAbort: AbortController | null = null;
+		/** 正在补页：防连点，也让按钮有个忙态 */
+		let loadingMore = false;
+
+		/**
+		 * 换消息区的状态占位。传 null 表示有数据了，直接把占位摘掉 ——
+		 * 留着会在最后一条消息下面垫一块空白。
+		 */
+		const setState = (
+			kind: "loading" | "empty" | "failed" | null,
+			text?: string,
+		) => {
+			if (!stateNode) return;
+			if (kind === null) {
+				stateNode.remove();
+				return;
+			}
+			stateNode.dataset.tgState = kind;
+			stateNode.classList.toggle("tg-state--skeleton", kind === "loading");
+			if (kind === "loading") {
+				stateNode.innerHTML = loadingHtml;
+			} else if (kind === "empty") {
+				paintEmptyPlaceholder(stateNode, text ?? "");
+			} else {
+				stateNode.textContent = text ?? "";
+			}
+			// 摘掉过的占位要重新挂回消息区（放在最后，永远是列表末尾那一条）
+			if (!stateNode.isConnected) scroller.append(stateNode);
+		};
+
+		/** 「加载更早」的显隐：没有更早的、或者正在拉，就别让它可点 */
+		const syncMore = () => {
+			if (!moreNode || !moreButton) return;
+			moreNode.hidden = nextCursor === null;
+			moreButton.disabled = loadingMore;
+			moreNode.dataset.loading = loadingMore ? "true" : "false";
+		};
+
+		const clearRows = () => {
+			for (const row of Array.from(scroller.querySelectorAll(".tg-row"))) {
+				row.remove();
+			}
+		};
+
+		/** 聊天里「待审核 / 发送失败」那一小截灰字 */
+		const setPending = (row: HTMLElement, on: boolean, text?: string) => {
+			const mark = row.querySelector<HTMLElement>(".tg-pending");
+			if (!mark) return;
+			if (text) mark.textContent = text;
+			mark.hidden = !on;
+		};
+
+		/** 克隆「自己发出去」的气泡模板，填好正文与时间 */
+		const buildOutgoing = (
+			source: string,
+			timeText: string,
+			pending = false,
+		): HTMLElement | null => {
+			const row = (template.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return null;
+			const body = row.querySelector<HTMLElement>(".tg-text");
+			if (body) {
+				// 原文留一份给右键「复制」：气泡里是渲染结果，不是 Markdown
+				body.dataset.tgSource = source;
+				setMarkdown(body, source, labels);
+			}
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (time) time.textContent = timeText;
+			setPending(row, pending);
+			return row;
+		};
+
+		/** 渲染一条别人的评论：昵称、头像色调、正文、时间全从接口数据来 */
+		const renderIncoming = (comment: ApiComment): HTMLElement | null => {
+			const row = (inTemplate.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return null;
+
+			const name = comment.author.name || "?";
+			const tone = toneOf(name);
+			const avatar = row.querySelector<HTMLElement>(".tg-avatar");
+			if (avatar) {
+				if (comment.author.isOwner && ownerAvatarSrc) {
+					// 头饰先入 DOM、头像后入：靠层叠顺序，只露出头顶那圈光环
+					avatar.className = "tg-avatar tg-avatar--owner";
+					avatar.textContent = "";
+					if (ownerHaloSrc) {
+						const halo = document.createElement("img");
+						halo.className = "tg-owner-halo";
+						halo.src = ownerHaloSrc;
+						halo.alt = "";
+						halo.setAttribute("aria-hidden", "true");
+						avatar.append(halo);
+					}
+					if (ownerMotionSrc) {
+						// 静音是自动播放的前提；loop + playsinline 让它像表情一样常驻，
+						// poster 兜住「视频首帧还没解出来」的那一瞬间
+						const video = document.createElement("video");
+						video.className = "tg-owner-face";
+						video.src = ownerMotionSrc;
+						video.poster = ownerAvatarSrc;
+						video.muted = true;
+						video.loop = true;
+						video.autoplay = true;
+						video.playsInline = true;
+						video.setAttribute("playsinline", "");
+						video.setAttribute("muted", "");
+						video.setAttribute("aria-hidden", "true");
+						avatar.append(video);
+					} else {
+						const face = document.createElement("img");
+						face.className = "tg-owner-face";
+						face.src = ownerAvatarSrc;
+						face.alt = name;
+						avatar.append(face);
+					}
+				} else {
+					avatar.className = `tg-avatar tg-avatar--${tone}`;
+					avatar.textContent = initialOf(name);
+				}
+			}
+			const author = row.querySelector<HTMLElement>(".tg-author");
+			if (author) {
+				author.className = `tg-author tg-author--${tone}`;
+				author.textContent = name;
+			}
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (time) time.textContent = formatTime(comment.createdAt);
+
+			const body = row.querySelector<HTMLElement>(".tg-text");
+			if (body) {
+				body.dataset.tgSource = comment.body;
+				setMarkdown(body, comment.body, labels);
+			}
+
+			row.dataset.tgMsg = comment.id;
+			row.dataset.tgAuthor = name;
+			// 引用块的颜色跟着作者走，和头像同一档色调
+			row.dataset.tgTone = String(tone);
+			// 父评论先记在行上：它可能还在后一页没拉回来，等索引补全了再画引用块
+			row.dataset.tgParent = comment.parentId ?? "";
+			rightclickPop.registerRow(row);
+			return row;
+		};
+
+		/** 渲染一条自己发过的评论（审核通过后从接口拿回来的那条） */
+		const renderOutgoing = (comment: ApiComment): HTMLElement | null => {
+			const row = buildOutgoing(
+				comment.body,
+				formatTime(comment.createdAt),
+				false,
+			);
+			if (!row) return null;
+			row.dataset.tgMsg = comment.id;
+			row.dataset.tgParent = comment.parentId ?? "";
+			rightclickPop.registerRow(row);
+			return row;
+		};
+
+		/**
+		 * 把渲染好的行放进消息区。
+		 *
+		 * 补历史时整批插在第一条消息之前：用一个 fragment 一次性插入，
+		 * 逐条 insertBefore 会把顺序反过来。「加载更早」按钮和「今天」分隔线
+		 * 都排在消息前面，插在第一条消息之前自然就落在它们之后。
+		 */
+		const placeRows = (rows: HTMLElement[], prepend: boolean) => {
+			if (rows.length === 0) return;
+			if (!prepend) {
+				for (const row of rows) scroller.append(row);
+				return;
+			}
+			const fragment = document.createDocumentFragment();
+			for (const row of rows) fragment.append(row);
+			scroller.insertBefore(fragment, scroller.querySelector(".tg-row"));
+		};
+
+		/**
+		 * 按索引给所有还没画引用块的行补上。
+		 *
+		 * 一页里找得到父评论的先画；找不到的先空着，等「加载更早」把那一页
+		 * 拉回来再统一补一遍 —— 否则用户得刷新才能看到回复关系。
+		 * decorate 自己会跳过已经有引用块的行，重复调用是安全的。
+		 */
+		const decorateReplies = () => {
+			for (const row of Array.from(
+				scroller.querySelectorAll<HTMLElement>(".tg-row"),
+			)) {
+				const parentId = row.dataset.tgParent;
+				if (!parentId) continue;
+				const parent = byID.get(parentId);
+				if (!parent) continue;
+				rightclickPop.decorate(row, {
+					id: parent.id,
+					name: parent.author.name || "?",
+					text: summarizeMarkdown(parent.body),
+					html: summarizeMarkdownHtml(parent.body),
+				});
+			}
+		};
+
+		/**
+		 * 把一页评论并进列表。
+		 *
+		 * 后端按时间倒序给，这里翻过来让最旧的在上 —— 聊天读法。
+		 * 认得出是自己的（id 在 ownIds 里）放右侧，其余放左侧：接口不回传邮箱，
+		 * 没有别的办法区分「我」和「别人」。
+		 */
+		const mergePage = (page: CommentPage, prepend: boolean) => {
+			for (const comment of page.items) byID.set(comment.id, comment);
+			nextCursor = page.nextCursor;
+
+			const rows: HTMLElement[] = [];
+			for (const comment of page.items.slice().reverse()) {
+				const row = isMine(comment)
+					? renderOutgoing(comment)
+					: renderIncoming(comment);
+				if (row) rows.push(row);
+			}
+			placeRows(rows, prepend);
+
+			decorateReplies();
+			rightclickPop.relayout();
+			syncMore();
+
+			// 「今天」分隔线只在确实全是今天的时候才成立，跨天的评论会露馅。
+			// 补了更早的页之后结论可能反转，所以每次合并都按全量重算
+			if (dayNode) {
+				dayNode.hidden = Array.from(byID.values()).some(
+					(comment) => !isToday(comment.createdAt),
+				);
+			}
+		};
+
+		/** 拉当前线程最新的一页并重建列表 */
+		const loadComments = async () => {
+			const token = ++loadToken;
+			// 换线程时把上一个请求掐掉：它的响应即使回来也已经没有意义，
+			// 让它继续跑只是白占带宽和服务端资源
+			loadAbort?.abort();
+			loadAbort = new AbortController();
+			clearRows();
+			byID = new Map();
+			nextCursor = null;
+			loadingMore = false;
+			syncMore();
+			if (dayNode) dayNode.hidden = true;
+			setState("loading");
+
+			try {
+				const page = await fetchComments(slug, null, loadAbort.signal);
+				if (token !== loadToken) return;
+
+				if (page.items.length === 0) {
+					setState("empty", textLabels.empty);
+					return;
+				}
+				setState(null);
+				mergePage(page, false);
+				requestAnimationFrame(toBottom);
+			} catch (error) {
+				if (token !== loadToken) return;
+				// 自己取消的不算失败：下一个线程正在加载，这里报错只会闪一下
+				if (isAbortedRequest(error)) return;
+				setState("failed", apiErrorMessage(error, textLabels.api));
+			}
+		};
+
+		/**
+		 * 往前补一页更早的评论。
+		 *
+		 * 新内容插在视口上方，得把滚动位置往上垫回相同的高度，否则整屏会
+		 * 突然跳到最后一条已经读过的消息上。失败只让按钮闪一下提示，
+		 * 不把整个线程打成「加载失败」—— 已经读到的消息仍然有效。
+		 */
+		const loadMore = async () => {
+			if (nextCursor === null || loadingMore) return;
+			const token = loadToken;
+			loadingMore = true;
+			syncMore();
+
+			const prevHeight = scroller.scrollHeight;
+			const prevTop = scroller.scrollTop;
+
+			try {
+				const page = await fetchComments(slug, nextCursor, loadAbort?.signal);
+				if (token !== loadToken) return;
+				mergePage(page, true);
+				scroller.scrollTop = prevTop + (scroller.scrollHeight - prevHeight);
+			} catch (error) {
+				if (token !== loadToken) return;
+				if (isAbortedRequest(error)) return;
+				if (moreButton) {
+					moreButton.textContent = apiErrorMessage(error, textLabels.api);
+					window.setTimeout(() => {
+						moreButton.textContent = moreText;
+					}, 2000);
+				}
+			} finally {
+				// 换线程之后这个 token 已经作废：新线程的 loadingMore 由 loadComments 重置
+				if (token === loadToken) {
+					loadingMore = false;
+					syncMore();
+				}
+			}
+		};
+
+		moreButton?.addEventListener("click", () => void loadMore());
+
+		// 滚到顶就自动补一页：和 Telegram 一样，不用每次去够那个按钮。
+		// 只在完全贴顶时触发，否则翻页后补偿出的那点偏移会立刻再触发一次
+		scroller.addEventListener(
+			"scroll",
+			() => {
+				if (scroller.scrollTop > 24) return;
+				void loadMore();
+			},
+			{ passive: true },
+		);
+
+		// 空输入时纸飞机是灰的、有内容才点亮成蓝色。
+		// 「有内容」= 有文字或至少有一张贴纸（贴纸是 <img>，textContent 里看不到）
+		const composerHasContent = (): boolean => {
+			if (composer.querySelector("img")) return true;
+			return (composer.textContent ?? "").replace(/\u00a0/g, " ").trim() !== "";
+		};
+
+		const syncSend = () => {
+			const has = composerHasContent();
+			chat.dataset.hasText = has ? "true" : "false";
+			// 占位文案靠这条属性显示（:empty 在只剩一个 <br> 时会失效，不可靠）
+			composer.dataset.empty = has ? "false" : "true";
+		};
+
+		// 输入框随内容长高（上限交给 CSS 的 max-height，超出后内部滚动）
+		const resizeInput = () => {
+			composer.style.height = "auto";
+			composer.style.height = `${composer.scrollHeight}px`;
+		};
+
+		/**
+		 * 在当前光标处插入一个节点：文字（表情）、换行（Shift+Enter）、贴纸 <img> 都走这里。
+		 * 没有选区或选区在别的元素里时退化成「追加到末尾」，不会把内容插到奇怪的地方。
+		 */
+		const insertAtCaret = (node: Node) => {
+			composer.focus({ preventScroll: true });
+			const selection = window.getSelection();
+			const range =
+				selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+			if (range && composer.contains(range.commonAncestorContainer)) {
+				range.deleteContents();
+				range.insertNode(node);
+			} else {
+				composer.append(node);
+			}
+
+			// 光标落到新节点之后，接着敲字就接在后面
+			const after = document.createRange();
+			after.setStartAfter(node);
+			after.collapse(true);
+			selection?.removeAllRanges();
+			selection?.addRange(after);
+
+			syncSend();
+			resizeInput();
+		};
+
+		/**
+		 * 把编辑器内容读回 Markdown 源：文字原样、`<br>` 转换行、表情转成短码。
+		 *
+		 * 发出去的是**源**，不是渲染结果：表情写成 `:huoying/hy-1:`，由渲染端翻译回
+		 * 图片。正文里一旦出现 `<img src=…>`，那条评论就把当时的资源地址焊死了，
+		 * 换目录、换 CDN 都会变成破图，而且字数上限会按标签长度扣
+		 * （一个标签 77 字符，一个短码 15）。详见 utils/emoji-shortcode.ts。
+		 */
+		const readComposer = (): string => {
+			let out = "";
+			const walk = (node: Node) => {
+				for (const child of Array.from(node.childNodes)) {
+					if (child.nodeType === Node.TEXT_NODE) {
+						out += (child.textContent ?? "").replace(/\u00a0/g, " ");
+						continue;
+					}
+					if (child.nodeName === "BR") {
+						out += "\n";
+						continue;
+					}
+					if (child instanceof HTMLImageElement) {
+						// 插入时就记了短码；没有的话按地址反查一次（老节点、外部脚本插的图）
+						const token =
+							child.dataset.tgEmojiToken ??
+							emojiTokenOfSrc(
+								child.dataset.tgEmojiSrc ?? child.getAttribute("src") ?? "",
+							);
+						// 认不出来的图片不进正文：输入框里只该有表情图，
+						// 一张来路不明的图没有对应的文字表达，写进去就是坏数据
+						if (token) out += token;
+						continue;
+					}
+					walk(child);
+				}
+			};
+			walk(composer);
+			return out;
+		};
+
+		composer.addEventListener("input", () => {
+			syncSend();
+			resizeInput();
+		});
+
+		// 粘贴只收纯文本：contenteditable 默认会把剪贴板里的整段 HTML 塞进来，
+		// 样式、链接全跟着进来，气泡里的白名单也挡不住这种「先污染再消毒」
+		composer.addEventListener("paste", (event) => {
+			const text = event.clipboardData?.getData("text/plain");
+			if (text == null) return;
+			event.preventDefault();
+			insertAtCaret(document.createTextNode(text));
+		});
+
+		// Enter 发送、Shift+Enter 换行 —— 浏览器的默认行为是插 <div>/<br>，两种都可能，
+		// 干脆自己插一个 <br>，读回文本时只需要认这一种
+		composer.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" || event.isComposing) return;
+			event.preventDefault();
+			if (event.shiftKey) {
+				insertAtCaret(document.createElement("br"));
+				return;
+			}
+			form.requestSubmit();
+		});
+
+		syncSend();
+		resizeInput();
+
+		/* ---------------- 表情面板 ---------------- */
+
+		const setEmojiOpen = (open: boolean) => {
+			if (!emojiPanel || !emojiButton) return;
+			emojiPanel.hidden = !open;
+			emojiButton.setAttribute("aria-expanded", open ? "true" : "false");
+			chat.dataset.emojiOpen = open ? "true" : "false";
+			if (open) toBottom();
+		};
+
+		const closeEmoji = () => setEmojiOpen(false);
+
+		// 开始回复时收起表情面板：两者都贴在输入框上，同屏会互相挤
+		chat.addEventListener("tg-reply-start", () => closeEmoji());
+
+		emojiButton?.addEventListener("click", () => {
+			setEmojiOpen(Boolean(emojiPanel?.hidden));
+		});
+
+		// 系列 tab：点哪个就露出哪个表情包系列，其余收起
+		// （只有一个系列时组件不渲染 tab 栏，这里的循环自然空转）
+		const emojiBody = chat.querySelector<HTMLElement>("[data-tg-emoji-body]");
+		const emojiTabs = Array.from(
+			chat.querySelectorAll<HTMLElement>("[data-tg-emoji-tab]"),
+		);
+		const emojiGrids = Array.from(
+			chat.querySelectorAll<HTMLElement>("[data-tg-emoji-cat]"),
+		);
+
+		const selectCategory = (id: string) => {
+			for (const tab of emojiTabs) {
+				tab.setAttribute(
+					"aria-selected",
+					tab.dataset.tgEmojiTab === id ? "true" : "false",
+				);
+			}
+			for (const grid of emojiGrids) {
+				grid.hidden = grid.dataset.tgEmojiCat !== id;
+			}
+			// 换分类时回到该类的顶部，否则会停在上一类的滚动位置
+			if (emojiBody) emojiBody.scrollTop = 0;
+		};
+
+		for (const tab of emojiTabs) {
+			tab.addEventListener("click", () => {
+				const id = tab.dataset.tgEmojiTab;
+				if (id) selectCategory(id);
+			});
+		}
+
+		// 点表情包是「插进输入框」，不是直接发出去：
+		// 这样它就能和文字排在同一行（图片、文字可以混着写，再一起发出去）
+		// 注意选择器是 [data-tg-emoji-src]：输入栏那个开面板的按钮用的是光秃秃的
+		// [data-tg-emoji]，两个属性撞名会把「开面板」的点击绑到第一张表情上
+		chat.querySelectorAll<HTMLElement>("[data-tg-emoji-src]").forEach((item) => {
+			item.addEventListener("mousedown", (event) => event.preventDefault());
+			item.addEventListener("click", () => {
+				const src = item.dataset.tgEmojiSrc;
+				if (!src) return;
+				// 短码是写进正文的东西，解析不出来就不插：插进去的图读不回短码，
+				// 发出去会变成一条内容缺失的评论
+				const token = emojiTokenOfSrc(src);
+				if (!token) return;
+				const img = document.createElement("img");
+				img.className = "tg-emoji-inline";
+				img.src = src;
+				img.alt = item.dataset.tgEmojiName ?? "";
+				// 读回内容时用这两个：src 会被浏览器补成绝对路径，短码不会
+				img.dataset.tgEmojiSrc = src;
+				img.dataset.tgEmojiToken = token;
+				insertAtCaret(img);
+			});
+		});
+
+		document.addEventListener("pointerdown", (event) => {
+			if (!emojiPanel || emojiPanel.hidden) return;
+			const target = event.target as Node | null;
+			if (!target) return;
+			if (
+				emojiPanel.contains(target) ||
+				emojiButton?.contains(target) ||
+				attachButton?.contains(target)
+			) {
+				return;
+			}
+			closeEmoji();
+		});
+
+		// Esc：面板开着就先收面板，已经收起了就把「关抽屉」交给父窗口
+		document.addEventListener("keydown", (event) => {
+			if (event.key !== "Escape") return;
+			if (emojiPanel && !emojiPanel.hidden) {
+				closeEmoji();
+				return;
+			}
+			requestClose();
+		});
+
+		// ---------------- 发送图片 ----------------
+
+		const appendPhoto = (file: File) => {
+			const row = (template.content.cloneNode(true) as DocumentFragment)
+				.firstElementChild as HTMLElement | null;
+			if (!row) return;
+			const text = row.querySelector<HTMLElement>(".tg-text");
+			const bubble = row.querySelector<HTMLElement>(".tg-bubble");
+			const time = row.querySelector<HTMLElement>(".tg-time");
+			if (text && bubble) {
+				const photo = document.createElement("img");
+				photo.className = "tg-photo";
+				photo.alt = file.name;
+				photo.src = URL.createObjectURL(file);
+				// 图加载完就能释放 blob，不必等页面关掉
+				photo.addEventListener(
+					"load",
+					() => URL.revokeObjectURL(photo.src),
+					{ once: true },
+				);
+				text.replaceWith(photo);
+				bubble.classList.add("tg-bubble--photo");
+			}
+			if (time) time.textContent = clockOf(new Date());
+
+			rightclickPop.registerRow(row);
+			scroller.append(row);
+			rightclickPop.relayout();
+			requestAnimationFrame(toBottom);
+		};
+
+		// 后端还没有图片上传接口，而 blob: 地址过不了正文的 URL 白名单 ——
+		// 放出来只会得到「本地看着发出去了、刷新就没了」的假象。等上传接口上线再放开
+		if (attachButton) attachButton.style.display = "none";
+
+		attachButton?.addEventListener("click", () => fileInput?.click());
+		fileInput?.addEventListener("change", () => {
+			const file = fileInput.files?.[0];
+			if (!file) return;
+			appendPhoto(file);
+			// 清空才能连续选同一张图
+			fileInput.value = "";
+		});
+
+		// ---------------- 发送消息 ----------------
+
+		/** 发送失败的提示文案：区分「确定失败」与「结果未知」 */
+		const sendFailureText = (error: unknown): string => {
+			if (isAbortedRequest(error)) return textLabels.sendFailed;
+			if (
+				error instanceof ApiError &&
+				(error.kind === "network" || error.kind === "timeout")
+			) {
+				return textLabels.sendUnconfirmed;
+			}
+			return apiErrorMessage(error, textLabels.api);
+		};
+
+		/**
+		 * 把刚追加的气泡换成后端那一条：换 id、记进 ownIds、按返回的状态决定
+		 * 「待审核」怎么显示。失败时不撤回气泡 —— 内容在里面，用户还能右键复制重发。
+		 */
+		/**
+		 * 提交评论；如果后端说「这个邮箱是站长，要令牌」，就问一次再重发。
+		 *
+		 * 只在收到那个字段级错误时才问，所以普通访客永远看不到这个弹窗 ——
+		 * 也就不会知道哪个地址是站长的。
+		 */
+		const postCommentWithOwnerKey = async (
+			author: { name: string; email: string },
+			body: string,
+			parentId?: string,
+		): Promise<ApiComment> => {
+			const attempt = (ownerKey: string) =>
+				postComment(slug, { author, body, parentId, ownerKey });
+
+			try {
+				return await attempt(readOwnerKey());
+			} catch (error) {
+				const needsKey =
+					error instanceof ApiError &&
+					error.fieldErrors.some((field) => field.field === "ownerKey");
+				if (!needsKey) throw error;
+
+				// 站长专用路径，不做事后翻译：看到这个框的人只有站长自己
+				const entered = window.prompt("请输入站长令牌（站长邮箱专用）", "");
+				const key = (entered ?? "").trim();
+				if (!key) throw error;
+				writeOwnerKey(key);
+				return attempt(key);
+			}
+		};
+
+		const submitComment = async (
+			row: HTMLElement,
+			body: string,
+			author: { name: string; email: string },
+			parentId?: string,
+		) => {
+			form.dataset.sending = "true";
+			try {
+				const created = await postCommentWithOwnerKey(author, body, parentId);
+				// 换成后端 id：引用跳转、撤回记录都按它来，刷新后才对得上
+				row.dataset.tgMsg = created.id;
+				row.dataset.tgParent = created.parentId ?? "";
+				// 撤回凭据只有这一次能拿到：连同 id 一起存下来，下次打开还能删
+				rememberOwnComment(created.id, created.deleteToken, myIdentity);
+				ownIds.add(created.id);
+				ownIdentities.set(created.id, myIdentity);
+				setPending(row, created.status === "pending");
+			} catch (error) {
+				row.classList.add("is-failed");
+				// 三种失败要分开说：被拒绝（改内容再试）、超时（结果未知，先别重发）、
+				// 自己取消（等于没发生）。混成一句「发送失败」会让用户在不该重发时重发
+				setPending(row, true, sendFailureText(error));
+			} finally {
+				form.dataset.sending = "false";
+			}
+		};
+
+		/**
+		 * 换了身份就重画两侧。
+		 *
+		 * 身份决定的是「哪些气泡算我的」：把资料从 A 换成 B 之后，A 发的要挪到
+		 * 左边、B 发的挪到右边。不刷新页面 —— 记录还在，只是左右重新排一次。
+		 */
+		window.addEventListener("commentUserChange", (event) => {
+			const detail = (event as CustomEvent<{ email: string; name: string }>)
+				.detail;
+			const next = identityKeyOf(detail ?? null);
+			if (next === myIdentity) return;
+			myIdentity = next;
+			myName = (detail?.name ?? "").trim();
+
+			for (const row of Array.from(
+				scroller.querySelectorAll<HTMLElement>(".tg-row[data-tg-msg]"),
+			)) {
+				const id = row.dataset.tgMsg;
+				const comment = id ? byID.get(id) : undefined;
+				if (!id || !comment) continue;
+				const wantOut = isMine(comment);
+				if ((row.dataset.tgSide === "out") === wantOut) continue;
+				const replacement = wantOut
+					? renderOutgoing(comment)
+					: renderIncoming(comment);
+				if (replacement) row.replaceWith(replacement);
+			}
+
+			decorateReplies();
+			rightclickPop.relayout();
+		});
+
+		form.addEventListener("submit", (event) => {
+			event.preventDefault();
+			if (form.dataset.sending === "true") return;
+			// 输入框是富文本：贴纸是 <img>，textContent 里什么都读不到，
+			// 必须走 readComposer 把「文字 + 换行 + 贴纸」按顺序拼回 Markdown
+			const source = readComposer();
+			if (!source.trim()) return;
+
+			// 身份没填全时输入栏本来就是锁着的，这里只是兜底（比如身份被清掉）
+			const user = getCommentUser();
+			const name = user?.name.trim() || chat.dataset.tgDefaultName || "";
+			const email = user?.email.trim() || "";
+			if (!name) return;
+
+			// 取走待发送的引用：引用块要嵌在气泡顶部、正文之上。
+			// 引用的 target 就是原消息的 data-tg-msg，自己发过的那些已经是后端 id，
+			// 提交时直接当 parentId 用
+			const quote = rightclickPop.takePendingReply();
+			const row = buildOutgoing(source, clockOf(new Date()), true);
+			if (!row) return;
+			if (quote) rightclickPop.decorate(row, quote);
+
+			rightclickPop.registerRow(row);
+			scroller.append(row);
+			rightclickPop.relayout();
+			composer.innerHTML = "";
+			syncSend();
+			resizeInput();
+			closeEmoji();
+			// 等浏览器完成一次布局再滚，否则新气泡高度还算不出来
+			requestAnimationFrame(toBottom);
+			composer.focus({ preventScroll: true });
+
+			void submitComment(row, source, { name, email }, quote?.id);
+		});
+
+		/* ---------------- 抽屉切换动态 ---------------- */
+
+		// 抽屉里换一条动态时父窗口只递 path 过来、不重载文档（重载等于白屏），
+		// 线程就靠这里换。同一个 path 会重复到达（打开、尺寸变化都会发），要忽略
+		window.addEventListener("message", (event) => {
+			if (event.origin !== window.location.origin) return;
+			const data = event.data as { type?: string; path?: string } | null;
+			if (data?.type !== "dynamic-comment-path") return;
+			chat.dataset.tgPath = String(data.path || "");
+			const next = slugOfPath(chat.dataset.tgPath || "/dynamic/");
+			if (next === slug) return;
+			slug = next;
+			void loadComments();
+		});
+
+		void loadComments();
+	}
+
+	/* ---------------- 与评论抽屉（父窗口）的桥 ---------------- */
+
+	/**
+	 * 抽屉的收起只能由父窗口做（几何、焦点、触发按钮都在那边），
+	 * 这里只把「想关」传出去。独立访问这个页面时没有父窗口，什么也不做。
+	 */
+	function requestClose(): void {
+		if (window.parent === window) return;
+		window.parent.postMessage(
+			{ type: "dynamic-comment-close" },
+			window.location.origin,
+		);
+	}
+
+	// 关闭按钮只在抽屉里渲染（embedded），独立访问时这个查询是空的
+	document
+		.querySelector<HTMLElement>("[data-tg-close]")
+		?.addEventListener("click", requestClose);
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init, { once: true });
+	} else {
+		init();
+	}
+</script>

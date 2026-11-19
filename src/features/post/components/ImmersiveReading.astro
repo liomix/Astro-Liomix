@@ -1,0 +1,20 @@
+---
+import FloatingButton from "@/shared/components/ui/FloatingButton.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+---
+
+<FloatingButton
+  id="immersive-reading-btn"
+  icon="material-symbols:auto-stories"
+  toggleIcon="material-symbols:logout"
+  ariaLabel={i18n(I18nKey.enterImmersiveReading)}
+  onclick="window.toggleImmersiveReading()"
+  class="hide"
+/>
+
+<script>
+  import { initImmersiveReading } from "@/features/post/lib/immersive-reading";
+
+  initImmersiveReading();
+</script>

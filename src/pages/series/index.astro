@@ -1,10 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getSeriesList } from "@/utils/content-utils";
-import { getPostUrlBySlug } from "@/utils/url-utils";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getSeriesList } from "@/shared/lib/content/content-utils";
+import { getPostUrlBySlug } from "@/shared/lib/seo/url";
 
 const seriesList = await getSeriesList();
 const totalPosts = seriesList.reduce((sum, series) => sum + series.count, 0);

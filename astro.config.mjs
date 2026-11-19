@@ -29,18 +29,18 @@ import remarkAdmonitionToBlockquoteCallout from "remark-admonition-to-blockquote
 import remarkDirective from "remark-directive"; /* Handle directives */
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
+import { commentApiConfig } from "./src/shared/lib/comments/config";
+import { dynamicConfig } from "./src/features/dynamic/config";
 import {
-	commentApiConfig,
-	dynamicConfig,
 	expressiveCodeConfig,
 	fontConfig,
 	fontsList,
 	mermaidConfig,
 	plantumlConfig,
 	siteConfig,
-} from "./src/config";
-import I18nKey from "./src/i18n/i18nKey";
-import { i18n } from "./src/i18n/translation";
+} from "./src/shared/config";
+import I18nKey from "./src/shared/i18n/i18nKey";
+import { i18n } from "./src/shared/i18n/translation";
 import { GithubCardComponent } from "./src/plugins/rehype-component-github-card.mjs";
 import { rehypeDiagramPanZoom } from "./src/plugins/rehype-diagram-panzoom.mjs";
 import rehypeEmailProtection from "./src/plugins/rehype-email-protection.mjs";
@@ -56,7 +56,7 @@ import { remarkMermaid } from "./src/plugins/remark-mermaid.js";
 import { remarkPlantuml } from "./src/plugins/remark-plantuml.js";
 import { remarkReadingTime } from "./src/plugins/remark-reading-time.mjs";
 import { remarkWikiLink } from "./src/plugins/remark-wiki-link.js";
-import { collectUsedFontCssVars } from "./src/utils/font-helper";
+import { collectUsedFontCssVars } from "./src/shared/lib/font-helper";
 
 
 /**

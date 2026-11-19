@@ -1,15 +1,15 @@
 ---
 import { Icon } from "astro-icon/components";
-import BilibiliGrid from "@/components/features/catalog/bilibili/BilibiliGrid.svelte";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import BilibiliGrid from "@/features/catalog/bilibili/components/BilibiliGrid.svelte";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/media-grid.css";
-import type { StandardizedAnime } from "@/types/bilibili";
-import { fetchBilibiliList } from "@/utils/bilibili-utils";
-import { formatDateI18n } from "@/utils/date-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/features/catalog/styles/media-grid.css";
+import { fetchBilibiliList } from "@/features/catalog/bilibili/lib/bilibili";
+import type { StandardizedAnime } from "@/features/catalog/bilibili/types";
+import { formatDateI18n } from "@/shared/lib/format/date";
 
 // 检查页面是否启用
 if (!siteConfig.pages.bilibili) {

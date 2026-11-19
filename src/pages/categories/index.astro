@@ -1,10 +1,10 @@
 ---
 import { Icon } from "astro-icon/components";
-import CategoryRoseChart from "@/components/features/stats/CategoryRoseChart.svelte";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import CategoryRoseChart from "@/features/stats/components/CategoryRoseChart.svelte";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getCategoryList } from "@/utils/content-utils";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getCategoryList } from "@/shared/lib/content/content-utils";
 
 const categories = await getCategoryList();
 

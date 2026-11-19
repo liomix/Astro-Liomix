@@ -1,9 +1,9 @@
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
-import { getSortedPosts } from "@utils/content-utils";
-import { url } from "@utils/url-utils";
 import type { APIRoute } from "astro";
-import { siteConfig } from "@/config";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
+import { url } from "@/shared/lib/seo/url";
 
 export const prerender = true;
 

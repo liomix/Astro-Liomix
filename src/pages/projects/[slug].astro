@@ -1,25 +1,25 @@
 ---
 import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
-import CoverImage from "@/components/ui/CoverImage.astro";
-import Markdown from "@/components/ui/Markdown.astro";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
-import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getSortedProjects } from "@/utils/content-utils";
-import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import {
 	getProjectStatusMeta,
 	resolveLinkIcon,
 	resolveProjectImage,
 	resolveProjectImageAbsolute,
-} from "@/utils/projects-utils";
+} from "@/features/catalog/projects/lib/projects";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import CoverImage from "@/shared/components/ui/CoverImage.astro";
+import Markdown from "@/shared/components/ui/Markdown.astro";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getSortedProjects } from "@/shared/lib/content/content-utils";
+import { formatDateToYYYYMMDD } from "@/shared/lib/format/date";
 import {
 	getFileDirFromPath,
 	removeFileExtension,
 	url,
-} from "@/utils/url-utils";
+} from "@/shared/lib/seo/url";
 
 // 检查页面是否启用
 if (!siteConfig.pages.projects) {

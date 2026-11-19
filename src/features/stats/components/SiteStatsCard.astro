@@ -1,0 +1,173 @@
+---
+import WidgetFrame from "@/shared/components/ui/WidgetFrame.astro";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
+import { formatCompactNumber } from "@/shared/lib/format/number";
+import type { WidgetComponentConfig } from "@/shared/types/sidebarConfig";
+import PostActivity from "./PostActivity.astro";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+
+const { class: className, style, widgetConfig } = Astro.props;
+
+const showTitle = widgetConfig?.showTitle !== false;
+
+// 从配置中获取站点开始日期
+const siteStartDate = siteConfig.siteStartDate || "2025-01-01";
+
+// 获取所有文章
+const posts = await getSortedPosts();
+
+// 计算总字数
+let totalWords = 0;
+for (const post of posts) {
+	if (post.body) {
+		// 移除代码块和内联代码后计算字数
+		let text = post.body
+			.replace(/```[\s\S]*?```/g, "") // 移除代码块
+			.replace(/`[^`]*`/g, "") // 移除内联代码
+			.replace(/\s+/g, " ") // 合并空白
+			.trim();
+
+		// 分别计算中文字符和英文字符
+		const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+		const englishChars = text.match(/[a-zA-Z]/g) || [];
+
+		totalWords += chineseChars.length + englishChars.length;
+	}
+}
+
+// 已运行天数：服务端先算一次，避免首屏出现占位 0，客户端再按真实时间刷新
+const runningDays = (() => {
+	const start = new Date(siteStartDate).getTime();
+	if (!Number.isFinite(start)) return 0;
+	const diff = Math.abs(Date.now() - start);
+	return Math.ceil(diff / (1000 * 60 * 60 * 24));
+})();
+
+// 统计卡片：数值一列在服务端算好，访问量与访客数由 analytics/SiteVisitCounter.astro
+// 在客户端回填（占位「—」），避免静态构建时把 0 写死进页面。
+interface StatTile {
+	id: string;
+	label: string;
+	value: string;
+	/** 对应后端计数字段；有值时由站点访问统计脚本回填 */
+	statKey?: "views" | "visitors";
+}
+
+const stats: StatTile[] = [
+	{
+		id: "total-words",
+		label: i18n(I18nKey.siteStatsTotalWords),
+		value: formatCompactNumber(totalWords),
+	},
+	{
+		id: "views",
+		label: i18n(I18nKey.siteStatsViews),
+		value: "—",
+		statKey: "views",
+	},
+	{
+		id: "visitors",
+		label: i18n(I18nKey.siteStatsVisitors),
+		value: "—",
+		statKey: "visitors",
+	},
+	{
+		id: "running-days",
+		label: i18n(I18nKey.siteStatsRunningDays),
+		value: runningDays.toString(),
+	},
+];
+---
+
+<WidgetFrame name={i18n(I18nKey.siteStats)} showTitle={showTitle} id="site-stats" class={className} style={style}>
+  <div class="stats-tiles">
+    {stats.map((stat) => (
+      <div class="stats-tile">
+        <span class="stats-tile-value" data-stat-id={stat.id} data-site-stat={stat.statKey}>
+          {stat.value}
+        </span>
+        <span class="stats-tile-label text-50">{stat.label}</span>
+      </div>
+    ))}
+  </div>
+
+  {/* 日历卡片的下半部分：年度热力图 + 全站最新文章列表 */}
+  <PostActivity />
+</WidgetFrame>
+
+<style>
+  .stats-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .stats-tile {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.125rem;
+    padding: 0.625rem 0.25rem;
+    border-radius: 0.75rem;
+    background: var(--btn-regular-bg);
+    transition: background-color 0.15s ease;
+  }
+
+  .stats-tile:hover {
+    background: var(--btn-regular-bg-hover);
+  }
+
+  .stats-tile-value {
+    font-size: 1.125rem;
+    line-height: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: var(--primary);
+    white-space: nowrap;
+  }
+
+  .stats-tile-label {
+    font-size: 0.6875rem;
+    line-height: 0.875rem;
+    white-space: nowrap;
+  }
+</style>
+
+<script is:inline define:vars={{ siteStartDate }}>
+  function updateDynamicStats() {
+    const start = new Date(siteStartDate).getTime();
+    if (!Number.isFinite(start)) return;
+
+    const diffDays = Math.ceil(
+      Math.abs(Date.now() - start) / (1000 * 60 * 60 * 24),
+    );
+
+    const elements = document.querySelectorAll('[data-stat-id="running-days"]');
+    elements.forEach((element) => {
+      element.textContent = diffDays.toString();
+    });
+  }
+
+  // 页面加载时更新
+  updateDynamicStats();
+
+  // 防止 Swup 切页重跑脚本时重复注册监听器
+  if (!window.__siteStatsInit) {
+    window.__siteStatsInit = true;
+    document.addEventListener("swup:contentReplaced", () => {
+      setTimeout(updateDynamicStats, 100);
+    });
+  }
+</script>

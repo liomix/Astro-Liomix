@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
-import { siteConfig } from "../src/config";
-import type { VndbUlistEntry } from "../src/types/vndb";
-import { fetchVndbUlist } from "../src/utils/vndb-utils";
+import { fetchVndbUlist } from "../src/features/catalog/vndb/lib/vndb";
+import type { VndbUlistEntry } from "../src/features/catalog/vndb/types";
+import { siteConfig } from "../src/shared/config";
 
 const OUTPUT_DIR = "public/vndb-covers";
 const COVER_WIDTH = 400;

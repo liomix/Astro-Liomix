@@ -1,19 +1,19 @@
 ---
 import { Icon } from "astro-icon/components";
-import BangumiGrid from "@/components/features/catalog/bangumi/BangumiGrid.svelte";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import BangumiGrid from "@/features/catalog/bangumi/components/BangumiGrid.svelte";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/media-grid.css";
-import EmptyState from "@/components/ui/EmptyState.astro";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/features/catalog/styles/media-grid.css";
 import type {
 	UserSubjectCollection,
 	UserSubjectCollectionResponse,
-} from "@/types/bangumi";
-import { formatDateI18n } from "@/utils/date-utils";
-import { filterNsfw, isBangumiNsfw } from "@/utils/nsfw-utils";
+} from "@/features/catalog/bangumi/types";
+import { filterNsfw, isBangumiNsfw } from "@/features/catalog/lib/nsfw";
+import EmptyState from "@/shared/components/ui/EmptyState.astro";
+import { formatDateI18n } from "@/shared/lib/format/date";
 
 //参考：霞葉 https://kasuha.com/posts/fuwari-enhance-ep2/
 

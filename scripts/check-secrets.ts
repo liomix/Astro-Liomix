@@ -14,7 +14,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 const DIST = "dist";
-const CONFIG_FILE = "src/config/wereadConfig.ts";
+const CONFIG_FILE = "src/features/navigation/books/config.ts";
 const TEXT_EXT = new Set([
 	".html",
 	".htm",
@@ -86,7 +86,9 @@ async function walk(dir: string): Promise<string[]> {
 async function main(): Promise<void> {
 	const files = await walk(DIST);
 	if (files.length === 0) {
-		console.error(`[secret-check] 没有找到构建产物，先跑 astro build 再检查（${DIST}/）`);
+		console.error(
+			`[secret-check] 没有找到构建产物，先跑 astro build 再检查（${DIST}/）`,
+		);
 		process.exit(1);
 	}
 

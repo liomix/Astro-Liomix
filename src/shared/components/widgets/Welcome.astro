@@ -1,0 +1,492 @@
+---
+/**
+ * 访客欢迎信息
+ * 展示：来自 X 的访客，{问候语}，现在是 HH:MM，距站长约 N 公里，IP：x.x.x.x
+ * 定位走自己的后端（GET /api/v1/location/me，高德 IP 定位 + 数字签名），
+ * Key 与私钥都在服务端环境变量里；失败时整卡隐藏
+ */
+import { locationApiConfig } from "@/shared/config/locationApiConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import { welcomeConfig } from "@/shared/config/welcomeConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { url } from "@/shared/lib/seo/url";
+
+const { enable, siteLocation, showIp, showDistance, cacheHours } =
+	welcomeConfig;
+
+// 定位走自建后端；模板里的 siteLocation 仍作为「服务端没给距离时」的兜底坐标
+const locationApi = locationApiConfig;
+
+const lang = siteConfig.lang || "zh_CN";
+const lottieSrc = url(welcomeConfig.lottieSrc || "/lottie/welcome.json");
+---
+{
+	enable && (
+		<div class="welcome">
+			<div
+				class="welcome-lottie"
+				data-welcome-lottie
+				data-src={lottieSrc}
+				role="img"
+				aria-label={i18n(I18nKey.welcomeTitle)}
+			/>
+			<div
+				class="welcome-text text-75"
+				data-welcome
+				data-template={i18n(I18nKey.welcomeTemplate)}
+				data-template-no-distance={i18n(I18nKey.welcomeTemplateNoDistance)}
+				data-greeting-late-night={i18n(I18nKey.welcomeGreetingLateNight)}
+				data-greeting-morning={i18n(I18nKey.welcomeGreetingMorning)}
+				data-greeting-afternoon={i18n(I18nKey.welcomeGreetingAfternoon)}
+				data-greeting-evening={i18n(I18nKey.welcomeGreetingEvening)}
+				data-lat={String(siteLocation.latitude)}
+				data-lng={String(siteLocation.longitude)}
+				data-show-ip={showIp ? "1" : "0"}
+				data-show-distance={showDistance ? "1" : "0"}
+				data-api-enable={locationApi.enable ? "1" : "0"}
+				data-api-base={locationApi.apiBaseUrl}
+				data-api-timeout={String(locationApi.requestTimeoutMs)}
+				data-cache-hours={String(cacheHours)}
+				data-lang={lang}
+			/>
+		</div>
+	)
+}
+
+<style>
+  /* 与公告正文分隔的圆角信息卡，不画横线 */
+  .welcome {
+    display: block;
+    margin-top: 0.875rem;
+    padding: 0.625rem 0.75rem 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--primary) 7%, transparent);
+  }
+
+  /* 定位失败时整卡隐藏，不留空壳 */
+  .welcome.is-failed {
+    display: none;
+  }
+
+  /* Lottie 欢迎动画：替代「欢迎信息」标题，固定高度，横向居中留白 */
+  .welcome-lottie {
+    width: 100%;
+    height: 2.75rem;
+    margin: 0 auto 0.25rem;
+  }
+
+  .welcome-lottie :global(svg) {
+    display: block;
+  }
+
+  /* 文案在定位返回前不占位，避免出现一张空卡 */
+  .welcome-text {
+    display: none;
+    font-size: 0.8125rem;
+    line-height: 1.75;
+    text-wrap: pretty;
+    word-break: break-word;
+  }
+
+  .welcome.is-ready .welcome-text {
+    display: block;
+    animation: welcome-fade-in 0.35s ease both;
+  }
+
+  :global(.welcome-accent) {
+    color: var(--primary);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes welcome-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  // 中文欢迎语的「本地梗」数据（src/data/welcome-cn.json）。下面那段是 is:inline
+  // 脚本，不能 import，所以在模块脚本里挂一次全局；JSON 跟着组件一起打包。
+  import welcomeCn from "@/shared/i18n/welcome-cn.json";
+
+  (window as unknown as { __welcomeCn?: unknown }).__welcomeCn = welcomeCn;
+  // 内联脚本可能已经先跑起来了，用事件告诉它数据到了
+  window.dispatchEvent(new Event("welcome-cn-ready"));
+
+  interface WelcomeAnim {
+    destroy(): void;
+    totalFrames: number;
+    goToAndStop(value: number, isFrame?: boolean): void;
+    addEventListener(name: string, callback: () => void): void;
+  }
+
+  // 动画第 196 帧写完「Welcome」，第 292 帧开始擦除，停在这之间即完整字形
+  const FULL_FRAME = 288;
+
+  const mounted = new Map<HTMLElement, WelcomeAnim>();
+  let attempts = 0;
+
+  // 提前拉取 lottie（与访客定位请求并行），不等定位结果
+  const lottieModule: Promise<typeof import("lottie-web")> | null = document.querySelector(
+    "[data-welcome-lottie]",
+  )
+    ? import("lottie-web")
+    : null;
+
+  async function mountWelcomeLottie() {
+    if (!lottieModule) return;
+
+    const nodes = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-welcome-lottie]"),
+    ).filter((node) => !mounted.has(node) && !!node.dataset.src && node.clientWidth > 0);
+
+    // 容器尚未布局完成（如侧栏还没显示）时短暂重试，最多 10 次
+    if (!nodes.length) {
+      if (attempts++ < 10) setTimeout(mountWelcomeLottie, 200);
+      return;
+    }
+
+    const { default: lottie } = await lottieModule;
+    const prefersReduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    nodes.forEach((node) => {
+      const animation = lottie.loadAnimation({
+        container: node,
+        renderer: "svg",
+        loop: false,
+        autoplay: !prefersReduce,
+        // 只播到「Welcome」写完的那一帧，不进入擦除，停在完整字形上
+        initialSegment: [0, FULL_FRAME],
+        path: node.dataset.src,
+      }) as unknown as WelcomeAnim;
+
+      if (prefersReduce) {
+        // 无障碍：不播放，直接显示完整「Welcome」
+        animation.addEventListener("DOMLoaded", () => {
+          animation.goToAndStop(FULL_FRAME, true);
+        });
+      }
+
+      mounted.set(node, animation);
+    });
+  }
+
+  function destroyWelcomeLottie() {
+    mounted.forEach((animation) => animation.destroy());
+    mounted.clear();
+    attempts = 0;
+  }
+
+  // DOM 解析完立刻挂载：此时卡片已在布局里，容器宽度不为 0
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", mountWelcomeLottie, { once: true });
+  } else {
+    requestAnimationFrame(mountWelcomeLottie);
+  }
+
+  // Swup 切页后重建动画（旧 DOM 已被替换，需先销毁实例）
+  document.addEventListener("swup:contentReplaced", () => {
+    destroyWelcomeLottie();
+    setTimeout(mountWelcomeLottie, 60);
+  });
+</script>
+
+<script is:inline>
+  (function () {
+    const CACHE_KEY = "firefly-welcome-geo";
+    // 这些城市本身带「市」的概念，不再追加
+    const CITY_SUFFIX_EXCLUDE = [
+      "香港",
+      "澳门",
+      "台北",
+      "新北",
+      "桃园",
+      "台中",
+      "台南",
+      "高雄",
+      "基隆",
+      "新竹",
+      "嘉义",
+    ];
+
+    function readCache(hours) {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !parsed.geo || !parsed.ts) return null;
+        if (Date.now() - parsed.ts > hours * 3600 * 1000) return null;
+        return parsed.geo;
+      } catch {
+        return null;
+      }
+    }
+
+    function writeCache(geo) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), geo: geo }));
+      } catch {
+        /* localStorage 不可用时忽略 */
+      }
+    }
+
+    /**
+     * 问自己的后端（高德 IP 定位，Key 与签名私钥都在服务端）。
+     * 后端没配 AMAP_KEY 时这条路由不存在：失败是常态，返回 null 让整卡隐藏。
+     */
+    async function fetchGeo(root) {
+      if (root.dataset.apiEnable !== "1") return null;
+      const base = (root.dataset.apiBase || "").replace(/\/+$/, "");
+      if (!base) return null;
+
+      try {
+        const res = await fetch(base + "/api/v1/location/me", {
+          signal: AbortSignal.timeout(Number(root.dataset.apiTimeout) || 8000),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        // known=false 是「后端也不知道你在哪」，不是故障：返回 null，卡片隐藏
+        if (!data || !data.known) return null;
+        return {
+          ip: data.ip || "",
+          region: data.province || "",
+          city: data.city || "",
+          lat: data.latitude,
+          lon: data.longitude,
+          distanceKm: data.distanceKm,
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    function formatLocation(geo, lang) {
+      const region = (geo.region || "").trim();
+      let city = (geo.city || "").trim();
+      if (lang.indexOf("zh") === 0 && city && !/[市州盟旗区县]$/.test(city)) {
+        if (CITY_SUFFIX_EXCLUDE.indexOf(city) === -1) city += "市";
+      }
+      const text = [region, city].filter(Boolean).join(" ");
+      return text || (geo.country || "").trim();
+    }
+
+    function distanceKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const rad = Math.PI / 180;
+      const dLat = (lat2 - lat1) * rad;
+      const dLon = (lon2 - lon1) * rad;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // ip 不可用时，把模板末尾「，IP 地址：{ip}」整段去掉
+    function stripIpClause(template) {
+      return template.replace(/[，,、；;.]?\s*[^，,、；;.{}]*\{ip\}\s*$/, "").trim();
+    }
+
+    function pickGreeting(root, hour) {
+      if (hour < 5) return root.dataset.greetingLateNight;
+      if (hour < 11) return root.dataset.greetingMorning;
+      if (hour < 18) return root.dataset.greetingAfternoon;
+      return root.dataset.greetingEvening;
+    }
+
+    /**
+     * 取这个城市的『本地梗』。
+     *
+     * 数据在 src/data/welcome-cn.json，由模块脚本挂到 window 上 —— 但模块脚本是
+     * defer 的，可能比这段内联脚本晚执行，所以这里等一下事件（最多 1.5 秒，
+     * 拿不到就退回普通模板，绝不因为一段欢迎语卡住页面）。
+     */
+    async function loadCnData() {
+      if (window.__welcomeCn) return window.__welcomeCn;
+      return await new Promise(function (resolve) {
+        const done = function () { resolve(window.__welcomeCn || null); };
+        window.addEventListener("welcome-cn-ready", done, { once: true });
+        window.setTimeout(done, 1500);
+      });
+    }
+
+    // 高德有时只给『恩施土家族苗族自治州』这种全名，先精确匹配，再去掉『市』试一次
+    function pickCityEntry(data, city) {
+      const name = (city || "").trim();
+      if (!data || !data.cities || !name) return null;
+      if (data.cities[name]) return data.cities[name];
+      const stripped = name.replace(/市$/, "");
+      return data.cities[stripped] || null;
+    }
+
+    // 按模板拼接节点，占位符用主题色强调，其余保持普通文本
+    function buildFragment(template, values) {
+      const token = /\{(location|greeting|time|distance|ip|intro|outro)\}/g;
+      const fragment = document.createDocumentFragment();
+      let last = 0;
+      let match = token.exec(template);
+      while (match) {
+        if (match.index > last) {
+          fragment.appendChild(document.createTextNode(template.slice(last, match.index)));
+        }
+        const value = values[match[1]];
+        if (value !== undefined && value !== null && value !== "") {
+          const span = document.createElement("span");
+          span.className = "welcome-accent";
+          span.dataset.welcomeField = match[1];
+          span.textContent = String(value);
+          fragment.appendChild(span);
+        }
+        last = token.lastIndex;
+        match = token.exec(template);
+      }
+      if (last < template.length) {
+        fragment.appendChild(document.createTextNode(template.slice(last)));
+      }
+      return fragment;
+    }
+
+    function hideCards() {
+      const cards = document.querySelectorAll(".welcome");
+      for (const card of cards) card.classList.add("is-failed");
+    }
+
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    // 实时刷新时间与问候语：只改已渲染的两个 span，不重建整段文案（避免闪烁与动画重放）
+    function updateClock() {
+      if (document.hidden) return;
+      const roots = document.querySelectorAll("[data-welcome]");
+      if (!roots.length) return;
+
+      const now = new Date();
+      const hour = now.getHours();
+      const time = pad2(hour) + ":" + pad2(now.getMinutes());
+
+      roots.forEach(function (root) {
+        const timeEl = root.querySelector('[data-welcome-field="time"]');
+        if (timeEl && timeEl.textContent !== time) timeEl.textContent = time;
+
+        const greetingEl = root.querySelector('[data-welcome-field="greeting"]');
+        if (greetingEl) {
+          const greeting = pickGreeting(root, hour);
+          if (greeting && greetingEl.textContent !== greeting) {
+            greetingEl.textContent = greeting;
+          }
+        }
+      });
+    }
+
+    // 单例定时器与监听：Swup 切页会重新执行本脚本，重复注册会叠加
+    if (!window.__welcomeClock) {
+      window.__welcomeClock = window.setInterval(updateClock, 1000);
+      // 从后台切回前台立即纠正一次，不用等下一个整秒
+      document.addEventListener("visibilitychange", updateClock);
+    }
+
+    async function initWelcome() {
+      const roots = document.querySelectorAll("[data-welcome]");
+      if (!roots.length) return;
+
+      const first = roots[0];
+      const cacheHours = Number(first.dataset.cacheHours) || 12;
+
+      const cnData = await loadCnData();
+
+      let geo = window.__welcomeGeo || readCache(cacheHours);
+      if (!geo) {
+        geo = await fetchGeo(first);
+        if (!geo) {
+          hideCards();
+          return;
+        }
+        window.__welcomeGeo = geo;
+        writeCache(geo);
+      }
+
+      const now = new Date();
+      const hour = now.getHours();
+      const time =
+        String(hour).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+      const location = formatLocation(geo, first.dataset.lang);
+
+      if (!location) {
+        hideCards();
+        return;
+      }
+
+      roots.forEach(function (root) {
+        const showDistance = root.dataset.showDistance === "1";
+        const lat = Number.parseFloat(root.dataset.lat);
+        const lng = Number.parseFloat(root.dataset.lng);
+        const geoLat = Number(geo.lat);
+        const geoLon = Number(geo.lon);
+        const hasGeoPoint =
+          Number.isFinite(geoLat) &&
+          Number.isFinite(geoLon) &&
+          Number.isFinite(lat) &&
+          Number.isFinite(lng);
+        // 服务端给的距离优先：它和缓存都在服务端一侧，也和后端配置的站长坐标一致；
+        // 没给（例如海外地址拿不到矩形）再退回本地计算
+        const serverDistance = Number(geo.distanceKm);
+        const distance = !showDistance
+          ? null
+          : Number.isFinite(serverDistance)
+            ? Math.round(serverDistance)
+            : hasGeoPoint
+              ? Math.round(distanceKm(lat, lng, geoLat, geoLon))
+              : null;
+
+        const withDistance = distance !== null;
+        let template = withDistance ? root.dataset.template : root.dataset.templateNoDistance;
+        const values = {
+          location: location,
+          greeting: pickGreeting(root, hour),
+          time: time,
+          distance: withDistance ? distance : null,
+          ip: root.dataset.showIp === "1" && geo.ip ? geo.ip : null,
+        };
+
+        // 有本地梗就用它整段替换：模板、开场梗、收尾话都来自 welcome-cn.json
+        const cn = cnData;
+        const entry = pickCityEntry(cn, geo.city);
+        if (entry) {
+          template = withDistance ? cn.template : cn.templateNoDistance;
+          const fallback = cn.fallback || {};
+          values.intro = entry.intro || fallback.intro || "";
+          values.outro = entry.outro || fallback.outro || "";
+        }
+
+        if (!values.ip) template = stripIpClause(template);
+
+        root.textContent = "";
+        root.appendChild(buildFragment(template, values));
+        const card = root.closest(".welcome");
+        if (card) {
+          card.classList.remove("is-failed");
+          card.classList.add("is-ready");
+        }
+      });
+    }
+
+    initWelcome();
+
+    // Swup 切页后重新渲染（只注册一次）
+    if (!window.__welcomeInit) {
+      window.__welcomeInit = true;
+      document.addEventListener("swup:contentReplaced", function () {
+        setTimeout(initWelcome, 100);
+      });
+    }
+  })();
+</script>

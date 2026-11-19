@@ -1,0 +1,96 @@
+---
+import { getImage } from "astro:assets";
+import * as path from "node:path";
+import type { ImageMetadata } from "astro";
+import { dynamicConfig } from "@/features/dynamic/config";
+import WidgetFrame from "@/shared/components/ui/WidgetFrame.astro";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import {
+	avatarMotionOverride,
+	isDynamicAvatar,
+	resolveRawAvatarUrl,
+} from "@/shared/lib/media/avatar";
+import { url } from "@/shared/lib/seo/url";
+import type { WidgetComponentConfig } from "@/shared/types/sidebarConfig";
+import DynamicSidebar from "./DynamicSidebar.svelte";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+
+const { class: className, style, widgetConfig } = Astro.props;
+const showTitle = widgetConfig?.showTitle !== false;
+const configuredLimit = widgetConfig?.specificConfig?.dynamic?.limit ?? 3;
+const limit = Math.max(1, Math.floor(configuredLimit));
+
+const apiUrl = dynamicConfig.apiUrl?.startsWith("http")
+	? dynamicConfig.apiUrl
+	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
+const memos = dynamicConfig.memos;
+
+const profileUrl = url(dynamicConfig.profileUrl || "/");
+
+// 弹窗条目需要头像的最终 URL，这里把本地资源先交给 Astro 生成一次
+async function resolveAvatar(src: string): Promise<string> {
+	if (!src) return "";
+	// 动图/视频必须直出原始文件，getImage 只会保留第一帧
+	if (avatarMotionOverride() ?? isDynamicAvatar(src)) {
+		return resolveRawAvatarUrl(src);
+	}
+	if (
+		src.startsWith("/") ||
+		src.startsWith("http://") ||
+		src.startsWith("https://") ||
+		src.startsWith("data:")
+	) {
+		return url(src);
+	}
+	const files = import.meta.glob<ImageMetadata>(
+		"../../../**/*.{png,jpg,jpeg,webp,avif}",
+		{ import: "default" },
+	);
+	const key = path.normalize(path.join("../../../", src)).replace(/\\/g, "/");
+	const loader = files[key];
+	if (!loader) return "";
+	try {
+		const image = await loader();
+		return (await getImage({ src: image, width: 96, format: "webp" })).src;
+	} catch {
+		return "";
+	}
+}
+
+const avatarUrl = await resolveAvatar(profileConfig.avatar || "");
+// 视频头像在弹窗里用 <video> 渲染，封面先顶上避免闪一下空白
+const avatarPosterUrl = profileConfig.avatarPoster
+	? resolveRawAvatarUrl(profileConfig.avatarPoster)
+	: "";
+---
+
+{
+	siteConfig.pages.dynamic && (
+		<WidgetFrame
+			name={i18n(I18nKey.latestDynamics)}
+			showTitle={showTitle}
+			id="latest-dynamics"
+			class={className}
+			style={style}
+		>
+			<DynamicSidebar
+				client:visible
+				apiUrl={apiUrl}
+				limit={limit}
+				{memos}
+				profileName={profileConfig.name}
+				{profileUrl}
+				{avatarUrl}
+				avatarPosterUrl={avatarPosterUrl}
+			/>
+		</WidgetFrame>
+	)
+}

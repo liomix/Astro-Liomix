@@ -17,21 +17,6 @@
       }
     ],
     "paths": {
-      "@components/*": [
-        "./src/components/*"
-      ],
-      "@assets/*": [
-        "./src/assets/*"
-      ],
-      "@utils/*": [
-        "./src/utils/*"
-      ],
-      "@i18n/*": [
-        "./src/i18n/*"
-      ],
-      "@layouts/*": [
-        "./src/layouts/*"
-      ],
       "@/*": [
         "./src/*"
       ]

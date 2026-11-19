@@ -8,7 +8,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { slug } from "github-slugger";
 import matter from "gray-matter";
-import { getApiUrlList, processCoverImageSync } from "../utils/image-utils";
+import {
+	getApiUrlList,
+	processCoverImageSync,
+} from "../shared/lib/media/image";
 
 const POSTS_DIR = fileURLToPath(new URL("../content/posts/", import.meta.url));
 const MARKDOWN_EXTENSION = /\.(?:md|mdx|markdown)$/i;

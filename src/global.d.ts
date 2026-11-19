@@ -1,5 +1,7 @@
-import type { SakuraManagerLike } from "./types/sakura-worker";
-import type { WavesManagerLike } from "./types/waves";
+import type {
+	SakuraManagerLike,
+	WavesManagerLike,
+} from "@/features/effects/types";
 
 declare global {
 	interface HTMLElementTagNameMap {

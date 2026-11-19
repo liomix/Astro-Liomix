@@ -1,0 +1,86 @@
+---
+/**
+ * 文章底部的版权卡片：标题 / 原文地址 / 作者 · 发布于 · 许可协议。
+ *
+ * 这里刻意不画许可证水印（曾经是右侧一个 15rem 的淡色 CC 图标，比卡片还高、被 overflow 裁成半个）：
+ * 大号半透明图形既读不出信息，又让右侧空出一大块。许可信息本来就由「许可协议」那一列的文字 + 链接承担。
+ *
+ * 结构分两段：上段是「这是什么」（标题 + 原文地址），发丝线隔开，下段是元信息
+ * （dl + 网格：小屏两列、大屏三列，值按列对齐；标签用 11px 大写字距压住层级，值统一 13px）。
+ */
+import { licenseConfig } from "@/features/post/config";
+import { profileConfig } from "@/shared/config/profileConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { formatDateToYYYYMMDD } from "@/shared/lib/format/date";
+
+interface Props {
+	title: string;
+	pubDate: Date;
+	class: string;
+	author: string;
+	sourceLink: string;
+	licenseName: string;
+	licenseUrl: string;
+}
+
+const { title, pubDate, author, sourceLink, licenseName, licenseUrl } =
+	Astro.props;
+const className = Astro.props.class;
+const profileConf = profileConfig;
+const licenseConf = licenseConfig;
+const postUrl = sourceLink || decodeURIComponent(Astro.url.toString());
+---
+
+<div
+  class={`relative transition overflow-hidden bg-(--license-block-bg) py-5 px-6 ${className}`}
+>
+  {/* 上段：标题 + 原文地址。地址降一档字号，只保留主题色做强调 */}
+  <div class="font-semibold text-[0.9375rem] leading-snug text-black/80 dark:text-white/80">
+    {title}
+  </div>
+  <a
+    href={postUrl}
+    class="mt-1 block text-[0.8125rem] leading-snug text-(--primary) break-all transition-colors hover:underline"
+  >
+    {postUrl}
+  </a>
+
+  {/* 发丝线：把「标题区」和「元信息区」分成两段，卡片不再是三行文字堆在一起 */}
+  <div class="my-3.5 h-px bg-black/[0.06] dark:bg-white/10"></div>
+
+  {/* 下段：元信息 */}
+  <dl class="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+    <div class="min-w-0">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
+        {i18n(I18nKey.author)}
+      </dt>
+      <dd class="mt-1 truncate text-[0.8125rem] text-black/75 dark:text-white/75">
+        {author || profileConf.name}
+      </dd>
+    </div>
+    <div class="min-w-0">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
+        {i18n(I18nKey.publishedAt)}
+      </dt>
+      <dd class="mt-1 text-[0.8125rem] tabular-nums text-black/75 dark:text-white/75">
+        {formatDateToYYYYMMDD(pubDate)}
+      </dd>
+    </div>
+    <div class="col-span-2 min-w-0 sm:col-span-1">
+      <dt class="text-[0.6875rem] font-medium uppercase tracking-[0.08em] text-black/50 dark:text-white/50">
+        {i18n(I18nKey.license)}
+      </dt>
+      <dd class="mt-1">
+        <a
+          href={licenseName ? licenseUrl || undefined : licenseConf.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-[0.8125rem] text-(--primary) transition-colors hover:underline"
+        >
+          {licenseName || licenseConf.name}
+        </a>
+      </dd>
+    </div>
+  </dl>
+</div>

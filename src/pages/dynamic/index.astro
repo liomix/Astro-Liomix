@@ -1,14 +1,15 @@
 ---
-import DynamicFeed from "@/components/features/dynamic/DynamicFeed.svelte";
-import DynamicItemTemplate from "@/components/features/dynamic/DynamicItemTemplate.astro";
-import { dynamicConfig, siteConfig } from "@/config";
-import { commentApiConfig } from "@/config/commentApiConfig";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import DynamicFeed from "@/features/dynamic/components/DynamicFeed.svelte";
+import DynamicItemTemplate from "@/features/dynamic/components/DynamicItemTemplate.astro";
+import { dynamicConfig } from "@/features/dynamic/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/dynamic.css";
-import { url } from "@/utils/url-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { commentApiConfig } from "@/shared/lib/comments/config";
+import "@/shared/styles/common.css";
+import "@/features/dynamic/styles/dynamic.css";
+import { url } from "@/shared/lib/seo/url";
 
 if (!siteConfig.pages.dynamic) {
 	return Astro.redirect("/404/");

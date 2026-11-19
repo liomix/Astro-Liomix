@@ -1,21 +1,21 @@
 ---
 import { Icon } from "astro-icon/components";
-import MalGrid from "@/components/features/catalog/mal/MalGrid.svelte";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import MalGrid from "@/features/catalog/mal/components/MalGrid.svelte";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/media-grid.css";
-import EmptyState from "@/components/ui/EmptyState.astro";
-import type { MalListItem } from "@/types/mal";
-import { formatDateI18n } from "@/utils/date-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/features/catalog/styles/media-grid.css";
+import { filterNsfw, isMalNsfw } from "@/features/catalog/lib/nsfw";
 import {
 	fetchMalList,
 	type MalCategory,
 	type MalListKind,
-} from "@/utils/mal-utils";
-import { filterNsfw, isMalNsfw } from "@/utils/nsfw-utils";
+} from "@/features/catalog/mal/lib/mal";
+import type { MalListItem } from "@/features/catalog/mal/types";
+import EmptyState from "@/shared/components/ui/EmptyState.astro";
+import { formatDateI18n } from "@/shared/lib/format/date";
 
 // 检查页面是否启用
 if (!siteConfig.pages.mal) {

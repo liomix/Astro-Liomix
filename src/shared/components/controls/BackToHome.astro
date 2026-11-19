@@ -1,0 +1,53 @@
+---
+import FloatingButton from "@/shared/components/ui/FloatingButton.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { url } from "@/shared/lib/seo/url";
+---
+
+
+<FloatingButton
+  id="back-to-home-btn"
+  icon="material-symbols:home-outline-rounded"
+  ariaLabel={i18n(I18nKey.home)}
+  onclick="backToHome()"
+  class="hide"
+/>
+
+
+
+<script is:inline define:vars={{ homeUrl: url("/") }}>
+  function updateBackToHomeVisibility() {
+    const btn = document.getElementById("back-to-home-btn");
+    if (!btn) return;
+
+    const path = window.location.pathname.replace(/\/$/, "") || "/";
+    const homePath = homeUrl.replace(/\/$/, "") || "/";
+    if (path === homePath) {
+      btn.classList.add("hide");
+    } else {
+      btn.classList.remove("hide");
+    }
+  }
+
+  // Initial check
+  updateBackToHomeVisibility();
+
+  // 防止 Swup 切页重跑脚本时重复注册监听器（守卫只包监听器注册，上面每次重跑仍需刷新当前页面状态）
+  if (!window.__backToHomeInit) {
+    window.__backToHomeInit = true;
+    // Re-check on view transitions or swup navigation
+    document.addEventListener("astro:page-load", updateBackToHomeVisibility);
+    document.addEventListener("swup:contentReplaced", updateBackToHomeVisibility);
+  }
+</script>
+
+<script>
+  import { goHomeFromEntry, initHomeEntryLinks } from "@/shared/lib/layout/home-entry";
+
+  // 分类栏的房子图标等 data-home-entry 入口统一走这里（含落地后定位到内容区）
+  initHomeEntryLinks();
+
+  // FloatingButton 的 onclick 是字符串属性，这里补一个全局函数给它调用
+  (window as Window & { backToHome?: () => void }).backToHome = goHomeFromEntry;
+</script>

@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { glob } from "glob";
-import { isValidGithubRepository } from "../src/utils/github-card-utils";
+import { isValidGithubRepository } from "../src/shared/lib/github-card";
 
 const OUTPUT_FILE = "src/data/github-card-data.json";
 const CONTENT_GLOB = "src/content/**/*.{md,mdx}";

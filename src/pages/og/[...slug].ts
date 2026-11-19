@@ -4,13 +4,13 @@ import * as fs from "node:fs";
 import type { APIContext, GetStaticPaths } from "astro";
 import type { FontDetails } from "takumi-js";
 import { ImageResponse } from "takumi-js/response";
-import { profileConfig } from "@/config/profileConfig";
-import { siteConfig } from "@/config/siteConfig";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
 import {
 	hasVideoExtension,
 	isAnimatedImageBuffer,
-} from "@/utils/image-animation";
-import { removeFileExtension } from "@/utils/url-utils";
+} from "@/shared/lib/media/image-animation";
+import { removeFileExtension } from "@/shared/lib/seo/url";
 
 export const prerender = true;
 

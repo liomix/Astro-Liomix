@@ -1,19 +1,19 @@
 ---
-import Bookshelf3D from "@/components/features/books/Bookshelf3D.svelte";
-import ReadingHeatmap from "@/components/features/books/ReadingHeatmap.svelte";
-import { siteConfig } from "@/config";
-import { wereadConfig } from "@/config/wereadConfig";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import Bookshelf3D from "@/features/navigation/books/components/Bookshelf3D.svelte";
+import ReadingHeatmap from "@/features/navigation/books/components/ReadingHeatmap.svelte";
+import { wereadConfig } from "@/features/navigation/books/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/books.css";
-import { wereadCacheStats } from "@/utils/weread-cache";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/features/navigation/books/styles/books.css";
+import { wereadCacheStats } from "@/features/navigation/books/lib/weread-cache";
 import {
 	fetchWereadData,
 	formatHours,
 	formatMinutes,
-} from "@/utils/weread-utils";
+} from "@/features/navigation/books/lib/weread-utils";
 
 // 页面开关：站点开关或微信读书配置任一关闭都跳 404
 if (!siteConfig.pages.books || !wereadConfig.enable) {

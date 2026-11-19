@@ -1,37 +1,37 @@
 ---
 import type { MarkdownHeading } from "astro";
-import Live2DWidget from "@/components/features/effects/Live2DWidget.astro";
-import SpineModel from "@/components/features/effects/SpineModel.astro";
-import FloatingControls from "@/components/shell/FloatingControls.astro";
-import Footer from "@/components/shell/Footer.astro";
-import HeaderTopRow from "@/components/shell/HeaderTopRow.astro";
-import NavMenuPanel from "@/components/shell/NavMenuPanel.astro";
-import Sidebar from "@/components/shell/Sidebar.astro";
-import SidebarColumn from "@/components/shell/SidebarColumn.astro";
-import TabBar from "@/components/shell/TabBar.astro";
-import ToastHost from "@/components/shell/ToastHost.svelte";
-import WallpaperSection from "@/components/shell/WallpaperSection.astro";
-import {
-	articlePurityConfig,
-	live2dWidgetConfig,
-	navBarConfig,
-	navbarMode,
-	navPurityConfig,
-	sidebarLayoutConfig,
-	siteConfig,
-	widePageConfig,
-} from "@/config";
-import { getBannerVisibilityState } from "@/utils/banner-visibility-utils";
-import { getBackgroundImages, isHomePage } from "@/utils/layout-utils";
-import { resolveNavMenuLinks } from "@/utils/nav-menu-utils";
+import Live2DWidget from "@/features/effects/components/Live2DWidget.astro";
+import SpineModel from "@/features/effects/components/SpineModel.astro";
+import { live2dWidgetConfig } from "@/features/effects/config";
+import HeaderTopRow from "@/features/navigation/components/HeaderTopRow.astro";
+import NavMenuPanel from "@/features/navigation/components/NavMenuPanel.astro";
+import TabBar from "@/features/navigation/components/TabBar.astro";
+import { navBarConfig, navPurityConfig } from "@/features/navigation/config";
+import { resolveNavMenuLinks } from "@/features/navigation/lib/nav-menu";
 import {
 	collectNavPurityPaths,
 	matchesPathScope,
-} from "@/utils/nav-purity-utils";
-import { getEffectiveSidebarState } from "@/utils/sidebar-effective-utils";
+} from "@/features/navigation/lib/nav-purity";
+import { articlePurityConfig } from "@/features/post/config";
+import FloatingControls from "@/shared/components/shell/FloatingControls.astro";
+import Footer from "@/shared/components/shell/Footer.astro";
+import Sidebar from "@/shared/components/shell/Sidebar.astro";
+import SidebarColumn from "@/shared/components/shell/SidebarColumn.astro";
+import ToastHost from "@/shared/components/shell/ToastHost.svelte";
+import WallpaperSection from "@/shared/components/shell/WallpaperSection.astro";
+import { navbarMode } from "@/shared/config";
+import { sidebarLayoutConfig } from "@/shared/config/sidebarConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import { widePageConfig } from "@/shared/config/widePageConfig";
+import { getBannerVisibilityState } from "@/shared/lib/layout/banner-visibility";
+import {
+	getBackgroundImages,
+	isHomePage,
+} from "@/shared/lib/layout/layout-utils";
+import { getEffectiveSidebarState } from "@/shared/lib/layout/sidebar-effective";
 import Layout from "./Layout.astro";
 
-import "@/styles/expressive-code.css";
+import "@/shared/styles/expressive-code.css";
 
 interface Props {
 	title?: string;

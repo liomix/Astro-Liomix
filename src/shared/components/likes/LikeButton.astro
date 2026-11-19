@@ -1,0 +1,52 @@
+---
+/**
+ * 通用点赞按钮：Lottie 爱心 + 数字。
+ *
+ * 行为全在 utils/likes.ts（和 CommentButton 共用一份），这里只负责长什么样：
+ * 文章页由调用方给 id，动态卡片把 id 写在条目上、按钮不传，靠祖先找。
+ */
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { formatCompactNumber } from "@/shared/lib/format/number";
+import "@/shared/styles/components/atom-action.css";
+
+interface Props {
+	/** 点赞对象的 id；留空则取祖先 [data-like-id]（动态卡片就是这么用的） */
+	id?: string;
+	/** 展示的基数：数字显示 base + 自己这一票 */
+	count?: number;
+	class?: string;
+	/** 无障碍文案，默认「点赞」 */
+	label?: string;
+}
+
+const {
+	id = "",
+	count = 0,
+	class: className,
+	label = i18n(I18nKey.dynamicLike),
+} = Astro.props;
+---
+
+<button
+	type="button"
+	class:list={["atom-action", className]}
+	data-like
+	data-like-id={id || undefined}
+	data-like-base={count}
+	aria-pressed="false"
+	aria-label={label}
+	title={label}
+>
+	<dynamic-lottie-icon data-animation="like"></dynamic-lottie-icon>
+	<span class="atom-action__count" data-like-count>{formatCompactNumber(count)}</span>
+</button>
+
+<script>
+	import { registerDynamicLottieIcons } from "@/shared/components/ui/lottie-icon";
+	import { bindLikeButtons } from "@/shared/lib/likes/likes";
+
+	// 先注册自定义元素再绑事件：爱心是 <dynamic-lottie-icon> 自己画的
+	registerDynamicLottieIcons();
+	bindLikeButtons();
+</script>

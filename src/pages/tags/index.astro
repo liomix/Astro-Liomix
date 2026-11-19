@@ -1,11 +1,11 @@
 ---
 import { Icon } from "astro-icon/components";
-import TagBarChart from "@/components/features/stats/TagBarChart.astro";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import TagBarChart from "@/features/stats/components/TagBarChart.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import { getTagList } from "@/utils/content-utils";
-import { getTagUrl } from "@/utils/url-utils";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getTagList } from "@/shared/lib/content/content-utils";
+import { getTagUrl } from "@/shared/lib/seo/url";
 
 const tags = await getTagList();
 

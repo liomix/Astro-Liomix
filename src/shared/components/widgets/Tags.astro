@@ -1,0 +1,42 @@
+---
+
+import TagLink from "@/shared/components/ui/TagLink.astro";
+import WidgetFrame from "@/shared/components/ui/WidgetFrame.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { getTagList } from "@/shared/lib/content/content-utils";
+import { getTagUrl, url } from "@/shared/lib/seo/url";
+import type { WidgetComponentConfig } from "@/shared/types/sidebarConfig";
+
+const tags = await getTagList();
+
+const COLLAPSED_HEIGHT = "7.5rem";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+const { class: className, style, widgetConfig } = Astro.props;
+
+const collapseThreshold = widgetConfig?.specificConfig?.collapseThreshold;
+const showTitle = widgetConfig?.showTitle !== false;
+const isCollapsed = collapseThreshold ? tags.length > collapseThreshold : false;
+---
+<WidgetFrame name={i18n(I18nKey.tags)} showTitle={showTitle} id="tags" isCollapsed={isCollapsed} collapsedHeight={COLLAPSED_HEIGHT} useExpandedButtonSpacing={true} moreUrl={url("/tags/")} class={className} style={style}>
+    <div class="tags-container">
+        {tags.map(t => (
+            <TagLink href={getTagUrl(t.name)} label={`View all posts with the ${t.name.trim()} tag`}>
+                {t.name.trim()}
+            </TagLink>
+        ))}
+    </div>
+</WidgetFrame>
+
+<style>
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+</style>

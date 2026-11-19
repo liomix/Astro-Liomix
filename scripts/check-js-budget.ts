@@ -62,7 +62,9 @@ if (kb > BUDGET_KB) {
 	console.error(`\n[budget] 超预算：${kb.toFixed(1)} KB > ${BUDGET_KB} KB`);
 	console.error("[budget] 明细（最大的 8 个）：");
 	for (const r of rows.sort((a, b) => b.bytes - a.bytes).slice(0, 8)) {
-		console.error(`    ${(r.bytes / 1024).toFixed(1).padStart(6)} KB  ${r.file}`);
+		console.error(
+			`    ${(r.bytes / 1024).toFixed(1).padStart(6)} KB  ${r.file}`,
+		);
 	}
 	process.exit(1);
 }

@@ -1,0 +1,60 @@
+---
+import { Icon } from "astro-icon/components";
+import "@/shared/styles/markdown/markdown.css";
+import "@/shared/styles/markdown/markdown-extend.styl";
+import { dynamicConfig } from "@/features/dynamic/config";
+import AvatarImage from "@/shared/components/ui/AvatarImage.astro";
+import { profileConfig } from "@/shared/config/profileConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { avatarMotionOverride } from "@/shared/lib/media/avatar";
+import { url } from "@/shared/lib/seo/url";
+import DynamicActionBar from "./DynamicActionBar.astro";
+import DynamicGallery from "./DynamicGallery.astro";
+
+const profileLabel = i18n(I18nKey.dynamicProfile).replace(
+	"{name}",
+	profileConfig.name,
+);
+const profileUrl = url(dynamicConfig.profileUrl || "/");
+---
+
+<template data-dynamic-item-template>
+	<dynamic-entry class="page-entry card-base" data-dynamic-entry>
+		<article>
+			<header class="page-entry-header">
+				<a href={profileUrl} class="page-avatar" aria-label={profileLabel}>
+					<AvatarImage
+						src={profileConfig.avatar || ""}
+						alt={profileConfig.name}
+						widths={[112]}
+						sizes="56px"
+						loading="lazy"
+						fadeIn={false}
+						animated={avatarMotionOverride()}
+						poster={profileConfig.avatarPoster}
+					/>
+				</a>
+				<div class="page-identity">
+					<a href={profileUrl} class="page-author" aria-label={profileLabel}>
+						<strong data-dynamic-author>{profileConfig.name}</strong>
+					</a>
+					<span class="page-pinned-badge" data-dynamic-pinned hidden>
+						<Icon name="material-symbols:push-pin" class="size-3" />
+						{i18n(I18nKey.pinned)}
+					</span>
+				</div>
+			</header>
+
+			<div class="page-content custom-md" data-dynamic-content></div>
+			<DynamicGallery sourceId="dynamic-template-content" />
+
+			<footer class="page-footer">
+				<a class="page-time" data-dynamic-permalink>
+					<time data-dynamic-time></time>
+				</a>
+				<DynamicActionBar />
+			</footer>
+		</article>
+	</dynamic-entry>
+</template>

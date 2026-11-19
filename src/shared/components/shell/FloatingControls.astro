@@ -1,0 +1,123 @@
+---
+import type { MarkdownHeading } from "astro";
+import PlaybackSettings from "@/features/music/components/PlaybackSettings.svelte";
+import { musicPlayerConfig } from "@/features/music/config";
+import FloatingTOC from "@/features/post/components/FloatingTOC.astro";
+import ImmersiveReading from "@/features/post/components/ImmersiveReading.astro";
+import ImmersiveTOC from "@/features/post/components/ImmersiveTOC.astro";
+import SettingsButton from "@/features/theme/components/SettingsButton.astro";
+import SettingsMenu from "@/features/theme/components/SettingsMenu.astro";
+import { displaySettingsConfig } from "@/features/theme/config";
+import BackToComment from "@/shared/components/controls/BackToComment.astro";
+import BackToHome from "@/shared/components/controls/BackToHome.astro";
+import BackToTop from "@/shared/components/controls/BackToTop.astro";
+import { siteConfig } from "@/shared/config/siteConfig";
+
+interface Props {
+	headings?: MarkdownHeading[];
+	encrypted?: boolean;
+}
+
+const { headings, encrypted } = Astro.props;
+const immersiveReadingEnabled =
+	siteConfig.post.immersiveReading?.enable !== false;
+// 主题设置面板始终有日夜切换，只要总开关开着就显示入口；播放设置则看音乐播放器是否在用
+const hasThemeSettings = displaySettingsConfig.enable;
+const hasPlaybackSettings =
+	musicPlayerConfig.showInNavbar === true ||
+	musicPlayerConfig.showInSidebar !== false;
+const showSettingsButton = hasThemeSettings || hasPlaybackSettings;
+---
+
+<div class="floating-controls-container">
+  <FloatingTOC headings={headings ?? []} encrypted={encrypted} />
+  {immersiveReadingEnabled && (
+    <>
+      <ImmersiveReading />
+      <ImmersiveTOC headings={headings ?? []} encrypted={encrypted} />
+    </>
+  )}
+  <BackToComment />
+  <BackToHome />
+  {showSettingsButton && <SettingsButton />}
+  <BackToTop />
+</div>
+
+<!-- 设置浮层挂在按钮组之外：容器带 pointer-events:none，浮层需要自己接管指针事件 -->
+{showSettingsButton && (
+  <>
+    <SettingsMenu />
+    {hasPlaybackSettings && <PlaybackSettings client:load />}
+  </>
+)}
+
+<style>
+  .floating-controls-container {
+    position: fixed;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end; /* 右对齐 */
+    pointer-events: none; /* 容器不阻挡点击 */
+    
+    /* 默认桌面端位置 - 对应 BackToTop 的位置 */
+    right: 1rem;
+    bottom: 4rem;
+  }
+
+  /* 响应式调整 - 保持原有的位置逻辑 */
+  @media (max-width: 1024px) {
+    .floating-controls-container {
+      right: 1rem;
+      bottom: 4rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .floating-controls-container {
+      right: 0.75rem;
+      bottom: 4rem;
+      gap: 0.5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .floating-controls-container {
+      right: 0.5rem;
+      bottom: 4rem;
+    }
+  }
+
+  /* 高缩放比例适配 */
+  @media (min-resolution: 2dppx) {
+    .floating-controls-container {
+      right: max(0.5rem, 2rem - 2vw);
+      bottom: max(3rem, 4rem - 5vh);
+    }
+  }
+  
+  /* 横屏模式适配 */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .floating-controls-container {
+      bottom: 4rem; 
+    }
+  }
+
+  /* 极低分辨率适配 */
+  @media (max-width: 320px) {
+    .floating-controls-container {
+        right: 0.125rem;
+        bottom: 4rem;
+    }
+  }
+
+  /* 移动端播放条铺满整个底边，展开歌词行时卡片会高一行：
+     按钮列跟着上移同样的高度，否则会被压在卡片下面。
+     高度值与 NowPlayingCard 的 --np-lyric-h 保持一致。 */
+  @media (max-width: 520px) {
+    :global(body:has(.now-playing.has-lyric:not(.is-mini))) .floating-controls-container {
+      bottom: calc(4rem + 1.0625rem);
+    }
+  }
+</style>

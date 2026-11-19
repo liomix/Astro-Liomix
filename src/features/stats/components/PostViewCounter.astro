@@ -1,0 +1,155 @@
+---
+/**
+ * 文章阅读量客户端：在文章页上报一次浏览，并把计数回填到页面上的占位符。
+ *
+ * 区分两种元素，避免「刷首页把所有文章都算一遍」：
+ *
+ * - `data-post-views="slug"`     只负责显示，列表卡片用这个
+ * - `data-post-view-trigger="slug"` 显示 + 上报，只有文章详情页加
+ *
+ * 列表页一次批量询问所有卡片（`GET /api/v1/count/posts?slugs=…`），
+ * 文章页只上报当前这一篇，POST 的返回体就是最新值，不再多发一次读取。
+ */
+---
+
+<script>
+	import { siteStatsConfig } from "@/features/stats/config";
+	import { ApiError } from "@/shared/lib/http/api-client";
+	import { formatCompactNumber } from "@/shared/lib/format/number";
+	import { fetchPostViews, reportPostView } from "@/features/stats/client";
+
+	/**
+	 * slug → 阅读量。跨 Swup 切页保留，切回来先显示旧值再刷新，避免闪「—」。
+	 *
+	 * 带时间戳是两件事分开：**显示**不看年龄（旧值也比「—」好），
+	 * **要不要重新问**才看年龄。没有 TTL 的话每次切页都把所有卡片重问一遍。
+	 */
+	const cached = new Map<string, { views: number; at: number }>();
+	/** 缓存有效期；过了就重新问一次，没过就直接用 */
+	const VIEW_TTL_MS = 60_000;
+	/** 条数上限：一个会话里翻过的文章会一直涨，必须封顶 */
+	const VIEW_CACHE_MAX = 500;
+	/** 正在进行的批量读取，切页时中止它 —— 旧页面的数字已经没人看了 */
+	let inflight: AbortController | null = null;
+
+	function rememberViews(slug: string, views: number): void {
+		// 先删再插 ≈ LRU：最久没被写过的排在最前，超限时先淘汰它
+		cached.delete(slug);
+		cached.set(slug, { views, at: Date.now() });
+		while (cached.size > VIEW_CACHE_MAX) {
+			const oldest = cached.keys().next().value;
+			if (oldest === undefined) break;
+			cached.delete(oldest);
+		}
+	}
+
+	/**
+	 * 已上报过浏览的路径。一次导航可能派发多个 swup 事件（content:replace /
+	 * page:view / contentReplaced），按路径去重，避免同一篇文章被 +2、+3。
+	 * 整页刷新会重置它，所以刷新仍然算一次新浏览。
+	 */
+	let reportedPath = "";
+
+	function currentPath(): string {
+		return window.location.pathname + window.location.search;
+	}
+
+	function slugsOf(
+		selector: string,
+		attribute: "postViews" | "postViewTrigger",
+	): string[] {
+		const slugs = new Set<string>();
+		document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+			const slug = element.dataset[attribute];
+			if (slug) slugs.add(slug);
+		});
+		return [...slugs];
+	}
+
+	function paint(): void {
+		document
+			.querySelectorAll<HTMLElement>("[data-post-views]")
+			.forEach((element) => {
+				const slug = element.dataset.postViews;
+				if (!slug) return;
+				const entry = cached.get(slug);
+				if (!entry) return;
+				element.textContent = formatCompactNumber(entry.views);
+			});
+	}
+
+	async function collect(): Promise<void> {
+		const displayed = slugsOf("[data-post-views]", "postViews");
+		if (displayed.length === 0) return;
+
+		// 先回填缓存，卡片上的数字不会因为切页而短暂消失
+		paint();
+
+		// 文章详情页才会带 trigger：给它 +1，返回体同时就是最新值
+		const counted = new Set<string>();
+		const path = currentPath();
+		if (path !== reportedPath) {
+			reportedPath = path;
+			for (const slug of slugsOf(
+				"[data-post-view-trigger]",
+				"postViewTrigger",
+			)) {
+				try {
+					const counts = await reportPostView(slug);
+					rememberViews(counts.slug, counts.views);
+					counted.add(counts.slug);
+				} catch (error) {
+					console.warn("[post-views] 上报阅读量失败", error);
+				}
+			}
+		}
+
+		// 剩下的（列表页的全部卡片）一次批量读取。跳过两种：刚上报过的（返回体就是最新值），
+		// 以及缓存还新鲜的（切页回来没必要重问一遍）
+		const now = Date.now();
+		const pending = displayed.filter((slug) => {
+			if (counted.has(slug)) return false;
+			const entry = cached.get(slug);
+			return !entry || now - entry.at >= VIEW_TTL_MS;
+		});
+		if (pending.length > 0) {
+			// 换页时上一批已经没人看了：中止它，别让旧响应盖住新页面的数字
+			inflight?.abort();
+			inflight = new AbortController();
+			try {
+				for (const counts of await fetchPostViews(pending, inflight.signal)) {
+					rememberViews(counts.slug, counts.views);
+				}
+			} catch (error) {
+				// 自己取消的不是失败，静默即可；真失败也只是数字停在旧值上
+				if (!(error instanceof ApiError && error.kind === "aborted")) {
+					console.warn("[post-views] 读取阅读量失败", error);
+				}
+			}
+		}
+
+		paint();
+	}
+
+	function init(): void {
+		if (!siteStatsConfig.enable || !siteStatsConfig.articleViews) return;
+
+		void collect();
+
+		// Swup 切页后 DOM 被替换；监听器只注册一次。
+		// 三个事件名都要绑：Swup 4 走 content:replace / page:view，
+		// contentReplaced 是旧名，只在部分场景（如首次进入）派发，
+		// 只绑它会导致「返回上一页」时数字停在「—」。
+		if (window.__postViewsInit) return;
+		window.__postViewsInit = true;
+		for (const event of [
+			"swup:content:replace",
+			"swup:contentReplaced",
+			"swup:page:view",
+		]) {
+			document.addEventListener(event, () => void collect());
+		}
+	}
+
+	init();
+</script>

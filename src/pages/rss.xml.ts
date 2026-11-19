@@ -1,9 +1,9 @@
 import rss, { type RSSFeedItem } from "@astrojs/rss";
-import { getSortedPosts } from "@utils/content-utils";
-import { formatDateI18nWithTime } from "@utils/date-utils";
-import { renderFeedEntries } from "@utils/feed-utils";
 import type { APIContext } from "astro";
-import { siteConfig } from "@/config";
+import { siteConfig } from "@/shared/config/siteConfig";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
+import { renderFeedEntries } from "@/shared/lib/content/feed-utils";
+import { formatDateI18nWithTime } from "@/shared/lib/format/date";
 import pkg from "../../package.json";
 
 export const prerender = true;

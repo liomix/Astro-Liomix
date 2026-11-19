@@ -1,0 +1,25 @@
+---
+import { musicPlayerConfig } from "@/features/music/config";
+import WidgetFrame from "@/shared/components/ui/WidgetFrame.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import type { WidgetComponentConfig } from "@/shared/types/sidebarConfig";
+import MusicPlayer from "./MusicPlayer.astro";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+const { class: className, style, widgetConfig } = Astro.props;
+
+const widgetId = `music-widget-${Math.random().toString(36).substring(2, 9)}`;
+
+const showTitle = widgetConfig?.showTitle !== false;
+---
+
+{musicPlayerConfig.showInSidebar !== false && (
+	<WidgetFrame id={`${widgetId}-layout`} class={className} style={style} name={i18n(I18nKey.music)} showTitle={showTitle}>
+		<MusicPlayer id={widgetId} />
+	</WidgetFrame>
+)}

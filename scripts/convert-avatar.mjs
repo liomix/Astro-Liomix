@@ -26,7 +26,17 @@ import process from "node:process";
 const DEFAULT_OUT = "src/assets/images/avatar/avatar-motion.mp4";
 
 function parseArgs(argv) {
-	const args = { input: "", out: "", size: 256, fps: 12, quality: 62, start: 0, duration: null, format: "mp4", square: "center" };
+	const args = {
+		input: "",
+		out: "",
+		size: 256,
+		fps: 12,
+		quality: 62,
+		start: 0,
+		duration: null,
+		format: "mp4",
+		square: "center",
+	};
 	const rest = [];
 	for (let i = 0; i < argv.length; i += 1) {
 		const arg = argv[i];
@@ -85,11 +95,21 @@ function resolveFfmpeg() {
 	if (process.env.FFMPEG_PATH) candidates.push(process.env.FFMPEG_PATH);
 
 	const exe = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
-	const prefixes = ["", "node_modules/@ffmpeg-installer", "node_modules/ffmpeg-static"];
+	const prefixes = [
+		"",
+		"node_modules/@ffmpeg-installer",
+		"node_modules/ffmpeg-static",
+	];
 	for (const prefix of prefixes) {
 		const guesses = [
 			path.join(prefix, exe),
-			path.join(prefix, process.platform === "win32" ? "win32-x64" : `${process.platform}-${process.arch}`, exe),
+			path.join(
+				prefix,
+				process.platform === "win32"
+					? "win32-x64"
+					: `${process.platform}-${process.arch}`,
+				exe,
+			),
 		];
 		for (const guess of guesses) {
 			if (fs.existsSync(guess)) candidates.push(path.resolve(guess));
@@ -99,7 +119,12 @@ function resolveFfmpeg() {
 	candidates.push("ffmpeg");
 
 	for (const candidate of candidates) {
-		if (candidate && (candidate === "ffmpeg" ? hasBinary(candidate) : fs.existsSync(candidate) && hasBinary(candidate))) {
+		if (
+			candidate &&
+			(candidate === "ffmpeg"
+				? hasBinary(candidate)
+				: fs.existsSync(candidate) && hasBinary(candidate))
+		) {
 			return candidate;
 		}
 	}
@@ -107,13 +132,18 @@ function resolveFfmpeg() {
 }
 
 function buildFilters(args) {
-	const pos = {
-		center: "crop='min(iw,ih)':'min(iw,ih)'",
-		top: "crop='min(iw,ih)':'min(iw,ih)':(iw-min(iw,ih))/2:0",
-		left: "crop='min(iw,ih)':'min(iw,ih)':0:(ih-min(iw,ih))/2",
-		right: "crop='min(iw,ih)':'min(iw,ih)':iw-min(iw,ih):(ih-min(iw,ih))/2",
-	}[args.square] || "crop='min(iw,ih)':'min(iw,ih)'";
-	return [pos, `scale=${args.size}:${args.size}:flags=lanczos`, `fps=${args.fps}`].join(",");
+	const pos =
+		{
+			center: "crop='min(iw,ih)':'min(iw,ih)'",
+			top: "crop='min(iw,ih)':'min(iw,ih)':(iw-min(iw,ih))/2:0",
+			left: "crop='min(iw,ih)':'min(iw,ih)':0:(ih-min(iw,ih))/2",
+			right: "crop='min(iw,ih)':'min(iw,ih)':iw-min(iw,ih):(ih-min(iw,ih))/2",
+		}[args.square] || "crop='min(iw,ih)':'min(iw,ih)'";
+	return [
+		pos,
+		`scale=${args.size}:${args.size}:flags=lanczos`,
+		`fps=${args.fps}`,
+	].join(",");
 }
 
 function humanSize(bytes) {
@@ -124,7 +154,9 @@ function humanSize(bytes) {
 
 const args = parseArgs(process.argv.slice(2));
 if (!args.input) {
-	console.error("用法: pnpm avatar:convert <输入文件> [--out 路径] [--size 256] [--fps 12] [--quality 62] [--format webp|mp4|gif]");
+	console.error(
+		"用法: pnpm avatar:convert <输入文件> [--out 路径] [--size 256] [--fps 12] [--quality 62] [--format webp|mp4|gif]",
+	);
 	process.exit(1);
 }
 if (!fs.existsSync(args.input)) {
@@ -152,8 +184,28 @@ fs.mkdirSync(path.dirname(out), { recursive: true });
 
 const filters = buildFilters(args);
 const encode = {
-	webp: ["-c:v", "libwebp", "-lossless", "0", "-q:v", String(args.quality), "-compression_level", "6", "-loop", "0"],
-	mp4: ["-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", String(Math.min(40, Math.round((100 - args.quality) / 2) + 18)), "-movflags", "+faststart"],
+	webp: [
+		"-c:v",
+		"libwebp",
+		"-lossless",
+		"0",
+		"-q:v",
+		String(args.quality),
+		"-compression_level",
+		"6",
+		"-loop",
+		"0",
+	],
+	mp4: [
+		"-c:v",
+		"libx264",
+		"-pix_fmt",
+		"yuv420p",
+		"-crf",
+		String(Math.min(40, Math.round((100 - args.quality) / 2) + 18)),
+		"-movflags",
+		"+faststart",
+	],
 	gif: ["-loop", "0"],
 };
 if (!encode[args.format]) {
@@ -171,19 +223,25 @@ const command = [
 	...(args.duration ? ["-t", String(args.duration)] : []),
 	"-an",
 	"-vf",
-	args.format === "gif" ? `${filters},split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer` : filters,
+	args.format === "gif"
+		? `${filters},split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer`
+		: filters,
 	...encode[args.format],
 	out,
 ];
 
 console.log(`[avatar] ffmpeg: ${ffmpeg}`);
 console.log(`[avatar] 输入  : ${args.input}`);
-console.log(`[avatar] 输出  : ${out}  (${args.size}px / ${args.fps}fps / ${args.format})`);
+console.log(
+	`[avatar] 输出  : ${out}  (${args.size}px / ${args.fps}fps / ${args.format})`,
+);
 
 try {
 	execFileSync(ffmpeg, command, { stdio: "inherit" });
 } catch (error) {
-	console.error(`[avatar] 转码失败: ${error instanceof Error ? error.message : String(error)}`);
+	console.error(
+		`[avatar] 转码失败: ${error instanceof Error ? error.message : String(error)}`,
+	);
 	process.exit(1);
 }
 
@@ -192,8 +250,12 @@ console.log(`[avatar] 完成，体积 ${humanSize(size)}`);
 
 if (args.format === "webp" || args.format === "mp4") {
 	const rel = path.relative(process.cwd(), out).replace(/\\/g, "/");
-	console.log(`[avatar] 在 src/config/profileConfig.ts 里设置 avatar: "${rel.replace(/^src\//, "")}"`);
+	console.log(
+		`[avatar] 在 src/shared/config/profileConfig.ts 里设置 avatar: "${rel.replace(/^src\//, "")}"`,
+	);
 	if (args.format === "mp4") {
-		console.log("[avatar] 提示: 再截一张首帧图作为 avatarPoster，首帧渲染和 OG 图都靠它兜底");
+		console.log(
+			"[avatar] 提示: 再截一张首帧图作为 avatarPoster，首帧渲染和 OG 图都靠它兜底",
+		);
 	}
 }

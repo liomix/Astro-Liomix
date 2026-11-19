@@ -13,13 +13,13 @@
  * 注意这里**不做任何「让页面透明、把背景让给父窗口」的处理**：壁纸和顶栏、消息区、
  * 输入栏同在正文档里，页面自己就是完整的一层。父窗口只需要把 iframe 摆对位置。
  */
-import "@/styles/main.css";
-import "@/styles/variables.styl";
-import { siteConfig } from "@/config";
+import "@/shared/styles/main.css";
+import "@/shared/styles/variables.styl";
+import { siteConfig } from "@/shared/config/siteConfig";
 import {
 	COMMENT_WALLPAPER_STORAGE_KEY,
 	commentWallpaperConfig,
-} from "@/config/commentWallpaperConfig";
+} from "@/shared/lib/comments/config";
 
 interface Props {
 	title?: string;

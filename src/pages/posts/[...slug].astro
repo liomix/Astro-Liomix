@@ -1,44 +1,43 @@
 ---
 import { render } from "astro:content";
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
-import EncryptedPost from "@/components/features/post/EncryptedPost.astro";
-import License from "@/components/features/post/License.astro";
-import KatexManager from "@/components/integrations/KatexManager.astro";
-import Markdown from "@/components/ui/Markdown.astro";
-import "@/styles/banner-post.css";
+import EncryptedPost from "@/features/post/components/EncryptedPost.astro";
+import License from "@/features/post/components/License.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import KatexManager from "@/shared/components/integrations/KatexManager.astro";
+import Markdown from "@/shared/components/ui/Markdown.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/banner/banner-post.css";
+import { Icon } from "astro-icon/components";
+import dayjs from "dayjs";
+import PostHeader from "@/features/post/components/PostHeader.astro";
+import PostMetadata from "@/features/post/components/PostMeta.astro";
+import RecommendedPost from "@/features/post/components/RecommendedPost.astro";
+import SeriesNav from "@/features/post/components/SeriesNav.astro";
+import ShareButton from "@/features/post/components/ShareButton.svelte";
+import SponsorButton from "@/features/post/components/sponsor/SponsorButton.astro";
+import SponsorDialog from "@/features/post/components/sponsor/SponsorDialog.svelte";
+import { licenseConfig, sponsorConfig } from "@/features/post/config";
+import { buildPostPagePayload } from "@/features/post/lib/post-page-data";
+import { siteStatsConfig } from "@/features/stats/config";
+import CommentButton from "@/shared/components/comments/CommentButton.astro";
+import PostComments from "@/shared/components/comments/CommentSection.astro";
+import LikeButton from "@/shared/components/likes/LikeButton.astro";
+import CoverImage from "@/shared/components/ui/CoverImage.astro";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
 import {
 	getRelatedPosts,
 	getSeriesPosts,
 	getSortedPosts,
-} from "@utils/content-utils";
+} from "@/shared/lib/content/content-utils";
+import { formatDateToYYYYMMDD } from "@/shared/lib/format/date";
 import {
 	getFileDirFromPath,
 	getPostUrlBySlug,
 	removeFileExtension,
-} from "@utils/url-utils";
-import { Icon } from "astro-icon/components";
-import dayjs from "dayjs";
-import PostComments from "@/components/features/comment/PostComments.astro";
-import PostHeader from "@/components/features/post/PostHeader.astro";
-import PostMetadata from "@/components/features/post/PostMeta.astro";
-import { buildPostPagePayload } from "@/components/features/post/post-page-data";
-import RecommendedPost from "@/components/features/post/RecommendedPost.astro";
-import SeriesNav from "@/components/features/post/SeriesNav.astro";
-import ShareButton from "@/components/features/post/ShareButton.svelte";
-import SponsorButton from "@/components/features/sponsor/SponsorButton.astro";
-import SponsorDialog from "@/components/features/sponsor/SponsorDialog.svelte";
-import CommentButton from "@/components/ui/CommentButton.astro";
-import CoverImage from "@/components/ui/CoverImage.astro";
-import LikeButton from "@/components/ui/LikeButton.astro";
-import { licenseConfig } from "@/config/licenseConfig";
-import { profileConfig } from "@/config/profileConfig";
-import { siteConfig } from "@/config/siteConfig";
-import { siteStatsConfig } from "@/config/siteStatsConfig";
-import { sponsorConfig } from "@/config/sponsorConfig";
-import { formatDateToYYYYMMDD } from "@/utils/date-utils";
-import { url } from "@/utils/url-utils";
+	url,
+} from "@/shared/lib/seo/url";
 
 const sponsorQr = sponsorConfig.qrCode?.trim() || "";
 // 打赏入口：开关打开且配了收款码才显示。弹窗是唯一入口，站点没有独立的打赏页

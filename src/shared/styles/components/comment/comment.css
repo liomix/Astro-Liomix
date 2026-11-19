@@ -1,0 +1,9 @@
+/* 评论区样式（入口）
+   ---------------------------------------------------------------------------
+   分成五份是按视觉分区切的：底、聊天区（壁纸 / 顶栏 / 消息区）、气泡里的 Markdown、
+   输入栏、右键菜单。@import 顺序 = 原来的文件顺序，级联结果与拆分前一致。 */
+@import "./comment-base.css";
+@import "./comment-chat.css";
+@import "./comment-markdown.css";
+@import "./comment-composer.css";
+@import "./comment-menu.css";

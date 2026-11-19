@@ -1,7 +1,11 @@
-import { getSortedPosts } from "@utils/content-utils";
-import { buildAtomFeed, renderFeedEntries } from "@utils/feed-utils";
 import type { APIContext } from "astro";
-import { profileConfig, siteConfig } from "@/config";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
+import {
+	buildAtomFeed,
+	renderFeedEntries,
+} from "@/shared/lib/content/feed-utils";
 import pkg from "../../package.json";
 
 export const prerender = true;

@@ -1,19 +1,19 @@
 ---
 import { Icon } from "astro-icon/components";
-import ProjectCard from "@/components/features/catalog/projects/ProjectCard.astro";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import ProjectCard from "@/features/catalog/projects/components/ProjectCard.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import { getSortedProjects } from "@/utils/content-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
 import {
 	getProjectStatusMeta,
 	PROJECT_STATUS_KEYS,
-} from "@/utils/projects-utils";
-import { getFileDirFromPath, removeFileExtension } from "@/utils/url-utils";
-import "@/styles/pages/card-grid.css";
-import EmptyState from "@/components/ui/EmptyState.astro";
+} from "@/features/catalog/projects/lib/projects";
+import { getSortedProjects } from "@/shared/lib/content/content-utils";
+import { getFileDirFromPath, removeFileExtension } from "@/shared/lib/seo/url";
+import "@/shared/styles/card-grid.css";
+import EmptyState from "@/shared/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.projects) {

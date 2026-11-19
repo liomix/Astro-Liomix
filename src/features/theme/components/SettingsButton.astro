@@ -1,0 +1,19 @@
+---
+import FloatingButton from "@/shared/components/ui/FloatingButton.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+---
+
+<FloatingButton
+  id="settings-floating"
+  icon="material-symbols:settings-outline-rounded"
+  toggleIcon="material-symbols:close-rounded"
+  ariaLabel={i18n(I18nKey.settings)}
+  onclick="__settingsTogglePanels()"
+/>
+
+<script>
+  import { initSettingsPanels } from "@/features/theme/lib/settings-panels";
+
+  initSettingsPanels();
+</script>

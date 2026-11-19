@@ -3,7 +3,7 @@ import { h } from "hastscript";
 import githubCardData from "../data/github-card-data.json" with {
 	type: "json",
 };
-import { isValidGithubRepository } from "../utils/github-card-utils.ts";
+import { isValidGithubRepository } from "../shared/lib/github-card.ts";
 
 /**
  * Creates a GitHub Card component.

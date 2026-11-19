@@ -1,14 +1,18 @@
 ---
 import { getEntry, render } from "astro:content";
 import { Icon } from "astro-icon/components";
-import Markdown from "@/components/ui/Markdown.astro";
-import { friendsPageConfig, getEnabledFriends, siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/friends.css";
-import EmptyState from "@/components/ui/EmptyState.astro";
+import Markdown from "@/shared/components/ui/Markdown.astro";
+import {
+	friendsPageConfig,
+	getEnabledFriends,
+} from "@/shared/config/friendsConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/shared/styles/friends.css";
+import EmptyState from "@/shared/components/ui/EmptyState.astro";
 
 // 检查页面是否启用
 if (!siteConfig.pages.friends) {

@@ -1,5 +1,5 @@
-import { getSortedPosts } from "@/utils/content-utils";
-import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { getSortedPosts } from "@/shared/lib/content/content-utils";
+import { formatDateToYYYYMMDD } from "@/shared/lib/format/date";
 
 export async function GET(): Promise<Response> {
 	const posts = await getSortedPosts();

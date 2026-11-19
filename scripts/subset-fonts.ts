@@ -7,8 +7,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { glob } from "glob";
 import subsetFont from "subset-font";
-import { fontConfig, fontsList } from "../src/config";
-import { collectUsedFontCssVars, toPublicPath } from "../src/utils/font-helper";
+import { fontConfig, fontsList } from "../src/shared/config";
+import {
+	collectUsedFontCssVars,
+	toPublicPath,
+} from "../src/shared/lib/font-helper";
 import { resolveSiteRoot } from "./site-root";
 
 // ─── 配置 ───────────────────────────────────────────────

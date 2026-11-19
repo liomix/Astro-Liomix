@@ -1,15 +1,19 @@
 ---
 import { Icon } from "astro-icon/components";
-import PhotoCard from "@/components/features/catalog/gallery/PhotoCard.astro";
-import EncryptedContent from "@/components/features/post/EncryptedContent.astro";
-import { galleryConfig, siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import PhotoCard from "@/features/catalog/gallery/components/PhotoCard.astro";
+import { galleryConfig } from "@/features/catalog/gallery/config";
+import EncryptedContent from "@/features/post/components/EncryptedContent.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/gallery-album.css";
-import { getAlbumCover, scanAlbumPhotos } from "@/utils/gallery-utils";
-import { getLqipProps } from "@/utils/lqip-utils";
-import { url } from "@/utils/url-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/features/catalog/styles/gallery-album.css";
+import {
+	getAlbumCover,
+	scanAlbumPhotos,
+} from "@/features/catalog/gallery/lib/gallery";
+import { getLqipProps } from "@/shared/lib/media/lqip";
+import { url } from "@/shared/lib/seo/url";
 
 // 检查页面是否启用
 if (!siteConfig.pages.gallery) {

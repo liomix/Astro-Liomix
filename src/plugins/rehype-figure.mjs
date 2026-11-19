@@ -1,6 +1,6 @@
 import { h } from "hastscript";
 import { visit } from "unist-util-visit";
-import { shouldAddNoReferrer } from "../utils/image-utils.ts";
+import { shouldAddNoReferrer } from "../shared/lib/media/image.ts";
 
 /**
  * 将带有 alt 文本的图片转换为包含 figcaption 的 figure 元素的 rehype 插件

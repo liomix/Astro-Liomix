@@ -2,7 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { siteConfig } from "../src/config/siteConfig.ts";
+import { siteConfig } from "../src/shared/config/siteConfig.ts";
 
 const content = process.argv.slice(2).join(" ").trim();
 

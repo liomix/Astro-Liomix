@@ -1,0 +1,57 @@
+---
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { commentApiConfig } from "@/shared/lib/comments/config";
+/**
+ * 文章页的评论区：把通用组件 Comment 嵌在正文下方。
+ *
+ * 这一层只处理「文章页的摆放」，聊天行为全在 Comment 里：
+ *   1. 线程 slug 直接给（文章没有 /dynamic/<id>/ 那种地址可推算）；
+ *   2. 没有「关闭」这个动作，closable=false；
+ *   3. 内嵌要给一个定高容器 —— Comment 内部写的是 height: 100%，它原本装在抽屉里，
+ *      铺满父级是那里的设计，不定高会塌成 0。
+ *
+ * 这里不再渲染「评论」小标题：聊天气泡本身就有顶栏，多一行标题只是把评论区往下推。
+ */
+import Comment from "./Comment.astro";
+
+interface Props {
+	/** 文章的 slug，就是评论线程的 id */
+	slug: string;
+	class?: string;
+}
+
+const { slug, class: className } = Astro.props;
+---
+
+{
+	commentApiConfig.enable && (
+		<section
+			id="post-comments"
+			class:list={["post-comments", className]}
+			aria-label={i18n(I18nKey.dynamicComment)}
+		>
+			<div class="post-comments__frame">
+				<Comment slug={slug} closable={false} />
+			</div>
+		</section>
+	)
+}
+
+<style>
+	.post-comments {
+		margin-top: 2rem;
+		/* 评论按钮（#post-comments 锚点）和悬浮的「回到评论」都是 block:"start"，
+		   默认会把评论区顶到视口最上沿、正好压在固定导航栏下面 —— 观感上就是「滚过头了」。
+		   留出 5.5rem 少滚这一段（与 #main-grid 的 scroll-margin-top 同值）。 */
+		scroll-margin-top: 5.5rem;
+	}
+
+	/* 定高：组件内部是 height: 100%，不定高会塌成 0 */
+	.post-comments__frame {
+		height: min(70vh, 640px);
+		overflow: hidden;
+		border: 1px solid var(--line-divider, rgb(0 0 0 / 0.08));
+		border-radius: 0.75rem;
+	}
+</style>

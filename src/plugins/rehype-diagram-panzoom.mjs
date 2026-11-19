@@ -1,6 +1,6 @@
 import { h } from "hastscript";
 import { visit } from "unist-util-visit";
-import clientScript from "./diagram-panzoom-script.js?raw";
+import clientScript from "./diagram-panzoom-script?raw";
 import { DIAGRAM_CONTAINER } from "./utils/diagramConstants.js";
 
 /** 已注入脚本的 tree 集合，避免同一 tree 多次注入 */

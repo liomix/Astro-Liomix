@@ -2,22 +2,22 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { Icon } from "astro-icon/components";
-import VndbGrid from "@/components/features/catalog/vndb/VndbGrid.svelte";
-import { siteConfig } from "@/config";
-import I18nKey from "@/i18n/i18nKey";
-import { i18n } from "@/i18n/translation";
+import VndbGrid from "@/features/catalog/vndb/components/VndbGrid.svelte";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
-import "@/styles/pages/common.css";
-import "@/styles/pages/media-grid.css";
-import EmptyState from "@/components/ui/EmptyState.astro";
-import type { VndbUlistEntry } from "@/types/vndb";
-import { formatDateI18n } from "@/utils/date-utils";
-import { isVndbNsfw } from "@/utils/nsfw-utils";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import "@/shared/styles/common.css";
+import "@/features/catalog/styles/media-grid.css";
+import { isVndbNsfw } from "@/features/catalog/lib/nsfw";
 import {
 	buildVndbTabs,
 	fetchVndbUlist,
 	type VndbTab,
-} from "@/utils/vndb-utils";
+} from "@/features/catalog/vndb/lib/vndb";
+import type { VndbUlistEntry } from "@/features/catalog/vndb/types";
+import EmptyState from "@/shared/components/ui/EmptyState.astro";
+import { formatDateI18n } from "@/shared/lib/format/date";
 
 // 检查页面是否启用
 if (!siteConfig.pages.vndb) {

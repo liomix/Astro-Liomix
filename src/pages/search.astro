@@ -1,9 +1,9 @@
 ---
-import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
-import MainGridLayout from "@layouts/MainGridLayout.astro";
-import AdvancedSearch from "@/components/controls/AdvancedSearch.svelte";
-import { url } from "@/utils/url-utils";
+import AdvancedSearch from "@/features/search/components/AdvancedSearch.svelte";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import { url } from "@/shared/lib/seo/url";
 
 const title = i18n(I18nKey.search);
 const description = "";
