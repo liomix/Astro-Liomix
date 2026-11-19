@@ -16,6 +16,10 @@ import { profileConfig } from "@/shared/config/profileConfig";
 import { siteConfig } from "@/shared/config/siteConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
+import {
+	COMMENT_MSG,
+	COMMENT_MSG_VERSION,
+} from "@/shared/lib/comments/comment-postmessage";
 import { commentApiConfig } from "@/shared/lib/comments/config";
 // 评论页的 html/body 归零样式与动态评论页共用
 import "@/features/dynamic/styles/dynamic-comments.css";
@@ -61,6 +65,7 @@ const contact = (
 		applyWallpaperTint,
 		setChatWallpaper,
 	} from "@/shared/lib/comments/comment-wallpaper";
+	import { COMMENT_MSG, COMMENT_MSG_VERSION } from "@/shared/lib/comments/comment-postmessage";
 	import I18nKey from "@/shared/i18n/i18nKey";
 	import { i18n } from "@/shared/i18n/translation";
 	import { emojiTokensToHtml } from "@/shared/lib/comments/emoji-shortcode";
@@ -133,7 +138,7 @@ const contact = (
 	/** 父窗口手里才有这条留言的正文，向它要一次（换线程时会再要一次） */
 	function requestParent(): void {
 		window.parent.postMessage(
-			{ type: "guest-parent-request" },
+			{ type: COMMENT_MSG.parentRequest, version: COMMENT_MSG_VERSION },
 			window.location.origin,
 		);
 	}
@@ -141,12 +146,12 @@ const contact = (
 	window.addEventListener("message", (event) => {
 		if (event.origin !== window.location.origin) return;
 
-		if (event.data?.type === "guest-parent") {
+		if (event.data?.type === COMMENT_MSG.parent) {
 			renderParent(event.data.parent as GuestParent);
 			return;
 		}
 
-		if (event.data?.type === "dynamic-comment-theme") {
+		if (event.data?.type === COMMENT_MSG.theme) {
 			document.documentElement.classList.toggle(
 				"dark",
 				Boolean(event.data.dark),
@@ -165,12 +170,12 @@ const contact = (
 		}
 
 		// 换了一张便签看评论：path 已经由聊天组件自己接走，这里只更新父留言
-		if (event.data?.type === "dynamic-comment-path") {
+		if (event.data?.type === COMMENT_MSG.path) {
 			requestParent();
 			return;
 		}
 
-		if (event.data?.type === "dynamic-comment-wallpaper" && event.data.id) {
+		if (event.data?.type === COMMENT_MSG.wallpaper && event.data.id) {
 			setChatWallpaper(String(event.data.id));
 		}
 	});

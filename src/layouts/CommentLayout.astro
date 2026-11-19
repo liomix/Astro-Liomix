@@ -50,6 +50,8 @@ const wallpaperDefaultId = commentWallpaperConfig.defaultId;
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		{/* 只给抽屉当 iframe 用，独立访问也没有分享价值 —— 不进索引 */}
+		<meta name="robots" content="noindex, follow" />
 		<title>{title}</title>
 		<script
 			is:inline

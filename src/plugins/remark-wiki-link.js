@@ -240,6 +240,8 @@ function createRemoteCoverImg(src, extraProperties) {
 }
 
 function createCoverNode(meta, resolvedPath, context) {
+	// 随机封面配置由 remarkWikiLink(options) 注入，见 astro.config.mjs
+	const cover = context.cover ?? { enable: false, apis: [] };
 	const image =
 		typeof meta.data.image === "string" ? meta.data.image.trim() : "";
 
@@ -439,9 +441,9 @@ function createWikiLinkCard(parsed, context) {
 
 	const children = [createElement("div", { class: "wlc-info" }, info)];
 
-	const cover = createCoverNode(meta, resolvedPath, context);
-	if (cover) {
-		children.push(createElement("div", { class: "wlc-cover" }, [cover]));
+	const coverNode = createCoverNode(meta, resolvedPath, context);
+	if (coverNode) {
+		children.push(createElement("div", { class: "wlc-cover" }, [coverNode]));
 	}
 
 	return createElement(
@@ -600,6 +602,7 @@ export function remarkWikiLink(options = {}) {
 	return (tree, file) => {
 		const context = {
 			currentDir: file?.path ? path.dirname(file.path) : null,
+			cover,
 		};
 		transformNode(tree, context);
 	};

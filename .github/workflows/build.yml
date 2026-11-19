@@ -41,7 +41,7 @@ jobs:
         run: pnpm astro check
 
       - name: Run TypeScript check
-        run: pnpm type-check
+        run: pnpm typecheck
 
       - name: Check module boundaries
         run: pnpm deps:check

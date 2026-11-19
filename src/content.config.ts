@@ -65,11 +65,12 @@ type ContentCollection<T> = CollectionConfig<
 const postsCollection: ContentCollection<PostData> = defineCollection({
 	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/posts" }),
 	schema: z.object({
-		title: z.string(),
-		published: z.date(),
-		updated: z.date().optional(),
+		// title ≤ 80 字；description 必填 —— 空 description 会直接变成 og:description=""
+		title: z.string().min(1).max(80),
+		published: z.coerce.date(),
+		updated: z.coerce.date().optional(),
 		draft: z.boolean().optional().default(false),
-		description: z.string().optional().default(""),
+		description: z.string().min(1).max(200),
 		image: z.string().optional().default(""),
 		tags: z.array(z.string()).optional().default([]),
 		category: z.string().optional().nullable().default(""),

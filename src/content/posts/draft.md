@@ -1,5 +1,6 @@
 ---
 title: 草稿示例
+description: 演示草稿：不会出现在列表、RSS、sitemap 与 OG 图里。
 published: 2026-11-09T01:00:00+08:00
 tags: [Markdown, 博客, 演示]
 category: 文章示例

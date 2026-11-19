@@ -36,6 +36,10 @@ import {
 	postComment,
 } from "@/shared/lib/comments/comment-client";
 import {
+	COMMENT_MSG,
+	COMMENT_MSG_VERSION,
+} from "@/shared/lib/comments/comment-postmessage";
+import {
 	commentApiConfig,
 	commentEmojiConfig,
 } from "@/shared/lib/comments/config";
@@ -525,7 +529,7 @@ async function remove(note: GuestTagItem): Promise<void> {
  */
 function onThreadMessage(event: MessageEvent): void {
 	if (event.origin !== window.location.origin) return;
-	if (event.data?.type !== "guest-parent-request") return;
+	if (event.data?.type !== COMMENT_MSG.parentRequest) return;
 	const parent = activeParent;
 	const frame = document.querySelector<HTMLIFrameElement>(
 		".comment-drawer-frame",
@@ -533,7 +537,8 @@ function onThreadMessage(event: MessageEvent): void {
 	if (!parent || !frame?.contentWindow) return;
 	frame.contentWindow.postMessage(
 		{
-			type: "guest-parent",
+			type: COMMENT_MSG.parent,
+			version: COMMENT_MSG_VERSION,
 			parent: {
 				author: parent.author,
 				dateLabel: parent.dateLabel,

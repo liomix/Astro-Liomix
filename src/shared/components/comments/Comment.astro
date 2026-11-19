@@ -3,6 +3,10 @@ import { profileConfig } from "@/shared/config/profileConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
 import {
+	COMMENT_MSG,
+	COMMENT_MSG_VERSION,
+} from "@/shared/lib/comments/comment-postmessage";
+import {
 	avatarGradientOf,
 	initialOf,
 } from "@/shared/lib/comments/comment-user";
@@ -605,6 +609,7 @@ const showTabs = packs.length > 1;
 </template>
 
 <script>
+	import { COMMENT_MSG, COMMENT_MSG_VERSION } from "@/shared/lib/comments/comment-postmessage";
 	import {
 		initCommentRightclickPop,
 		summarizeMarkdown,
@@ -1569,7 +1574,8 @@ const showTabs = packs.length > 1;
 		window.addEventListener("message", (event) => {
 			if (event.origin !== window.location.origin) return;
 			const data = event.data as { type?: string; path?: string } | null;
-			if (data?.type !== "dynamic-comment-path") return;
+			if (!data) return;
+			if (data?.type !== COMMENT_MSG.path) return;
 			chat.dataset.tgPath = String(data.path || "");
 			const next = slugOfPath(chat.dataset.tgPath || "/dynamic/");
 			if (next === slug) return;
@@ -1589,7 +1595,7 @@ const showTabs = packs.length > 1;
 	function requestClose(): void {
 		if (window.parent === window) return;
 		window.parent.postMessage(
-			{ type: "dynamic-comment-close" },
+			{ type: COMMENT_MSG.close, version: COMMENT_MSG_VERSION },
 			window.location.origin,
 		);
 	}

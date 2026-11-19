@@ -26,8 +26,11 @@ function parseRefs(html: string): string[] {
 		/<script[^>]+src="(\/_astro\/[^"]+\.js)"/g,
 		/<link[^>]+rel="modulepreload"[^>]+href="(\/_astro\/[^"]+\.js)"/g,
 	]) {
-		let m: RegExpExecArray | null;
-		while ((m = re.exec(html))) refs.add(m[1]);
+		let m = re.exec(html);
+		while (m) {
+			refs.add(m[1]);
+			m = re.exec(html);
+		}
 	}
 	return [...refs];
 }

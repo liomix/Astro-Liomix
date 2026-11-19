@@ -55,11 +55,12 @@ const contact = (
 		applyWallpaperTint,
 		setChatWallpaper,
 	} from "@/shared/lib/comments/comment-wallpaper";
+import { COMMENT_MSG } from "@/shared/lib/comments/comment-postmessage";
 
 	window.addEventListener("message", (event) => {
 		if (event.origin !== window.location.origin) return;
 
-		if (event.data?.type === "dynamic-comment-theme") {
+		if (event.data?.type === COMMENT_MSG.theme) {
 			document.documentElement.classList.toggle(
 				"dark",
 				Boolean(event.data.dark),
@@ -84,7 +85,7 @@ const contact = (
 		// —— 它要据此重新拉评论，这里再写一遍会变成两份状态
 
 		// 父窗口（设置面板）换了评论区壁纸：壁纸画在本文档里，只能由这边换
-		if (event.data?.type === "dynamic-comment-wallpaper" && event.data.id) {
+		if (event.data?.type === COMMENT_MSG.wallpaper && event.data.id) {
 			setChatWallpaper(String(event.data.id));
 		}
 	});

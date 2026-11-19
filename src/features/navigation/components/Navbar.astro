@@ -164,7 +164,7 @@ const logoVariants = await Promise.all(
                 aria-label={navbarTitle}
             >
                 {logoConfig?.type === "lottie" ? (
-                    <NavLottieLogo client:load name={logoConfig.value || "logo"} />
+                    <NavLottieLogo client:idle name={logoConfig.value || "logo"} />
                 ) : logoConfig?.type === "icon" ? (
                     <Icon name={logoConfig.value || "material-symbols:home-pin-outline"} class="navbar-logo text-[1.8rem]" />
                 ) : logoIsImage && logoVariants.length > 0 ? (
@@ -201,18 +201,18 @@ const logoVariants = await Promise.all(
             <div class="flex col-start-3 justify-self-end">
                 <!--<SearchPanel client:load>-->
                 <Search
-                    client:load
+                    client:idle
                 />
-                {showNavMusic && <NavMusicButton client:load />}
+                {showNavMusic && <NavMusicButton client:idle />}
                 {/* 主题（显示设置）入口只在右下角悬浮按钮，导航栏不再放置调色板按钮 */}
                 {/* @ts-ignore */}
-                <LightDarkSwitch client:load></LightDarkSwitch>
+                <LightDarkSwitch client:idle></LightDarkSwitch>
                 <button aria-label="Menu" aria-controls="nav-menu-panel" aria-expanded="false" name="Nav Menu" class="nav-icon-btn lg:hidden!" id="nav-menu-switch">
                     <Icon name="material-symbols:menu-rounded" class="text-[1.4rem]"></Icon>
                 </button>
             </div>
         </div>
-        {isDisplaySettingsEnabled && <DisplaySettings client:load></DisplaySettings>}
+        {isDisplaySettingsEnabled && <DisplaySettings client:idle></DisplaySettings>}
     </div>
 </div>
 

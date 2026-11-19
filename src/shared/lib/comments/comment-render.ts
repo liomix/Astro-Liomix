@@ -8,7 +8,7 @@
  * 改白名单等于改评论的信任边界，别为了显示效果放宽它。
  */
 
-import { Marked } from "marked";
+import { Marked, type Tokens } from "marked";
 import { createEmptyLottie } from "@/shared/components/ui/empty-lottie";
 import { emojiShortcodeExtension } from "./emoji-shortcode";
 
@@ -59,7 +59,33 @@ export function toneOf(name: string): number {
 /* ---------------- Markdown ---------------- */
 
 /** 只建一次实例：GFM（表格 / 删除线 / 自动链接）+ 单换行也算换行 */
-const md = new Marked({ gfm: true, breaks: true });
+/** 把原始 HTML 当文本显示（评论是用户输入，规范 §13.2） */
+function escapeCommentHtml(value: string): string {
+	return value.replace(/[&<>"']/g, (char) => {
+		switch (char) {
+			case "&":
+				return "&amp;";
+			case "<":
+				return "&lt;";
+			case ">":
+				return "&gt;";
+			case '"':
+				return "&quot;";
+			default:
+				return "&#39;";
+		}
+	});
+}
+
+// Marked 18 去掉了 `html: false` 选项，等价做法是让 html 渲染器只吐转义文本；
+// 下面的 sanitizeHtml 是第二道闸，白名单之外的元素/属性全部丢掉。
+const md = new Marked({
+	gfm: true,
+	breaks: true,
+	renderer: {
+		html: ({ text }: Tokens.HTML | Tokens.Tag) => escapeCommentHtml(text ?? ""),
+	},
+});
 
 // 行内表情：正文里存的是短码（`:huoying/hy-1:`），渲染时才翻译成图片。
 // 做成扩展而不是先替换再解析，是为了让代码块和行内代码里的短码原样留着。

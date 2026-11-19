@@ -141,6 +141,15 @@ if (isGeneratedOg) {
 	ogImageUrl = siteLogo.url;
 	ogImageWidth = siteLogo.width;
 	ogImageHeight = siteLogo.height;
+} else {
+	// 兜底：任何页面都要有 og:image（规范 §12.1）。留空在分享卡片上就是一块灰底，
+	// 而且没人会主动发现 —— 这里退到站点图标，宁可尺寸不合规也不要空着。
+	const fallbackIcon =
+		siteConfig.favicon.find((item) => item.src.endsWith(".png"))?.src ??
+		siteConfig.favicon[0]?.src;
+	if (fallbackIcon && Astro.site) {
+		ogImageUrl = new URL(fallbackIcon, Astro.site).toString();
+	}
 }
 const ogImageAlt = propsOgImageAlt ?? pageTitle;
 

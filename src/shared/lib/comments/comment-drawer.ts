@@ -21,6 +21,7 @@
  *      相对祖先定位而不是视口，挂 body 才稳。
  */
 
+import { COMMENT_MSG, COMMENT_MSG_VERSION } from "./comment-postmessage";
 import { getChatWallpaperSrc, getChatWallpaperTint } from "./comment-wallpaper";
 import { getStoredCommentWallpaper } from "./wallpaper-setting";
 
@@ -44,7 +45,8 @@ function syncFrameTheme(): void {
 		.trim();
 	win.postMessage(
 		{
-			type: "dynamic-comment-theme",
+			type: COMMENT_MSG.theme,
+			version: COMMENT_MSG_VERSION,
 			dark: document.documentElement.classList.contains("dark"),
 			hue,
 		},
@@ -86,7 +88,7 @@ function syncFramePath(src: string): void {
 		path = "";
 	}
 	win.postMessage(
-		{ type: "dynamic-comment-path", path },
+		{ type: COMMENT_MSG.path, version: COMMENT_MSG_VERSION, path },
 		window.location.origin,
 	);
 }
@@ -101,7 +103,8 @@ function syncFrameWallpaper(): void {
 	if (!win) return;
 	win.postMessage(
 		{
-			type: "dynamic-comment-wallpaper",
+			type: COMMENT_MSG.wallpaper,
+			version: COMMENT_MSG_VERSION,
 			id: getStoredCommentWallpaper(),
 		},
 		window.location.origin,
@@ -336,7 +339,7 @@ function onOutsideClick(event: MouseEvent): void {
 /** iframe 里的「关闭」按钮 / Esc 走这里 */
 function onFrameMessage(event: MessageEvent): void {
 	if (event.origin !== window.location.origin) return;
-	if (event.data?.type !== "dynamic-comment-close") return;
+	if (event.data?.type !== COMMENT_MSG.close) return;
 	closeCommentDrawer();
 }
 
