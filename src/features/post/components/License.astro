@@ -8,7 +8,7 @@
  * 结构分两段：上段是「这是什么」（标题 + 原文地址），发丝线隔开，下段是元信息
  * （dl + 网格：小屏两列、大屏三列，值按列对齐；标签用 11px 大写字距压住层级，值统一 13px）。
  */
-import { licenseConfig } from "@/features/post/config";
+import { postConfig } from "@/features/post/config";
 import { profileConfig } from "@/shared/config/profileConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
@@ -28,7 +28,7 @@ const { title, pubDate, author, sourceLink, licenseName, licenseUrl } =
 	Astro.props;
 const className = Astro.props.class;
 const profileConf = profileConfig;
-const licenseConf = licenseConfig;
+const licenseConf = postConfig.license;
 const postUrl = sourceLink || decodeURIComponent(Astro.url.toString());
 ---
 

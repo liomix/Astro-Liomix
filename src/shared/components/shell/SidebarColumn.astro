@@ -12,6 +12,9 @@ interface Props {
 	sidebarClass: string;
 	headings?: MarkdownHeading[];
 	encrypted?: boolean;
+	articlePurity?: { enable: boolean; keepWidgets: string[] };
+	license?: { enable: boolean; name: string };
+	navPurity?: { enable: boolean; keepWidgets: string[] };
 }
 
 const {
@@ -24,6 +27,9 @@ const {
 	sidebarClass,
 	headings = [],
 	encrypted = false,
+	articlePurity,
+	license,
+	navPurity,
 } = Astro.props;
 
 // 静态容器 id（左侧为 wrapper，右侧为 static，保持原有 id 不变）
@@ -49,6 +55,9 @@ const staticSideBarSide =
 		>
 			{hasComponents && (
 				<Sidebar
+					articlePurity={articlePurity}
+					license={license}
+					navPurity={navPurity}
 					side={staticSideBarSide}
 					class={sidebarClass}
 					headings={headings}

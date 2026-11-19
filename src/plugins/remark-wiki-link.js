@@ -11,7 +11,7 @@ import matter from "gray-matter";
 import {
 	getApiUrlList,
 	processCoverImageSync,
-} from "../shared/lib/media/image";
+} from "../shared/lib/media/cover-image.ts";
 
 const POSTS_DIR = fileURLToPath(new URL("../content/posts/", import.meta.url));
 const MARKDOWN_EXTENSION = /\.(?:md|mdx|markdown)$/i;
@@ -251,11 +251,11 @@ function createCoverNode(meta, resolvedPath, context) {
 	// seed 与 PostCard / 文章页保持一致（Astro 的 entry.id 会去掉末尾的 /index）
 	if (image === "api") {
 		const seed = resolvedPath.replace(/\/index$/i, "");
-		const firstUrl = processCoverImageSync(image, seed);
+		const firstUrl = processCoverImageSync(image, seed, cover);
 		if (!firstUrl) {
 			return null;
 		}
-		const apiUrls = getApiUrlList(image, seed);
+		const apiUrls = getApiUrlList(image, seed, cover);
 		return createElement(
 			"div",
 			{
@@ -594,7 +594,9 @@ function transformNode(node, context) {
  * post's `entry.id` rather than from the link text, so a bare file name
  * still produces the post's real URL.
  */
-export function remarkWikiLink() {
+/** @param {{ cover?: { enable: boolean, apis: readonly string[] } }} options */
+export function remarkWikiLink(options = {}) {
+	const cover = options.cover ?? { enable: false, apis: [] };
 	return (tree, file) => {
 		const context = {
 			currentDir: file?.path ? path.dirname(file.path) : null,

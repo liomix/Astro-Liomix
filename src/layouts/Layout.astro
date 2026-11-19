@@ -8,7 +8,6 @@ import { musicPlayerConfig } from "@/features/music/config";
 import PostViewCounter from "@/features/stats/components/PostViewCounter.astro";
 import SiteVisitCounter from "@/features/stats/components/SiteVisitCounter.astro";
 import { siteStatsConfig } from "@/features/stats/config";
-import { displaySettingsConfig } from "@/features/theme/config";
 import CodeGroupManager from "@/shared/components/integrations/CodeGroupManager.astro";
 import FancyboxManager from "@/shared/components/integrations/FancyboxManager.astro";
 import FontManager from "@/shared/components/integrations/FontManager.astro";
@@ -24,6 +23,7 @@ import {
 	BANNER_HEIGHT_NON_HOME_MIN,
 	PAGE_WIDTH,
 } from "@/shared/config/constants";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { expressiveCodeConfig } from "@/shared/config/expressiveCodeConfig";
 import { defaultFavicons } from "@/shared/config/icon";
 import { profileConfig } from "@/shared/config/profileConfig";
@@ -594,6 +594,29 @@ const ogImageAlt = propsOgImageAlt ?? pageTitle;
 
 
 <script>
+  import {
+    initThemeListener,
+    initWallpaperMode,
+    syncBannerHomeTextVisibility,
+    updateNavbarTransparency,
+  } from "@/features/theme";
   import { initLayout } from "@/shared/lib/layout/layout-init";
-  initLayout();
+  import type { WallpaperMode } from "@/shared/types";
+
+  // 外观（主题 / 壁纸模式 / 导航栏透明）属于主题域，由这里注入给布局初始化，
+  // shared/lib/layout 不认识任何业务域。
+  initLayout({
+    initAppearance: () => {
+      initWallpaperMode();
+      initThemeListener();
+    },
+    onPageView: () => {
+      syncBannerHomeTextVisibility();
+      updateNavbarTransparency(
+        document.documentElement.getAttribute(
+          "data-wallpaper-mode",
+        ) as WallpaperMode,
+      );
+    },
+  });
 </script>

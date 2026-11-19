@@ -31,6 +31,7 @@ import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 import { commentApiConfig } from "./src/shared/lib/comments/config";
 import { dynamicConfig } from "./src/features/dynamic/config";
+import { postConfig } from "./src/features/post/config";
 import {
 	expressiveCodeConfig,
 	fontConfig,
@@ -341,7 +342,7 @@ export default defineConfig({
 					: []),
 				remarkMath,
 				remarkReadingTime,
-				remarkWikiLink,
+				[remarkWikiLink, { cover: postConfig.cover.randomCoverImage }],
 				remarkImageGrid,
 				remarkExcerpt,
 				remarkDirective,

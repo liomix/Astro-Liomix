@@ -43,6 +43,9 @@ jobs:
       - name: Run TypeScript check
         run: pnpm type-check
 
+      - name: Check module boundaries
+        run: pnpm deps:check
+
       - name: Run unit tests
         run: pnpm test
 

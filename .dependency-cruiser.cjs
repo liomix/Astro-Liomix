@@ -14,7 +14,15 @@ module.exports = {
 			name: "features-must-not-know-each-other",
 			severity: "error",
 			comment: "域间只走公开出口，且要登记（docs/adr/0001 偏离表）",
-			from: { path: "^src/features/([^/]+)/" },
+			// 具名白名单（规范 §3.9 + docs/adr/0001）：
+			//   theme/lib/settings/effects.ts   读 @/features/effects 的 sakuraConfig（默认开关）
+			//   theme/components/DisplaySettings.svelte 读 @/features/dynamic 的 showComment
+			// 只允许这两个文件跨域，且只调对方的公开出口。
+			from: {
+				path: "^src/features/([^/]+)/",
+				pathNot:
+					"^src/features/theme/(lib/settings/effects\\.ts|components/DisplaySettings\\.svelte)$",
+			},
 			to: { path: "^src/features/(?!$1)([^/]+)/" },
 		},
 		{
@@ -27,9 +35,13 @@ module.exports = {
 		{
 			name: "no-deep-import-into-features",
 			severity: "error",
-			comment: "对外只认 features/<域>/index.ts 与 features/<父>/<子>/index.ts，请从 @/features/<域> 导入",
+			comment:
+				"对外只认 features/<域>/index.ts 与 features/<父>/<子>/index.ts，请从 @/features/<域> 导入",
 			from: { pathNot: "^src/features/([^/]+)/" },
-			to: { path: "^src/features/[^/]+/(?!([^/]+/)?index\\.ts$)" },
+			to: {
+				path: "^src/features/[^/]+/.+",
+				pathNot: "^src/features/[^/]+/(index\\.ts|[^/]+/index\\.ts)$",
+			},
 		},
 		{
 			name: "plugins-must-stay-pure",
@@ -41,6 +53,8 @@ module.exports = {
 	],
 	options: {
 		doNotFollow: { path: "node_modules" },
+		// 类型依赖也算边：`import type { Post }` 出现在 shared 同样是越界
+		tsPreCompilationDeps: true,
 		tsConfig: { fileName: "tsconfig.json" },
 		enhancedResolveOptions: { exportsFields: ["exports"], conditionNames: ["import", "require"] },
 	},

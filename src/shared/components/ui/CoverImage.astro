@@ -1,5 +1,4 @@
 ---
-import { coverImageConfig } from "@/features/post/config";
 import {
 	getImageFormats,
 	getImageQuality,
@@ -25,11 +24,14 @@ interface Props {
 	apiUrls?: string[];
 	// 高度跟随图片本身宽高比（不裁上下，只裁两边），用于文章详情页封面
 	naturalHeight?: boolean;
+	// 是否显示加载动画（原来读文章域配置，改成由调用方传入）
+	showLoading?: boolean;
 }
 
 const {
 	id,
 	src,
+	showLoading: showLoadingProp = false,
 	alt,
 	position = "center",
 	basePath = "/",
@@ -72,8 +74,8 @@ const sizes = preview
 	: "(max-width: 768px) 100vw, 828px";
 const quality = configQuality;
 
-// 是否显示加载动画
-const showLoading = coverImageConfig.showLoading ?? true;
+// 是否显示加载动画（由调用方决定；默认不显示，避免无意中多一层转圈）
+const showLoading = showLoadingProp;
 
 // 检查远程图片是否需要 referrerpolicy
 const remoteReferrerPolicy =

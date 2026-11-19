@@ -1,21 +1,22 @@
 ---
 import type { MarkdownHeading } from "astro";
 import PlaybackSettings from "@/features/music/components/PlaybackSettings.svelte";
-import { musicPlayerConfig } from "@/features/music/config";
 import FloatingTOC from "@/features/post/components/FloatingTOC.astro";
 import ImmersiveReading from "@/features/post/components/ImmersiveReading.astro";
 import ImmersiveTOC from "@/features/post/components/ImmersiveTOC.astro";
 import SettingsButton from "@/features/theme/components/SettingsButton.astro";
 import SettingsMenu from "@/features/theme/components/SettingsMenu.astro";
-import { displaySettingsConfig } from "@/features/theme/config";
 import BackToComment from "@/shared/components/controls/BackToComment.astro";
 import BackToHome from "@/shared/components/controls/BackToHome.astro";
 import BackToTop from "@/shared/components/controls/BackToTop.astro";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { siteConfig } from "@/shared/config/siteConfig";
 
 interface Props {
 	headings?: MarkdownHeading[];
 	encrypted?: boolean;
+	/** 音乐播放器是否在用（决定播放设置入口），由布局注入 */
+	hasPlaybackSettings?: boolean;
 }
 
 const { headings, encrypted } = Astro.props;
@@ -23,9 +24,8 @@ const immersiveReadingEnabled =
 	siteConfig.post.immersiveReading?.enable !== false;
 // 主题设置面板始终有日夜切换，只要总开关开着就显示入口；播放设置则看音乐播放器是否在用
 const hasThemeSettings = displaySettingsConfig.enable;
-const hasPlaybackSettings =
-	musicPlayerConfig.showInNavbar === true ||
-	musicPlayerConfig.showInSidebar !== false;
+// 播放设置入口是否存在由布局注入（shared 不读音乐域配置）
+const hasPlaybackSettings = Astro.props.hasPlaybackSettings ?? false;
 const showSettingsButton = hasThemeSettings || hasPlaybackSettings;
 ---
 

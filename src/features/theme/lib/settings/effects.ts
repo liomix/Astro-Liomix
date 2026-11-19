@@ -4,7 +4,7 @@
  * 由 setting-utils.ts 按职责拆出；对外仍经 setting-utils.ts 暴露，调用点不变。
  */
 
-import { sakuraConfig } from "@/features/effects/config";
+import { sakuraConfig } from "@/features/effects";
 import { backgroundWallpaperConfig } from "@/shared/config/backgroundWallpaperConfig";
 
 // Declare global functions

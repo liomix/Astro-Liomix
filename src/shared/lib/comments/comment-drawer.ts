@@ -21,8 +21,8 @@
  *      相对祖先定位而不是视口，挂 body 才稳。
  */
 
-import { getStoredCommentWallpaper } from "@/features/theme/lib/setting-utils";
 import { getChatWallpaperSrc, getChatWallpaperTint } from "./comment-wallpaper";
+import { getStoredCommentWallpaper } from "./wallpaper-setting";
 
 const BOUND_KEY = "__fireflyCommentDrawerBound";
 

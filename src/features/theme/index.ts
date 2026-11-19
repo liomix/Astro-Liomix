@@ -2,16 +2,17 @@
  * 主题域：深浅色、显示设置面板与其持久化。
  */
 
+export {
+	getDefaultCommentWallpaper,
+	getStoredCommentWallpaper,
+	setCommentWallpaper,
+} from "@/shared/lib/comments/wallpaper-setting";
 // 组件
 export { default as DisplaySettings } from "./components/DisplaySettings.svelte";
 export { default as LightDarkSwitch } from "./components/LightDarkSwitch.svelte";
 export { default as SettingsButton } from "./components/SettingsButton.astro";
 export { default as SettingsMenu } from "./components/SettingsMenu.astro";
-
-// 配置
-export { displaySettingsConfig } from "./config";
 // 工具 / 契约
-export { resolveDisplaySettingsConfig } from "./lib/display-settings";
 export type { ThemeTransitionOrigin } from "./lib/light-dark-switch";
 export { originFromElement, runThemeReveal } from "./lib/light-dark-switch";
 export {
@@ -27,11 +28,6 @@ export {
 	setBannerTitleEnabled,
 	setCardBorderEnabled,
 } from "./lib/settings/appearance";
-export {
-	getDefaultCommentWallpaper,
-	getStoredCommentWallpaper,
-	setCommentWallpaper,
-} from "./lib/settings/comment-wallpaper";
 export {
 	applyGradientEnabledToDocument,
 	applyWavesEnabledToDocument,
@@ -108,5 +104,3 @@ export {
 	SETTINGS_TRIGGER_ID,
 	toggleSettingsMenu,
 } from "./lib/settings-panels";
-// 类型
-export type { DisplaySettingsConfig, OverlaySwitchable } from "./types";

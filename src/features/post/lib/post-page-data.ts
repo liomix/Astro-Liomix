@@ -9,12 +9,11 @@
  * 这样它能在任何 Node 环境里被调用与测试。
  */
 import type { CollectionEntry } from "astro:content";
-import { coverImageConfig } from "@/features/post/config";
+import { postConfig } from "@/features/post/config";
 import { profileConfig } from "@/shared/config/profileConfig";
 import { siteConfig } from "@/shared/config/siteConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
-import { getApiUrlList, processCoverImageSync } from "@/shared/lib/media/image";
 import {
 	buildBreadcrumbList,
 	buildPersonEntity,
@@ -27,6 +26,7 @@ import {
 	toAbsoluteImageInfo,
 } from "@/shared/lib/seo/schema-image";
 import { getCategoryUrl, getFileDirFromPath, url } from "@/shared/lib/seo/url";
+import { getApiUrlList, processCoverImageSync } from "./cover-image";
 
 export interface PostPagePayloadInput {
 	entry: CollectionEntry<"posts">;
@@ -72,10 +72,10 @@ export async function buildPostPagePayload({
 	const processedImage = processCoverImageSync(entry.data.image, entry.id);
 	const apiUrls = getApiUrlList(entry.data.image, entry.id);
 	const showPostCover = Boolean(
-		processedImage && coverImageConfig.enableInPost,
+		processedImage && postConfig.cover.enableInPost,
 	);
 	const usePostCoverOverlay =
-		showPostCover && (coverImageConfig.enableInPostOverlay ?? true);
+		showPostCover && (postConfig.cover.enableInPostOverlay ?? true);
 
 	// 海报优先复用页面上已经优化过的图片，本地源路径不再单独导入
 	const posterCoverUrl = showPostCover ? null : directImageUrl(processedImage);

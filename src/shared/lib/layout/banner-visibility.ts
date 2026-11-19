@@ -1,5 +1,5 @@
-import { displaySettingsConfig } from "@/features/theme/config";
 import { backgroundWallpaperConfig } from "@/shared/config/backgroundWallpaperConfig";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { getImageQuality } from "@/shared/lib/media/image";
 import { getBackgroundImages } from "./layout-utils";
 

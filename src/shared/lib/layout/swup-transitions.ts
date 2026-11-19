@@ -1,7 +1,3 @@
-import {
-	syncBannerHomeTextVisibility,
-	updateNavbarTransparency,
-} from "@/features/theme/lib/setting-utils";
 import { navbarMode } from "@/shared/config";
 import { expressiveCodeConfig } from "@/shared/config/expressiveCodeConfig";
 import { siteConfig } from "@/shared/config/siteConfig";
@@ -11,7 +7,6 @@ import {
 	updateFullscreenTitleParallax,
 } from "@/shared/lib/media/fullscreen-wallpaper";
 import { pathsEqual, url } from "@/shared/lib/seo/url";
-import type { WallpaperMode } from "@/shared/types/siteConfig";
 import { scheduleContentOverflowEnhancements } from "./content-overflow";
 import { initializeFloatingPanels } from "./floating-panel";
 import {
@@ -301,14 +296,8 @@ function registerSwupHooks(): void {
 		updateFullscreenTitleParallax();
 		syncFullscreenOverlays();
 		syncFullscreenBlur();
-		// 页面切换后同步首页标题显隐（body.is-home 已更新，按新页面重算 hidden 类）
-		syncBannerHomeTextVisibility();
-		// 页面切换后按新页面刷新导航栏透明状态（全屏首页动态透明 / 非首页完全透明）
-		updateNavbarTransparency(
-			document.documentElement.getAttribute(
-				"data-wallpaper-mode",
-			) as WallpaperMode,
-		);
+		// 页面切换后同步外观状态（首页标题显隐、导航栏透明），由 Layout 注入
+		pageAppearance.onPageView?.();
 
 		// 在移动端恢复文章列表容器的过渡动画（在主内容区位置动画完成后）
 		const isMobile = window.innerWidth < 1024;
@@ -378,8 +367,19 @@ function registerSwupHooks(): void {
 	});
 }
 
+/**
+ * 每次换页后需要应用的外观状态（主题/横幅/导航栏透明）。
+ * 由 layouts 注入 —— shared 不许 import 任何业务域。
+ */
+export interface PageAppearanceHooks {
+	onPageView?: () => void;
+}
+
+let pageAppearance: PageAppearanceHooks = {};
+
 /** 注册 Swup 钩子（swup 就绪时立即执行，否则等待 swup:enable 事件） */
-export function setupSwupTransitions(): void {
+export function setupSwupTransitions(hooks: PageAppearanceHooks = {}): void {
+	pageAppearance = hooks;
 	if (window?.swup?.hooks) {
 		registerSwupHooks();
 	} else {

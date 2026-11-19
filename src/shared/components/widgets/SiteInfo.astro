@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { Icon } from "astro-icon/components";
 import ci from "ci-info";
-import { licenseConfig } from "@/features/post/config";
 import WidgetFrame from "@/shared/components/ui/WidgetFrame.astro";
 import { siteConfig } from "@/shared/config/siteConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
@@ -89,8 +88,13 @@ const siteDomain = siteConfig.site_url
 	? siteConfig.site_url.replace(/^https?:\/\//, "").replace(/\/$/, "")
 	: "unknown";
 
-// 文章许可
-const licenseName = licenseConfig.enable ? licenseConfig.name : "None";
+// 文章许可：由侧栏（layouts）注入，shared 不读文章域配置
+const license = (Astro.props as { license?: { enable: boolean; name: string } })
+	.license ?? {
+	enable: false,
+	name: "",
+};
+const licenseName = license.enable ? license.name : "None";
 
 // ---- 组装展示数据 ----
 // 始终显示的项目（列表）

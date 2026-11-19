@@ -5,12 +5,12 @@ import { registerEmptyLottie } from "@/shared/components/ui/empty-lottie";
 registerEmptyLottie();
 
 import { onMount } from "svelte";
-import { navigateToPage } from "@/features/navigation/lib/nav-utils";
 import type { SearchResult } from "@/global";
 import Icon from "@/shared/components/ui/Icon.svelte";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
 import { FLOATING_PANEL_CLOSE_EVENT } from "@/shared/lib/layout/floating-panel";
+import { navigateToPage } from "@/shared/lib/navigation";
 import { url as formatUrl, getSearchUrl } from "@/shared/lib/seo/url";
 
 // --- State ---

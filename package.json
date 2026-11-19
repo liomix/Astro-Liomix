@@ -12,7 +12,7 @@
     "check": "astro check",
     "check:secrets": "npx tsx scripts/check-secrets.ts",
     "check:budget": "npx tsx scripts/check-js-budget.ts",
-    "test": "node --import tsx --test src/shared/lib/format/*.test.ts src/features/post/lib/*.test.ts",
+    "test": "node --import tsx --test src/shared/lib/*.test.ts src/shared/lib/format/*.test.ts src/shared/lib/media/*.test.ts src/features/post/lib/*.test.ts",
     "build": "npx tsx scripts/generate-github-card-data.ts && npx tsx scripts/generate-lqips.ts && npx tsx scripts/generate-vndb-covers.ts && astro build --force && npx tsx scripts/check-secrets.ts && npx tsx scripts/prune-pio-assets.ts && npx tsx scripts/subset-fonts.ts && npx tsx scripts/minify-inline-scripts.ts && npx tsx scripts/run-pagefind.ts",
     "preview": "astro preview",
     "astro": "astro",
@@ -27,7 +27,8 @@
     "books:refresh": "npx tsx src/features/navigation/books/lib/weread-cache.ts",
     "books:refresh:all": "npx tsx src/features/navigation/books/lib/weread-cache.ts --all",
     "avatar:convert": "node scripts/convert-avatar.mjs",
-    "github-cards": "npx tsx scripts/generate-github-card-data.ts"
+    "github-cards": "npx tsx scripts/generate-github-card-data.ts",
+    "deps:check": "depcruise src --config .dependency-cruiser.cjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",
@@ -112,6 +113,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.2",
+    "dependency-cruiser": "^18.8.0",
     "esbuild": "^0.28.2",
     "pinyin-pro": "^3.29.5",
     "postcss-import": "^16.1.1",

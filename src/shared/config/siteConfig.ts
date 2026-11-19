@@ -1,6 +1,6 @@
-import { resolvePageToggles } from "@/features/navigation/lib/page-toggle";
 import { resolveSiteLang } from "@/shared/lib/seo/site-config";
 import type { SiteConfig } from "@/shared/types/siteConfig";
+import { resolvePageToggles } from "./page-toggle";
 
 // 定义站点语言
 // 语言代码，例如：'zh_CN', 'zh_TW', 'en', 'ja', 'ru', 'ko'。

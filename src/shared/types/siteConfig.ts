@@ -1,5 +1,3 @@
-import type { NsfwMode } from "@/features/catalog/types";
-import type { ImmersiveReadingConfig } from "@/features/post/types";
 import type {
 	DARK_MODE,
 	LIGHT_MODE,
@@ -10,6 +8,8 @@ import type {
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@/shared/config/constants";
+import type { ImmersiveReadingConfig } from "./immersiveReading";
+import type { NsfwMode } from "./nsfw";
 
 export type LightDarkMode =
 	| typeof LIGHT_MODE

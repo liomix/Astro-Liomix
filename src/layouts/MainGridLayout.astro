@@ -3,6 +3,7 @@ import type { MarkdownHeading } from "astro";
 import Live2DWidget from "@/features/effects/components/Live2DWidget.astro";
 import SpineModel from "@/features/effects/components/SpineModel.astro";
 import { live2dWidgetConfig } from "@/features/effects/config";
+import { musicPlayerConfig } from "@/features/music/config";
 import HeaderTopRow from "@/features/navigation/components/HeaderTopRow.astro";
 import NavMenuPanel from "@/features/navigation/components/NavMenuPanel.astro";
 import TabBar from "@/features/navigation/components/TabBar.astro";
@@ -12,7 +13,7 @@ import {
 	collectNavPurityPaths,
 	matchesPathScope,
 } from "@/features/navigation/lib/nav-purity";
-import { articlePurityConfig } from "@/features/post/config";
+import { postConfig } from "@/features/post/config";
 import FloatingControls from "@/shared/components/shell/FloatingControls.astro";
 import Footer from "@/shared/components/shell/Footer.astro";
 import Sidebar from "@/shared/components/shell/Sidebar.astro";
@@ -78,6 +79,19 @@ const {
 
 const isHomePageCheck = isHomePage(Astro.url.pathname);
 const isPostPage = !!postSlug;
+
+// 侧栏需要的域数据：shared/shell 不许 import 文章域，由布局注入
+const sidebarDomainProps = {
+	articlePurity: {
+		enable: postConfig.purity.enable,
+		keepWidgets: postConfig.purity.keepWidgets as string[],
+	},
+	license: { enable: postConfig.license.enable, name: postConfig.license.name },
+	navPurity: {
+		enable: navPurityConfig.enable,
+		keepWidgets: navPurityConfig.keepWidgets as string[],
+	},
+};
 const shouldRenderTabBar = !!siteConfig.tabBar;
 
 /**
@@ -139,7 +153,7 @@ const {
 <!-- Main content -->
 <div id="content-panel" tabindex="-1" class="content-panel absolute w-full z-30 pointer-events-none outline-none">
     <!-- The pointer-events-none here prevent blocking the click event of the TOC -->
-    <div id="content-panel-inner" class="relative w-full xl:w-[92vw] max-w-(--page-width) mx-auto pointer-events-auto" style={gridColumnStyle} data-nav-purity={navPurityActive ? "true" : "false"} data-article-purity={articlePurityConfig.enable && isPostPage ? "true" : "false"} data-wide-page={widePageActive ? "true" : "false"}>
+    <div id="content-panel-inner" class="relative w-full xl:w-[92vw] max-w-(--page-width) mx-auto pointer-events-auto" style={gridColumnStyle} data-nav-purity={navPurityActive ? "true" : "false"} data-article-purity={postConfig.purity.enable && isPostPage ? "true" : "false"} data-wide-page={widePageActive ? "true" : "false"}>
         {/* 列几何唯一真源 = computeGridColumns()，SSR 写在父级 #content-panel-inner 上
             （页脚作为兄弟节点也要拿到 --content-ratio-*）。子元素无需定位类：
             侧栏包裹层是 display:contents，真正的 grid item 是内层元素 */}
@@ -147,6 +161,7 @@ const {
           class="transition duration-700 w-full left-0 right-0 grid mx-auto gap-4 px-2 md:px-4 mobile-no-sidebar"
           {...gridDataAttrs}
           data-nav-purity-enable={navPurityConfig.enable ? "true" : "false"}
+          data-article-purity-enable={postConfig.purity.enable ? "true" : "false"}
           data-nav-purity-paths={navPurityPaths.join(",")}
           data-wide-page-enable={widePageConfig.enable ? "true" : "false"}
           data-wide-page-paths={widePagePaths.join(",")}
@@ -162,6 +177,7 @@ const {
                 sidebarClass={sidebarClass}
                 headings={headings}
                 encrypted={encrypted}
+                {...sidebarDomainProps}
             />
                     
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
@@ -177,7 +193,7 @@ const {
                 >
                 {/* 为每个页面提供一个隐藏的h1标题，用于SEO和可访问性 */}
                 <h1 class="sr-only">{heading || title}</h1>
-                <div id="content-wrapper" class="onload-animation transition-leaving" data-nav-purity={navPurityActive ? "true" : undefined} data-article-purity={articlePurityConfig.enable && isPostPage ? "true" : undefined}>
+                <div id="content-wrapper" class="onload-animation transition-leaving" data-nav-purity={navPurityActive ? "true" : undefined} data-article-purity={postConfig.purity.enable && isPostPage ? "true" : undefined}>
                     <slot></slot>
                 </div>
             </main>
@@ -185,7 +201,7 @@ const {
                 {/* 移动端底部组件：<768px 时 #main-grid 是 display:block，必须排在页脚之前 */}
                 {sidebarLayoutConfig.mobileBottomComponents && sidebarLayoutConfig.mobileBottomComponents.length > 0 && (
                     <div id="mobile-bottom-sidebar" class="block md:hidden mt-4">
-                        <Sidebar side="bottom" headings={headings} encrypted={encrypted}></Sidebar>
+                        <Sidebar side="bottom" headings={headings} encrypted={encrypted} {...sidebarDomainProps}></Sidebar>
                     </div>
                 )}
             </div>
@@ -200,6 +216,7 @@ const {
                 sidebarClass={sidebarClass}
                 headings={headings}
                 encrypted={encrypted}
+                {...sidebarDomainProps}
             />
 
         </div>
@@ -216,7 +233,12 @@ const {
     </div>
 </div>
 
-<FloatingControls headings={headings} encrypted={encrypted} />
+<FloatingControls
+  headings={headings}
+  encrypted={encrypted}
+  hasPlaybackSettings={musicPlayerConfig.showInNavbar === true ||
+    musicPlayerConfig.showInSidebar !== false}
+/>
 
 <!-- 移动端导航抽屉：渲染为 <body> 直系子元素，脱离导航栏的 transform 包含块才能铺满视口 -->
 <NavMenuPanel links={resolveNavMenuLinks()} />

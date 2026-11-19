@@ -40,16 +40,14 @@ export type SponsorConfig = {
 	qrLabel?: string; // 收款码下方的收款方式名，如「微信」
 };
 
+export type { ImmersiveReadingConfig } from "@/shared/types/immersiveReading";
+
 /**
- * 沉浸阅读（Immersive Reading）配置（挂在 siteConfig.post 下）
+ * 文章域配置：四块合一份。字段分别对应许可证 / 封面 / 纯净模式 / 打赏。
  */
-export interface ImmersiveReadingConfig {
-	/** 总开关，false 则不渲染按钮 */
-	enable: boolean;
-	/** 进入文章页是否默认开启沉浸阅读（默认 false） */
-	defaultOn: boolean;
-	/** 沉浸阅读中是否显示目录栏 */
-	tocEnabled: boolean;
-	/** 目录栏位置："left" | "right" */
-	tocPosition: "left" | "right";
-}
+export type PostConfig = {
+	license: LicenseConfig;
+	cover: CoverImageConfig;
+	purity: ArticlePurityConfig;
+	sponsor: SponsorConfig;
+};

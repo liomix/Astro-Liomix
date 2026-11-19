@@ -1,7 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
-import { dynamicConfig } from "@/features/dynamic/config";
-import { displaySettingsConfig } from "@/features/theme/config";
+import { dynamicConfig } from "@/features/dynamic";
 import { originFromElement } from "@/features/theme/lib/light-dark-switch";
 import {
 	DEFAULT_THEME_SCHEDULE,
@@ -66,6 +65,7 @@ import {
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@/shared/config/constants";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { siteConfig } from "@/shared/config/siteConfig";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";

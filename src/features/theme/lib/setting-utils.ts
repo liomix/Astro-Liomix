@@ -7,8 +7,8 @@
  */
 
 export * from "@/features/theme/lib/settings/appearance";
-export * from "@/features/theme/lib/settings/comment-wallpaper";
 export * from "@/features/theme/lib/settings/effects";
 export * from "@/features/theme/lib/settings/overlay";
 export * from "@/features/theme/lib/settings/theme";
 export * from "@/features/theme/lib/settings/wallpaper";
+export * from "@/shared/lib/comments/wallpaper-setting";

@@ -1,0 +1,523 @@
+---
+import type { CollectionEntry } from "astro:content";
+import type { AstroComponentFactory } from "astro/runtime/server/index.js";
+/**
+ * 文章详情正文（域组件）
+ * ---------------------------------------------------------------------------
+ * 页面只负责取数、选布局、把 payload 递进来；封面/系列/正文/打赏/上下篇/相关推荐
+ * 全在这里。`posts/[...slug].astro` 因此只留编排。
+ */
+import { Icon } from "astro-icon/components";
+import dayjs from "dayjs";
+import { postConfig } from "@/features/post/config";
+import { siteStatsConfig } from "@/features/stats/config";
+import CommentButton from "@/shared/components/comments/CommentButton.astro";
+import CommentSection from "@/shared/components/comments/CommentSection.astro";
+import LikeButton from "@/shared/components/likes/LikeButton.astro";
+import CoverImage from "@/shared/components/ui/CoverImage.astro";
+import Markdown from "@/shared/components/ui/Markdown.astro";
+import { profileConfig } from "@/shared/config/profileConfig";
+import { siteConfig } from "@/shared/config/siteConfig";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
+import type {
+	getRelatedPosts,
+	getSeriesPosts,
+} from "@/shared/lib/content/content-utils";
+import { formatDateToYYYYMMDD } from "@/shared/lib/format/date";
+import {
+	getFileDirFromPath,
+	getPostUrlBySlug,
+	removeFileExtension,
+	url,
+} from "@/shared/lib/seo/url";
+import type { PostPagePayload } from "../lib/post-page-data";
+import EncryptedPost from "./EncryptedPost.astro";
+import License from "./License.astro";
+import PostHeader from "./PostHeader.astro";
+import PostMetadata from "./PostMeta.astro";
+import RecommendedPost from "./RecommendedPost.astro";
+import SeriesNav from "./SeriesNav.astro";
+import ShareButton from "./ShareButton.svelte";
+import SponsorButton from "./sponsor/SponsorButton.astro";
+import SponsorDialog from "./sponsor/SponsorDialog.svelte";
+
+interface Props {
+	entry: CollectionEntry<"posts">;
+	Content: AstroComponentFactory;
+	remarkPluginFrontmatter: { words: number; minutes: number };
+	payload: PostPagePayload;
+	relatedPosts: Awaited<ReturnType<typeof getRelatedPosts>>;
+	seriesData: Awaited<ReturnType<typeof getSeriesPosts>>;
+	pageUrl: string;
+}
+
+const {
+	entry,
+	Content,
+	remarkPluginFrontmatter,
+	payload,
+	relatedPosts,
+	seriesData,
+	pageUrl,
+} = Astro.props;
+
+const {
+	processedImage,
+	apiUrls,
+	showPostCover,
+	usePostCoverOverlay,
+	posterCoverUrl,
+	posterCoverSelector,
+	posterAvatarUrl,
+	posterAvatarSelector,
+} = payload;
+
+const sponsorQr = postConfig.sponsor.qrCode?.trim() || "";
+// 打赏入口：开关打开且配了收款码才显示。弹窗是唯一入口，站点没有独立的打赏页
+const showSponsorButton =
+	postConfig.sponsor.showButtonInPost && sponsorQr.length > 0;
+const showPostActionCard = siteConfig.post.share || showSponsorButton;
+const SPONSOR_POP_ID = "post-sponsor-pop";
+---
+
+  <div
+    class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"
+  >
+    <div
+      id="post-container"
+      class:list={[
+        "card-base z-10 px-6 md:px-9 pt-6 pb-4 relative w-full ",
+        {},
+      ]}
+    >
+      {
+        usePostCoverOverlay && processedImage && (
+          <div class="-mx-6 md:-mx-9 -mt-6 mb-6 h-48 md:h-64 relative onload-animation">
+            <CoverImage
+              id="post-cover"
+              src={processedImage}
+              basePath={getFileDirFromPath(entry.filePath || "")}
+              alt={entry.data.title}
+              class="h-full"
+              preview={false}
+              apiUrls={apiUrls}
+            />
+            <div class="absolute inset-x-4 top-3 z-10 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-white drop-shadow-[0_1px_2px_rgb(0_0_0/0.9)]">
+              <div class="flex items-center gap-1 whitespace-nowrap">
+                <Icon name="material-symbols:notes-rounded" class="text-base" />
+                <span>
+                  {remarkPluginFrontmatter.words}
+                  {" " + i18n(remarkPluginFrontmatter.words === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 whitespace-nowrap">
+                <Icon name="material-symbols:schedule-outline-rounded" class="text-base" />
+                <span>
+                  {remarkPluginFrontmatter.minutes}
+                  {" " + i18n(remarkPluginFrontmatter.minutes === 1 ? I18nKey.minuteCount : I18nKey.minutesCount)}
+                </span>
+              </div>
+              {entry.data.password && (
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                  <Icon name="material-symbols:lock-outline" class="text-base" />
+                  <span>{i18n(I18nKey.postEncrypted)}</span>
+                </div>
+              )}
+            </div>
+            <div class="absolute inset-x-0 bottom-0 px-6 md:px-9 pt-10 pb-3 bg-gradient-to-t from-black/80 via-black/45 to-transparent">
+              <div
+                data-pagefind-body
+                data-pagefind-weight="10"
+                data-pagefind-meta="title"
+                class="mb-2 text-xl md:text-2xl font-bold leading-tight text-white"
+              >
+                {entry.data.title}
+              </div>
+              <PostMetadata
+                variant="cover"
+                className="gap-x-4 gap-y-1"
+                published={entry.data.published}
+                updated={entry.data.updated}
+                category={entry.data.category || undefined}
+                tags={entry.data.tags}
+                showViews={siteStatsConfig.enable && siteStatsConfig.articleViews}
+                viewsId={entry.id}
+                countView={siteStatsConfig.enable && siteStatsConfig.articleViews}
+              />
+            </div>
+          </div>
+        )
+      }
+
+      <!-- 文章头部：标题居中 + 两行元信息（字数 / 阅读时长 / 阅读量 / 分类 / 标签） -->
+      {
+        !usePostCoverOverlay && (
+          <>
+            <PostHeader
+              title={entry.data.title}
+              published={entry.data.published}
+              updated={entry.data.updated}
+              category={entry.data.category || undefined}
+              tags={entry.data.tags}
+              words={remarkPluginFrontmatter.words}
+              minutes={remarkPluginFrontmatter.minutes}
+              id={entry.id}
+              password={!!entry.data.password}
+            />
+            {!showPostCover && (
+              <div class="border-(--line-divider) border-dashed border-b mb-5" />
+            )}
+          </>
+        )
+      }
+
+      {
+        seriesData && (
+          <SeriesNav
+            seriesName={seriesData.seriesName}
+            posts={seriesData.posts}
+            currentPostId={entry.id}
+          />
+        )
+      }
+
+      {
+        showPostCover && !usePostCoverOverlay && processedImage && (
+          <div class="mt-4">
+            <CoverImage
+              id="post-cover"
+              src={processedImage}
+              basePath={getFileDirFromPath(entry.filePath || "")}
+              alt={entry.data.title}
+              class="mb-8 rounded-xl onload-animation"
+              preview={false}
+              naturalHeight
+              apiUrls={apiUrls}
+            />
+          </div>
+        )
+      }
+
+      {entry.data.password ? (
+        <EncryptedPost password={entry.data.password} slug={entry.id} hint={entry.data.passwordHint}>
+          <Markdown class="mb-6 markdown-content onload-animation">
+            <Content />
+          </Markdown>
+
+          {/* 打赏按钮 & 分享按钮 */}
+          {
+            showPostActionCard && (
+              <div class="mb-6 rounded-xl onload-animation">
+                <div class="p-6 bg-(--license-block-bg) rounded-xl">
+                  <div class="flex flex-col items-center gap-4 text-center">
+                    <div class="flex flex-col items-center gap-2">
+                      <div class="h-12 w-12 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
+                        <Icon
+                          name={showSponsorButton
+                            ? "material-symbols:favorite"
+                            : "material-symbols:share"}
+                          class="text-2xl"
+                        />
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
+                          {
+                            showSponsorButton
+                              ? i18n(I18nKey.sponsorButton)
+                              : i18n(I18nKey.shareOnSocial)
+                          }
+                        </h3>
+                        <p class="text-sm text-neutral-600 dark:text-neutral-400">
+                          {
+                            showSponsorButton
+                              ? i18n(I18nKey.sponsorButtonText)
+                              : i18n(I18nKey.shareOnSocialDescription)
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                      {
+                        siteConfig.post.share && (
+                          <ShareButton
+                            client:load
+                            title={entry.data.title}
+                            author={entry.data.author || profileConfig.name}
+                            description={entry.data.description || entry.data.title}
+                            pubDate={formatDateToYYYYMMDD(entry.data.published)}
+                            coverImage={posterCoverUrl}
+                            coverImageSelector={posterCoverSelector}
+                            url={pageUrl}
+                            avatar={posterAvatarUrl}
+                            avatarSelector={posterAvatarSelector}
+                          />
+                        )
+                      }
+                      {
+                        showSponsorButton && (
+                          <SponsorButton popId={SPONSOR_POP_ID} />
+                        )
+                      }
+                      <LikeButton
+                        id={removeFileExtension(entry.id)}
+                        count={0}
+                        class="atom-action--lg"
+                      />
+                      <CommentButton
+                        href="#post-comments"
+                        count={0}
+                        slug={removeFileExtension(entry.id)}
+                        class="atom-action--lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            postConfig.license.enable && (
+              <License
+                title={entry.data.title}
+                pubDate={entry.data.published}
+                author={entry.data.author}
+                sourceLink={entry.data.sourceLink}
+                licenseName={entry.data.licenseName}
+                licenseUrl={entry.data.licenseUrl}
+                class="mb-6 rounded-xl license-container onload-animation"
+              />
+            )
+          }
+        </EncryptedPost>
+      ) : (
+        <>
+          <Markdown class="mb-6 markdown-content onload-animation">
+            <Content />
+          </Markdown>
+
+          {/* 打赏按钮 & 分享按钮 */}
+          {
+            showPostActionCard && (
+              <div class="mb-6 rounded-xl onload-animation">
+                <div class="p-6 bg-(--license-block-bg) rounded-xl">
+                  <div class="flex flex-col items-center gap-4 text-center">
+                    <div class="flex flex-col items-center gap-2">
+                      <div class="h-12 w-12 rounded-lg bg-(--primary) flex items-center justify-center text-white dark:text-black/70 shrink-0">
+                        <Icon
+                          name={showSponsorButton
+                            ? "material-symbols:favorite"
+                            : "material-symbols:share"}
+                          class="text-2xl"
+                        />
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
+                          {
+                            showSponsorButton
+                              ? i18n(I18nKey.sponsorButton)
+                              : i18n(I18nKey.shareOnSocial)
+                          }
+                        </h3>
+                        <p class="text-sm text-neutral-600 dark:text-neutral-400">
+                          {
+                            showSponsorButton
+                              ? i18n(I18nKey.sponsorButtonText)
+                              : i18n(I18nKey.shareOnSocialDescription)
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                      {
+                        siteConfig.post.share && (
+                          <ShareButton
+                            client:load
+                            title={entry.data.title}
+                            author={entry.data.author || profileConfig.name}
+                            description={entry.data.description || entry.data.title}
+                            pubDate={formatDateToYYYYMMDD(entry.data.published)}
+                            coverImage={posterCoverUrl}
+                            coverImageSelector={posterCoverSelector}
+                            url={pageUrl}
+                            avatar={posterAvatarUrl}
+                            avatarSelector={posterAvatarSelector}
+                          />
+                        )
+                      }
+                      {
+                        showSponsorButton && (
+                          <SponsorButton popId={SPONSOR_POP_ID} />
+                        )
+                      }
+                      <LikeButton
+                        id={removeFileExtension(entry.id)}
+                        count={0}
+                        class="atom-action--lg"
+                      />
+                      <CommentButton
+                        href="#post-comments"
+                        count={0}
+                        slug={removeFileExtension(entry.id)}
+                        class="atom-action--lg"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {
+            postConfig.license.enable && (
+              <License
+                title={entry.data.title}
+                pubDate={entry.data.published}
+                author={entry.data.author}
+                sourceLink={entry.data.sourceLink}
+                licenseName={entry.data.licenseName}
+                licenseUrl={entry.data.licenseUrl}
+                class="mb-6 rounded-xl license-container onload-animation"
+              />
+            )
+          }
+        </>
+      )}
+    </div>
+  </div>
+
+  <CommentSection slug={removeFileExtension(entry.id)} class="mb-6 onload-animation" />
+
+  <!-- 上次编辑时间 -->
+  {
+    siteConfig.post.showLastModified && (() => {
+      const lastModified = dayjs(entry.data.updated || entry.data.published);
+      const dateStr = lastModified.format("YYYY-MM-DD");
+      const outdatedThreshold = siteConfig.post.outdatedThreshold ?? 1;
+
+      // 1. 預設加上 hidden 隱藏，並把時間與閾值綁在 data-* 屬性
+      return (
+        <div 
+          id="outdated-card" 
+          class="card-base p-6 mb-4 hidden" 
+          data-date={lastModified.toISOString()} 
+          data-threshold={outdatedThreshold}
+        >
+          <div class="flex items-center gap-2">
+            <div class="transition h-9 w-9 rounded-lg overflow-hidden relative flex items-center justify-center mr-0">
+              <Icon
+                name="material-symbols:history-rounded"
+                class="text-4xl text-(--primary) transition-transform group-hover:translate-x-0.5 bg-(--enter-btn-bg) p-2 rounded-md"
+              />
+            </div>
+
+            <div class="flex flex-col gap-0.1">
+              <div class="text-[1.0rem] leading-tight text-black/75 dark:text-white/75">
+                {i18n(I18nKey.lastModifiedPrefix)}{dateStr}
+                <span id="days-ago-text" data-template={i18n(I18nKey.lastModifiedDaysAgo)}></span>
+              </div>
+              <p id="outdated-warning" class="text-[0.8rem] leading-tight text-black/75 dark:text-white/75 hidden">
+                {i18n(I18nKey.lastModifiedOutdated)}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    })()
+  }
+
+  <script>
+    const card = document.getElementById('outdated-card');
+    const dateStr = card?.dataset.date;
+
+    if (card && dateStr) {
+      // 讀取伺服器給的日期，用原生 Date 算出差異天數（避免向客戶端打包整個 dayjs）
+      const lastModified = new Date(dateStr);
+      const daysDiff = Math.floor(
+        (Date.now() - lastModified.getTime()) / 86400000,
+      );
+      const threshold = Number(card.dataset.threshold);
+
+      // 如果超過閾值，就顯示卡片與提示文字
+      if (daysDiff >= threshold) {
+        card.classList.remove('hidden');
+
+        if (daysDiff >= 1) {
+          const textEl = document.getElementById('days-ago-text');
+          if (textEl && textEl.dataset.template) {
+            textEl.textContent = `，${textEl.dataset.template.replace("{days}", daysDiff.toString())}`;
+          }
+
+          const warningEl = document.getElementById('outdated-warning');
+          if (warningEl) {
+            warningEl.classList.remove('hidden');
+          }
+        }
+      }
+    }
+  </script>
+
+  {
+    siteConfig.post.postNavigation && (
+      <div
+        class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full"
+      >
+    <a
+      href={entry.data.nextSlug ? getPostUrlBySlug(entry.data.nextSlug) : url("/")}
+      class="w-full font-bold overflow-hidden active:scale-95"
+    >
+      <div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-start! gap-4">
+        <Icon
+          name="material-symbols:chevron-left-rounded"
+          class="text-[2rem] text-(--primary)"
+        />
+        <div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-black/75 dark:text-white/75">
+          {entry.data.nextTitle || i18n(I18nKey.home)}
+        </div>
+      </div>
+    </a>
+
+    <a
+      href={entry.data.prevSlug ? getPostUrlBySlug(entry.data.prevSlug) : url("/")}
+      class="w-full font-bold overflow-hidden active:scale-95"
+    >
+      <div class="btn-card rounded-2xl w-full h-15 max-w-full px-4 flex items-center justify-end! gap-4">
+        <div class="overflow-hidden transition text-ellipsis whitespace-nowrap max-w-[calc(100%-3rem)] text-black/75 dark:text-white/75">
+          {entry.data.prevTitle || i18n(I18nKey.home)}
+        </div>
+        <Icon
+          name="material-symbols:chevron-right-rounded"
+          class="text-[2rem] text-(--primary)"
+        />
+      </div>
+    </a>
+      </div>
+    )
+  }
+
+  {
+    (siteConfig.post.relatedPosts || siteConfig.post.randomPosts) && (
+      <RecommendedPost
+        relatedPosts={relatedPosts}
+        currentPostId={entry.id}
+        showRelatedPosts={siteConfig.post.relatedPosts}
+        showRandomPosts={siteConfig.post.randomPosts}
+      />
+    )
+  }
+
+  <!-- 评论区：第三方评论实现已移除，待接入自定义实现 -->
+
+  <!-- 打赏弹窗：由底部的金币按钮通过 data-sponsor-pop 触发 -->
+  {
+    showSponsorButton && (
+      <SponsorDialog
+        client:idle
+        id={SPONSOR_POP_ID}
+        qrCode={sponsorQr}
+        qrLabel={postConfig.sponsor.qrLabel}
+        usage={postConfig.sponsor.usage}
+      />
+    )
+  }

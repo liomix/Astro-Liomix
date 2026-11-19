@@ -4,8 +4,8 @@
  * 由 setting-utils.ts 按职责拆出；对外仍经 setting-utils.ts 暴露，调用点不变。
  */
 
-import { displaySettingsConfig } from "@/features/theme/config";
 import { backgroundWallpaperConfig } from "@/shared/config/backgroundWallpaperConfig";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { siteConfig } from "@/shared/config/siteConfig";
 
 // Declare global functions

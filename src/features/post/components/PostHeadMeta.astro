@@ -1,0 +1,30 @@
+---
+/**
+ * 文章页的 <head> 元数据（og:article + JSON-LD）。
+ * 单独成组件是为了让页面只留「一个 slot 挂载点」，而不是二十行 meta。
+ */
+import type { CollectionEntry } from "astro:content";
+import { profileConfig } from "@/shared/config/profileConfig";
+
+interface Props {
+	entry: CollectionEntry<"posts">;
+	jsonLd: unknown;
+}
+
+const { entry, jsonLd } = Astro.props;
+---
+
+<!-- og:article 结构化元数据 -->
+<meta property="article:published_time" content={entry.data.published.toISOString()} />
+{entry.data.updated && (
+  <meta property="article:modified_time" content={entry.data.updated.toISOString()} />
+)}
+<meta property="article:author" content={entry.data.author || profileConfig.name} />
+{entry.data.category && <meta property="article:section" content={entry.data.category} />}
+{entry.data.tags.map((tag) => (
+  <meta property="article:tag" content={tag.trim()} />
+))}
+{/* 加密文章：内容不可被爬取 */}
+{entry.data.password && <meta name="robots" content="noindex, noarchive" />}
+
+<script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

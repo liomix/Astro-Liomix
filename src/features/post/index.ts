@@ -3,6 +3,11 @@
  * 不负责：评论与点赞（在 shared/lib 的横切能力里）、页面取数（在 pages/ 里）。
  */
 
+export type { PostOrderKey } from "@/shared/lib/content/post-order";
+export {
+	comparePostOrder,
+	toPostOrderKey,
+} from "@/shared/lib/content/post-order";
 // 组件
 export { default as EncryptedContent } from "./components/EncryptedContent.astro";
 export { default as EncryptedPost } from "./components/EncryptedPost.astro";
@@ -22,19 +27,11 @@ export { default as SponsorButton } from "./components/sponsor/SponsorButton.ast
 export { default as SponsorButtonLottie } from "./components/sponsor/SponsorButtonLottie.svelte";
 export { default as SponsorDialog } from "./components/sponsor/SponsorDialog.svelte";
 export { default as TocCard } from "./components/TocCard.astro";
-
 // 配置
-export {
-	articlePurityConfig,
-	coverImageConfig,
-	licenseConfig,
-	sponsorConfig,
-} from "./config";
+export { postConfig } from "./config";
 // 工具 / 契约
 export { encryptContent } from "./lib/crypto-utils";
 export { initImmersiveReading } from "./lib/immersive-reading";
-export type { PostOrderKey } from "./lib/post-order";
-export { comparePostOrder, toPostOrderKey } from "./lib/post-order";
 export type {
 	PostPagePayload,
 	PostPagePayloadInput,

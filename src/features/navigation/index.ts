@@ -3,6 +3,15 @@
  * 子域（guestbook / books）不从这里转导出，页面直接 import 子域。
  */
 
+export { resolvePageToggles } from "@/shared/config/page-toggle";
+export {
+	getCurrentPath,
+	isHomePage,
+	isPostPage,
+	isSwupReady,
+	navigateToPage,
+	pathsEqual,
+} from "@/shared/lib/navigation";
 // 组件
 export { default as DropdownItem } from "./components/DropdownItem.astro";
 export { default as DropdownMenu } from "./components/DropdownMenu.astro";
@@ -12,7 +21,6 @@ export { default as Navbar } from "./components/Navbar.astro";
 export { default as NavLottieLogo } from "./components/NavLottieLogo.svelte";
 export { default as NavMenuPanel } from "./components/NavMenuPanel.astro";
 export { default as TabBar } from "./components/TabBar.astro";
-
 // 配置
 export {
 	linkPresets,
@@ -28,15 +36,6 @@ export {
 	matchesPathScope,
 	toNavPurityPath,
 } from "./lib/nav-purity";
-export {
-	getCurrentPath,
-	isHomePage,
-	isPostPage,
-	isSwupReady,
-	navigateToPage,
-	pathsEqual,
-} from "./lib/nav-utils";
-export { resolvePageToggles } from "./lib/page-toggle";
 // 类型
 export type {
 	NavBarConfig,

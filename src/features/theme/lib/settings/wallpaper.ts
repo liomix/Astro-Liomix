@@ -4,7 +4,6 @@
  * 由 setting-utils.ts 按职责拆出；对外仍经 setting-utils.ts 暴露，调用点不变。
  */
 
-import { displaySettingsConfig } from "@/features/theme/config";
 import { backgroundWallpaperConfig } from "@/shared/config/backgroundWallpaperConfig";
 import {
 	WALLPAPER_BANNER,
@@ -12,6 +11,7 @@ import {
 	WALLPAPER_NONE,
 	WALLPAPER_OVERLAY,
 } from "@/shared/config/constants";
+import { displaySettingsConfig } from "@/shared/config/displaySettings";
 import { isHomePage as checkIsHomePage } from "@/shared/lib/layout/layout-utils";
 import type { FullscreenWallpaperLayout } from "@/shared/types/backgroundWallpaperConfig";
 import type { WallpaperMode } from "@/shared/types/siteConfig";

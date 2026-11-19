@@ -4,7 +4,7 @@ import {
 	dynamicSearchText,
 	dynamicSlug,
 	sortDynamics,
-} from "@/features/dynamic/lib/dynamic-utils";
+} from "@/features/dynamic";
 
 const markdownImagePattern = /!\[([^\]]*)\]\((\S+?)(?:\s+["']([^"']*)["'])?\)/g;
 

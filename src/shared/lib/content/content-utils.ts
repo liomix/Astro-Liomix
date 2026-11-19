@@ -1,11 +1,22 @@
 import { type CollectionEntry, getCollection } from "astro:content";
-import {
-	comparePostOrder,
-	toPostOrderKey,
-} from "@/features/post/lib/post-order";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
 import { getCategoryUrl } from "@/shared/lib/seo/url";
+import { comparePostOrder, toPostOrderKey } from "./post-order";
+
+/**
+ * 「已发布」的唯一判定：详情页、sitemap、RSS、OG 图、搜索索引共用。
+ * 草稿只在一处过滤，才不会出现「列表没有、sitemap 里有」。
+ */
+export function isPublishedPost(entry: { data: { draft?: boolean } }): boolean {
+	return entry.data.draft !== true;
+}
+
+export function publishedPosts<T extends { data: { draft?: boolean } }>(
+	posts: T[],
+): T[] {
+	return posts.filter(isPublishedPost);
+}
 
 // // Retrieve posts and sort them by publication date
 async function getRawSortedPosts() {

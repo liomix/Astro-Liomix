@@ -1,4 +1,4 @@
-/* 文章页纯净模式（src/config/articlePurityConfig.ts 控制范围）
+/* 文章页纯净模式（features/post/config.ts 的 postConfig.purity 控制范围）
    ---------------------------------------------------------------------------
    文章页只留文章目录：其余侧栏卡片隐藏（.article-purity-hide 由 SideBar.astro 打标）。
    目录卡本身配在 sidebarConfig 的 leftComponents 里 —— 这一版不再用 grid 换列去搬它。

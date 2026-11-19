@@ -2,9 +2,8 @@
  * 主网格列布局与侧边栏可见性 / 吸顶间距管理（从 Layout.astro 迁出）。
  */
 
-import { matchesPathScope } from "@/features/navigation/lib/nav-purity";
-import { articlePurityConfig } from "@/features/post/config";
 import { widePageConfig } from "@/shared/config/widePageConfig";
+import { matchesPathScope } from "@/shared/lib/path-scope";
 import { isArticleDetailPage } from "@/shared/lib/seo/url";
 import { computeGridColumns, gridColumnVarsToStyle } from "./responsive";
 
@@ -145,8 +144,13 @@ export function applyPurityModes(targetUrl: string): void {
 		);
 	}
 
-	// 文章页：只留目录（目录卡已配在左栏），标签栏竖排搬进右列
-	if (articlePurityConfig.enable) {
+	// 文章页：只留目录（目录卡已配在左栏），标签栏竖排搬进右列。
+	// 开关由 SSR 写在 #main-grid 上 —— shared 不许 import 文章域的配置
+	const articlePurityEnabled =
+		document
+			.getElementById("main-grid")
+			?.getAttribute("data-article-purity-enable") === "true";
+	if (articlePurityEnabled) {
 		const articlePurity = isArticleDetailPage(pathname);
 		setPurityAttr(host, "data-article-purity", articlePurity);
 		// 竖版只在 xl 生效：更窄的断点右栏不显示，搬进去会看不见，所以留原位横版

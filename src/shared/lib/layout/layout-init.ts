@@ -1,7 +1,3 @@
-import {
-	initThemeListener,
-	initWallpaperMode,
-} from "@/features/theme/lib/setting-utils";
 import { initIconLoader } from "@/shared/lib/icon-loader";
 import {
 	initFullscreenWallpaper,
@@ -26,8 +22,16 @@ import {
 import { initScroll } from "./scroll";
 import { setupSwupTransitions } from "./swup-transitions";
 
+/** 由 Layout 注入的外观初始化（shared 不许 import 业务域） */
+export interface LayoutInitHooks {
+	/** 首屏与 DOMContentLoaded 后初始化主题 / 壁纸模式 */
+	initAppearance?: () => void;
+	/** 每次 swup 换页后同步外观状态 */
+	onPageView?: () => void;
+}
+
 /** 布局初始化编排（从 Layout.astro 迁出） */
-export function initLayout(): void {
+export function initLayout(hooks: LayoutInitHooks = {}): void {
 	// 防止 Swup 切页重跑模块化脚本时重复注册监听器/钩子（一次性注册；
 	// 切页后的页面状态刷新由下方 swup 钩子与一次性注册的 document 监听器负责）
 	if (window.__fireflyLayoutInit) return;
@@ -45,7 +49,7 @@ export function initLayout(): void {
 		"wallpaper-mode-switch",
 	]);
 
-	setupSwupTransitions();
+	setupSwupTransitions({ onPageView: hooks.onPageView });
 	initFullscreenWallpaper();
 	registerContentOverflowListeners();
 	// 滚动路径不再读取布局；先在初始化时填充侧边栏 top 容器可见性缓存
@@ -77,8 +81,7 @@ export function initLayout(): void {
 			updateMainGridCols();
 			updateSidebarComponentsVisibility();
 			syncSideTabBar();
-			initWallpaperMode();
-			initThemeListener();
+			hooks.initAppearance?.();
 			initIconLoader();
 			syncFullscreenStateAfterInit();
 		});
@@ -86,8 +89,7 @@ export function initLayout(): void {
 		updateMainGridCols();
 		updateSidebarComponentsVisibility();
 		syncSideTabBar();
-		initWallpaperMode();
-		initThemeListener();
+		hooks.initAppearance?.();
 		initIconLoader();
 		syncFullscreenStateAfterInit();
 	}

@@ -2,9 +2,7 @@
 import type { MarkdownHeading } from "astro";
 import Dynamic from "@/features/dynamic/components/DynamicPreview.astro";
 import MusicCard from "@/features/music/components/MusicCard.astro";
-import { navPurityConfig } from "@/features/navigation/config";
 import TocCard from "@/features/post/components/TocCard.astro";
-import { articlePurityConfig } from "@/features/post/config";
 import SiteStatsCard from "@/features/stats/components/SiteStatsCard.astro";
 import Advertisement from "@/shared/components/widgets/Advertisement.astro";
 import Announcement from "@/shared/components/widgets/Announcement.astro";
@@ -26,6 +24,15 @@ interface Props {
 	headings?: MarkdownHeading[];
 	encrypted?: boolean;
 	side?: "left" | "right" | "bottom";
+	/**
+	 * 文章页纯净模式（由 layouts 注入）：shared 不允许 import 文章域配置，
+	 * 但侧栏要在 SSR 时给卡片打 article-purity-hide 标记。
+	 */
+	articlePurity?: { enable: boolean; keepWidgets: string[] };
+	/** 侧栏站点信息卡展示的许可（同样由 layouts 注入） */
+	license?: { enable: boolean; name: string };
+	/** 导航页纯净模式保留的卡片（由 layouts 注入） */
+	navPurity?: { enable: boolean; keepWidgets: string[] };
 }
 
 // 侧边栏位置常量
@@ -58,6 +65,13 @@ const componentMap = {
 	siteInfo: SiteInfo,
 	dynamic: Dynamic,
 };
+
+const articlePurity = Astro.props.articlePurity ?? {
+	enable: false,
+	keepWidgets: [],
+};
+const license = Astro.props.license ?? { enable: false, name: "" };
+const navPurity = Astro.props.navPurity ?? { enable: false, keepWidgets: [] };
 
 // 获取侧边栏位置
 const side = (Astro.props.side ||
@@ -143,20 +157,21 @@ const getComponentProps = (
 
 	// 导航页纯净模式：只留 keepWidgets 里的卡片（默认个人资料），其余打标记由
 	// CSS 隐藏。这里不改渲染结构 —— 卡片只是不显示，侧栏列宽照旧占着位置
-	if (
-		navPurityConfig.enable &&
-		!navPurityConfig.keepWidgets.includes(config.type)
-	) {
+	if (navPurity.enable && !navPurity.keepWidgets.includes(config.type)) {
 		baseProps.class = `${baseProps.class} nav-purity-hide`;
 	}
 
 	// 文章页纯净模式：只留目录卡。两套标记可以同时存在，具体哪套生效由
 	// #content-panel-inner 上的 data-nav-purity / data-article-purity 决定
 	if (
-		articlePurityConfig.enable &&
-		!articlePurityConfig.keepWidgets.includes(config.type)
+		articlePurity.enable &&
+		!articlePurity.keepWidgets.includes(config.type)
 	) {
 		baseProps.class = `${baseProps.class} article-purity-hide`;
+	}
+
+	if (config.type === "siteInfo") {
+		return { ...baseProps, license };
 	}
 
 	// 特殊处理 TocCard 组件

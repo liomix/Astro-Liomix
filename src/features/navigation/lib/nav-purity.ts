@@ -8,15 +8,12 @@
  * 属性重算 —— 所以这个模块不 import 任何配置，客户端不会为此多打包一份导航栏。
  */
 import type { NavBarLink } from "@/features/navigation/types";
+import { matchesPathScope, normalizePath } from "@/shared/lib/path-scope";
+
+export { matchesPathScope };
 
 /** 站点 base（配置为 "/" 时是空串），用来把 /archive/ 这类站点路径对齐成运行时 pathname */
 const BASE = (import.meta.env.BASE_URL || "/").replace(/^\/+|\/+$/g, "");
-
-/** 去掉尾部斜杠；根路径保留为 "/" */
-function normalizePath(path: string): string {
-	const trimmed = path.replace(/\/+$/, "");
-	return trimmed || "/";
-}
 
 function withBase(path: string): string {
 	return BASE ? `/${BASE}${path}` : path;
@@ -73,27 +70,4 @@ export function collectNavPurityPaths(
 		.filter((path): path is string => !!path);
 
 	return [...paths].filter((path) => !matchesPathScope(path, excluded));
-}
-
-/**
- * 某个路径是否落在给定集合里。
- *
- * 按前缀命中：/archive/ 也覆盖 /archive/2/ 这类分页。
- * 根路径 "/" 例外 —— 它是一切路径的前缀，只能精确命中首页。
- *
- * 导航页纯净模式与宽幅页面布局共用这一份判定（两者都是「按路径挑页面」）。
- */
-export function matchesPathScope(pathname: string, paths: string[]): boolean {
-	if (!paths.length) return false;
-	const current = normalizePath((pathname.split(/[?#]/)[0] || "/").trim());
-
-	for (const path of paths) {
-		if (path === "/") {
-			if (current === "/") return true;
-			continue;
-		}
-		if (current === path || current.startsWith(`${path}/`)) return true;
-	}
-
-	return false;
 }
