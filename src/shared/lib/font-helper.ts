@@ -1,7 +1,7 @@
 /**
  * 字体工具函数
  *
- * 提供字体配置相关的共享逻辑，用于 astro.config.mjs 和 scripts/subset-fonts.ts。
+ * 提供字体配置相关的共享逻辑，用于 astro.config.mjs 和 scripts/postbuild-font-subset.ts。
  */
 
 import type { FontSelectionConfig } from "@/shared/types/fontConfig";

@@ -13,7 +13,7 @@
     "check:secrets": "npx tsx scripts/check-secrets.ts",
     "check:budget": "npx tsx scripts/check-js-budget.ts",
     "test": "node --import tsx --test \"src/shared/lib/*.test.ts\" \"src/shared/lib/format/*.test.ts\" \"src/shared/lib/media/*.test.ts\" \"src/shared/lib/comments/*.test.ts\" \"src/features/post/lib/*.test.ts\"",
-    "build": "npx tsx scripts/generate-github-card-data.ts && npx tsx scripts/generate-lqips.ts && astro build --force",
+    "build": "npx tsx scripts/build-github-cards.ts && npx tsx scripts/build-lqips.ts && astro build --force",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit",
@@ -23,15 +23,15 @@
     "format": "biome format --write ./src ./scripts",
     "lint": "biome check --write ./src ./scripts",
     "preinstall": "npx only-allow pnpm",
-    "lqips": "npx tsx scripts/generate-lqips.ts",
+    "lqips": "npx tsx scripts/build-lqips.ts",
     "books:refresh": "npx tsx src/features/navigation/books/lib/weread-cache.ts",
     "books:refresh:all": "npx tsx src/features/navigation/books/lib/weread-cache.ts --all",
     "avatar:convert": "node scripts/convert-avatar.mjs",
-    "github-cards": "npx tsx scripts/generate-github-card-data.ts",
+    "github-cards": "npx tsx scripts/build-github-cards.ts",
     "deps:check": "depcruise src --config .dependency-cruiser.cjs",
     "typecheck": "tsc --noEmit",
     "lint:ci": "biome ci ./src ./scripts",
-    "postbuild": "npx tsx scripts/check-secrets.ts && npx tsx scripts/subset-fonts.ts && npx tsx scripts/minify-inline-scripts.ts && npx tsx scripts/run-pagefind.ts && npx tsx scripts/check-artifacts.ts"
+    "postbuild": "npx tsx scripts/check-secrets.ts && npx tsx scripts/postbuild-font-subset.ts && npx tsx scripts/postbuild-minify-inline.ts && npx tsx scripts/postbuild-pagefind.ts && npx tsx scripts/check-artifacts.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",

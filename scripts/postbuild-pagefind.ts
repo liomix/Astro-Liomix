@@ -5,7 +5,7 @@
 // 索引会输出到 <root>/pagefind，随站点一起上传。
 
 import { spawnSync } from "node:child_process";
-import { resolveSiteRoot } from "./site-root";
+import { resolveSiteRoot } from "./resolve-site-root";
 
 const siteRoot = resolveSiteRoot();
 

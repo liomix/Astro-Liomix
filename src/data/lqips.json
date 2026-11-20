@@ -1,6 +1,4 @@
 {
-  "public:gallery/firefly-2026/cover.avif": "7588a28a8f989e8d88",
-  "public:gallery/firefly-2026/1.avif": "c8bca9dde6d2babfb5",
   "src:content/posts/guide/cover.avif": "c8bca9dde6d2babfb5",
   "src:content/posts/images/vitepress.avif": "3d3d43e1e1e7ebe0da",
   "src:content/posts/images/right-grid2.avif": "cbcdcddddcd9d8d7db",
@@ -17,7 +15,6 @@
   "src:content/posts/images/both-grid.avif": "d5d6d3e6e7e3d8d9e3",
   "src:content/posts/images/1.avif": "b5b0b3bcb6bbe0e0df",
   "src:content/projects/images/firefly.avif": "b5b0b3bcb6bbe0e0df",
-  "public:images/sponsor/wechat-tip.png": "aba8a3b0aeabb0aeac",
   "public:emoji/huoying/hy-9.webp": "c0b4aebaada7b5aca8",
   "public:emoji/huoying/hy-8.webp": "d1cac4cec7c0ccc6c0",
   "public:emoji/huoying/hy-7.webp": "a2a0a2a2a2a3a59694",
@@ -84,5 +81,6 @@
   "src:assets/images/websitewallpaper/website-bg-1.png": "60795b7d929968766e",
   "src:assets/images/avatar/avatar.avif": "dcd8d5d1cecabea9a9",
   "src:assets/images/avatar/avatar-pendant.png": "e7d37fead583c3d9f0",
-  "src:assets/images/avatar/avatar-motion-poster.webp": "262123444041544742"
+  "src:assets/images/avatar/avatar-motion-poster.webp": "262123444041544742",
+  "public:sponsor/wechat-tip.png": "aba8a3b0aeabb0aeac"
 }

@@ -12,7 +12,7 @@ import {
 	collectUsedFontCssVars,
 	toPublicPath,
 } from "../src/shared/lib/font-helper";
-import { resolveSiteRoot } from "./site-root";
+import { resolveSiteRoot } from "./resolve-site-root";
 
 // ─── 配置 ───────────────────────────────────────────────
 
