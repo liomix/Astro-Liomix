@@ -1,0 +1,65 @@
+{
+	"bannerCarouselChange": [
+		"src/features/theme/lib/settings/appearance.ts"
+	],
+	"bg-player-state-change": [
+		"src/features/effects/components/BackgroundPlayer.astro"
+	],
+	"commentWallpaperChange": [
+		"src/shared/lib/comments/wallpaper-setting.ts"
+	],
+	"dynamic-gallery:ready": [
+		"src/features/dynamic/lib/dynamic-gallery.ts"
+	],
+	"firefly:page:loaded": [
+		"src/shared/lib/layout/swup-transitions.ts"
+	],
+	"fontsLoaded": [
+		"src/shared/components/integrations/FontManager.astro"
+	],
+	"fullscreenLayoutChange": [
+		"src/features/theme/lib/settings/wallpaper.ts"
+	],
+	"immersiveReadingChange": [
+		"src/features/post/lib/immersive-reading.ts",
+		"src/features/post/lib/immersive-reading.ts"
+	],
+	"layoutChange": [
+		"src/features/theme/components/DisplaySettings.svelte",
+		"src/features/theme/components/DisplaySettings.svelte",
+		"src/features/theme/components/DisplaySettings.svelte"
+	],
+	"pagefindloaderror": [
+		"src/features/navigation/components/Navbar.astro"
+	],
+	"pagefindready": [
+		"src/features/navigation/components/Navbar.astro"
+	],
+	"password:decrypted": [
+		"src/features/post/components/EncryptedContent.astro"
+	],
+	"sakuraToggle": [
+		"src/features/theme/lib/settings/effects.ts"
+	],
+	"tg-reply-start": [
+		"src/shared/lib/comments/comment-rightclick-pop.ts"
+	],
+	"theme-change": [
+		"src/features/theme/lib/settings/theme.ts",
+		"src/features/theme/lib/settings/theme.ts",
+		"src/features/theme/lib/settings/theme.ts",
+		"src/features/theme/lib/settings/theme.ts"
+	],
+	"theme-reveal-end": [
+		"src/features/theme/lib/light-dark-switch.ts"
+	],
+	"theme-reveal-start": [
+		"src/features/theme/lib/light-dark-switch.ts"
+	],
+	"wallpaperModeChange": [
+		"src/features/theme/lib/settings/wallpaper.ts"
+	],
+	"x": [
+		"scripts/check-event-names.ts"
+	]
+}

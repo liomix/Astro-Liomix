@@ -10,10 +10,8 @@ export const zh_CN: Translation = {
 	[Key.searchNoResults]: "找不到相关结果。",
 	[Key.searchTypeSomething]: "请输入搜索关键词。",
 	[Key.searchLoading]: "正在搜索...",
-	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "内容",
 	[Key.searchViewMore]: "查看更多结果 ({count} 个更多)",
-	[Key.other]: "其他",
 
 	// 导航栏菜单分组
 	[Key.navArticles]: "文章",
@@ -28,7 +26,6 @@ export const zh_CN: Translation = {
 	[Key.allCategories]: "全部分类",
 	[Key.allTags]: "全部标签",
 	[Key.allSeries]: "全部系列",
-	[Key.recentPosts]: "最新文章",
 	[Key.postList]: "文章列表",
 	[Key.tableOfContents]: "文章目录",
 	[Key.tocEmpty]: "当前页面没有目录",
@@ -59,14 +56,10 @@ export const zh_CN: Translation = {
 	[Key.moreDynamics]: "更多动态",
 	[Key.dynamicDescription]: "随手记下此刻的想法与日常。",
 	[Key.dynamicEmpty]: "还没有发布动态",
-	[Key.dynamicSearch]: "搜索动态...",
 	[Key.dynamicNoResults]: "没有找到匹配的动态",
 	[Key.dynamicLoading]: "正在加载动态",
 	[Key.dynamicAllYears]: "全部年份",
-	[Key.dynamicLoadMore]: "加载更多",
-	[Key.dynamicBackToList]: "返回动态列表",
 	[Key.dynamicProfile]: "查看 {name} 的资料",
-	[Key.dynamicPermalink]: "此动态的固定链接",
 	[Key.dynamicLike]: "点赞",
 	[Key.dynamicComment]: "评论",
 	[Key.dynamicLikes]: "获赞",
@@ -94,15 +87,11 @@ export const zh_CN: Translation = {
 	[Key.musicProgress]: "播放进度",
 	[Key.musicCover]: "封面",
 	[Key.musicNoCover]: "暂无封面",
-	[Key.musicAudioPlayer]: "音频播放器",
 
 	// 公告栏
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "关闭",
 
-	[Key.comments]: "评论",
-	[Key.commentSection]: "评论区",
-	[Key.commentSubtitle]: "分享你的想法，与大家交流讨论",
 	[Key.commentNotConfigured]: "评论系统暂未配置",
 	[Key.commentChatToday]: "今天",
 	[Key.commentChatLoading]: "加载中…",
@@ -145,17 +134,11 @@ export const zh_CN: Translation = {
 	[Key.commentInfoSubEmpty]: "点击填写昵称和邮箱",
 	[Key.commentInfoNameRequired]: "请填写昵称",
 	[Key.commentInfoEmailInvalid]: "邮箱格式不正确",
-	[Key.guestbookCommentHint]:
-		"您还未在配置文件中启用评论系统，启用后访客才可在此留言",
 	[Key.friends]: "友链",
 	[Key.friendsDescription]: "这里是我的朋友们，欢迎互相访问交流",
 	[Key.searchFriends]: "搜索友链...",
 	[Key.friendsEmpty]: "暂无友情链接",
-	[Key.searchBooknav]: "搜索书签...",
 
-	// 项目展示页
-	[Key.projects]: "项目",
-	[Key.projectsDescription]: "这里展示我开发过的项目",
 	[Key.guestbook]: "留言",
 	[Key.guestbookDescription]: "很多事值得被记录，然后也值得被回想",
 	[Key.guestbookTitle]: "留言墙",
@@ -166,7 +149,6 @@ export const zh_CN: Translation = {
 	[Key.guestbookDelete]: "删除留言",
 	[Key.guestbookDeleteConfirm]: "确定删除这条留言吗？",
 	[Key.guestbookBodyRequired]: "写点什么再发吧",
-	[Key.untitled]: "无标题",
 	[Key.uncategorized]: "未分类",
 	[Key.noTags]: "无标签",
 
@@ -178,7 +160,6 @@ export const zh_CN: Translation = {
 	[Key.postsCount]: "篇文章",
 	[Key.tagChartTitle]: "文章篇数",
 	[Key.tagChartAverage]: "平均",
-	[Key.tagsCount]: "个标签",
 	[Key.noData]: "暂无数据",
 
 	[Key.themeColor]: "主题色相",
@@ -200,45 +181,9 @@ export const zh_CN: Translation = {
 	[Key.readTime]: "阅读时长",
 	[Key.license]: "许可协议",
 
-	// 追番 - 公共组件
-	[Key.animeTotal]: "总追番",
-	[Key.animeAverageRating]: "平均评分",
-	[Key.animeSearch]: "搜索番剧...",
-	[Key.animeAllTypes]: "全部",
-	[Key.animeTV]: "TV 动画",
-	[Key.animeMovie]: "电影",
-	[Key.animeRatingDesc]: "评分最高",
-	[Key.animeRatingAsc]: "评分最低",
-	[Key.animeDateDesc]: "最新发布",
-	[Key.animeDateAsc]: "最早发布",
-	[Key.animeNoResults]: "没有找到匹配的番剧",
-	[Key.animeLastUpdated]: "数据更新日期",
-	[Key.animeEpStatus]: "进度",
-	[Key.animeViewDetails]: "查看详情",
-	[Key.animeBilibiliAvg]: "Bilibili 均分",
-	[Key.animeNoOverview]: "暂无简介",
-	[Key.animeClose]: "关闭",
-	[Key.animeSynopsis]: "剧情简介",
-	[Key.animeWatchNow]: "立即观看",
-	[Key.animeAllWithCount]: "全部 ({count})",
-	[Key.animeTVWithCount]: "TV ({count})",
-	[Key.animeMovieWithCount]: "电影 ({count})",
-	[Key.animeTypeAnime]: "番剧",
-	[Key.animeTypeMovie]: "电影",
-	[Key.animeTypeDocumentary]: "纪录片",
-	[Key.animeTypeChinese]: "国创",
-	[Key.animeTypeDrama]: "电视剧",
-	[Key.animeTypeConcert]: "演唱会",
-
-	// 分页
-	[Key.paginationFirst]: "首页",
 	[Key.paginationPrev]: "上一页",
 	[Key.paginationNext]: "下一页",
-	[Key.paginationLast]: "末页",
 	[Key.paginationPage]: "第",
-	[Key.paginationOf]: "页，共",
-	[Key.paginationTotal]: "页，总计",
-	[Key.paginationRecords]: "条记录",
 	[Key.paginationJump]: "跳转到指定页",
 
 	// 404页面
@@ -279,16 +224,9 @@ export const zh_CN: Translation = {
 	[Key.lastModifiedOutdated]: "部分内容可能已过时",
 	[Key.lastModifiedDaysAgo]: "距今已过 {days} 天",
 	[Key.year]: "年",
-	[Key.month]: "月",
-	[Key.day]: "日",
-	[Key.hour]: "时",
-	[Key.minute]: "分",
-	[Key.second]: "秒",
 
 	// 访问量统计
 	[Key.pageViews]: "阅读量",
-	[Key.pageViewsLoading]: "加载中...",
-	[Key.pageViewsError]: "统计不可用",
 
 	// 置顶
 	[Key.pinned]: "置顶",
@@ -339,7 +277,6 @@ export const zh_CN: Translation = {
 	// 设置面板标签
 	[Key.settingsTabAppearance]: "外观",
 	[Key.settingsTabWallpaper]: "壁纸",
-	[Key.settingsTabEffects]: "特效",
 	[Key.settingsTabBackground]: "背景",
 
 	// 卡片样式
@@ -355,17 +292,7 @@ export const zh_CN: Translation = {
 	// 打赏页面
 	[Key.sponsor]: "打赏",
 	[Key.sponsorTitle]: "打赏支持",
-	[Key.sponsorDescription]:
-		"如果我的内容对你有帮助，欢迎通过以下方式打赏我，你的支持是我持续创作的动力！",
-	[Key.sponsorMethods]: "打赏方式",
-	[Key.sponsorList]: "打赏列表",
-	[Key.sponsorEmpty]: "暂无打赏记录",
-	[Key.sponsorAmount]: "金额",
-	[Key.sponsorDate]: "日期",
-	[Key.sponsorMessage]: "留言",
-	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "扫码打赏",
-	[Key.sponsorGoTo]: "前往打赏",
 	[Key.sponsorButton]: "支持与分享",
 	[Key.sponsorButtonText]:
 		"如果这篇文章对你有帮助，欢迎分享给更多人或打赏支持！",
@@ -376,17 +303,12 @@ export const zh_CN: Translation = {
 	// 站点统计
 	[Key.siteStats]: "站点统计",
 	[Key.siteStatsPostCount]: "文章",
-	[Key.siteStatsDynamicCount]: "动态",
 	[Key.siteStatsCategoryCount]: "分类",
 	[Key.siteStatsTagCount]: "标签",
 	[Key.siteStatsTotalWords]: "总字数",
 	[Key.siteStatsViews]: "访问量",
 	[Key.siteStatsVisitors]: "访客数",
 	[Key.siteStatsRunningDays]: "已运行",
-	[Key.siteStatsLastUpdate]: "最后活动",
-	[Key.siteStatsDaysAgo]: "{days} 天前",
-	[Key.siteStatsDays]: "{days} 天",
-	[Key.today]: "今天",
 
 	// 站点信息
 	[Key.siteInfo]: "站点信息",
@@ -428,19 +350,9 @@ export const zh_CN: Translation = {
 
 	[Key.shareArticle]: "分享",
 	[Key.generatingPoster]: "海报生成中...",
-	[Key.copied]: "已复制",
 	[Key.copyLink]: "复制链接",
-	[Key.savePoster]: "保存海报",
 	[Key.sharePoster]: "分享海报",
 	[Key.scanToRead]: "扫码阅读文章",
-
-	// 代码块折叠配置
-	[Key.codeCollapsibleShowMore]: "展开",
-	[Key.codeCollapsibleShowLess]: "收起",
-	[Key.codeCollapsibleExpanded]: "代码块已展开",
-	[Key.codeCollapsibleCollapsed]: "代码块已折叠",
-
-	[Key.searchAlbums]: "搜索相簿...",
 
 	// 密码保护
 	[Key.passwordProtected]: "密码保护",
@@ -451,9 +363,6 @@ export const zh_CN: Translation = {
 	[Key.passwordError]: "密码错误，请重试。",
 	[Key.passwordProtectedRss]: "本文已加密保护，请访问网站查看。",
 
-	// 背景视频播放器
-	[Key.videoPlay]: "播放背景视频",
-	[Key.videoPause]: "暂停背景视频",
 	[Key.videoPrev]: "上一个视频",
 	[Key.videoNext]: "下一个视频",
 	[Key.videoLoadError]: "视频加载失败",
@@ -494,8 +403,6 @@ export const zh_CN: Translation = {
 	[Key.playModeList]: "列表循环",
 	[Key.playModeOne]: "单曲循环",
 	[Key.playModeRandom]: "随机播放",
-	[Key.playMode]: "播放模式",
-	[Key.playerNowPlaying]: "正在播放",
 	[Key.playerSpeed]: "播放速度",
 	[Key.playerGlass]: "播放器玻璃",
 	[Key.playerPersistent]: "播放器常驻",
@@ -504,5 +411,4 @@ export const zh_CN: Translation = {
 	[Key.playerAutoPlayHint]:
 		"打开页面就自动播放（下次进站生效）；浏览器可能拦截，需先点击页面",
 	[Key.playerTapForSound]: "已静音播放，点击页面开启声音",
-	[Key.playerPlaylist]: "播放列表",
 };

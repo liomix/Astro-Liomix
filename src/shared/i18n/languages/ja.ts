@@ -10,10 +10,8 @@ export const ja: Translation = {
 	[Key.searchNoResults]: "結果が見つかりません。",
 	[Key.searchTypeSomething]: "検索キーワードを入力してください。",
 	[Key.searchLoading]: "検索中...",
-	[Key.searchSummary]: "摘要",
 	[Key.searchContent]: "内容",
 	[Key.searchViewMore]: "さらに結果を表示 ({count} 件)",
-	[Key.other]: "その他",
 
 	// ナビバーメニューグループ
 	[Key.navArticles]: "記事",
@@ -28,7 +26,6 @@ export const ja: Translation = {
 	[Key.allCategories]: "すべてのカテゴリ",
 	[Key.allTags]: "すべてのタグ",
 	[Key.allSeries]: "すべてのシリーズ",
-	[Key.recentPosts]: "最近の投稿",
 	[Key.postList]: "投稿リスト",
 	[Key.tableOfContents]: "目次",
 	[Key.tocEmpty]: "このページには目次がありません",
@@ -59,14 +56,10 @@ export const ja: Translation = {
 	[Key.moreDynamics]: "もっと見る",
 	[Key.dynamicDescription]: "日々の短い思いや出来事を記録します。",
 	[Key.dynamicEmpty]: "まだ投稿がありません",
-	[Key.dynamicSearch]: "投稿を検索...",
 	[Key.dynamicNoResults]: "一致する投稿がありません",
 	[Key.dynamicLoading]: "投稿を読み込んでいます",
 	[Key.dynamicAllYears]: "すべての年",
-	[Key.dynamicLoadMore]: "さらに読み込む",
-	[Key.dynamicBackToList]: "投稿一覧へ戻る",
 	[Key.dynamicProfile]: "{name}のプロフィールを見る",
-	[Key.dynamicPermalink]: "この投稿への固定リンク",
 	[Key.dynamicLike]: "いいね",
 	[Key.dynamicComment]: "コメント",
 	[Key.dynamicLikes]: "いいね",
@@ -94,15 +87,11 @@ export const ja: Translation = {
 	[Key.musicProgress]: "再生の進捗",
 	[Key.musicCover]: "カバー",
 	[Key.musicNoCover]: "カバーなし",
-	[Key.musicAudioPlayer]: "オーディオプレーヤー",
 
 	// お知らせ
 	[Key.announcement]: "お知らせ",
 	[Key.announcementClose]: "閉じる",
 
-	[Key.comments]: "コメント",
-	[Key.commentSection]: "コメント欄",
-	[Key.commentSubtitle]: "あなたの考えを共有し、みんなと議論しましょう",
 	[Key.commentNotConfigured]: "コメントシステムが設定されていません",
 	[Key.commentChatToday]: "今日",
 	[Key.commentChatLoading]: "読み込み中…",
@@ -151,18 +140,12 @@ export const ja: Translation = {
 	[Key.commentInfoSubEmpty]: "タップして名前とメールアドレスを入力",
 	[Key.commentInfoNameRequired]: "名前を入力してください",
 	[Key.commentInfoEmailInvalid]: "メールアドレスの形式が正しくありません",
-	[Key.guestbookCommentHint]:
-		"設定ファイルでコメントシステムをまだ有効にしていません。有効にすると、訪問者がここにメッセージを残せるようになります",
 	[Key.friends]: "友達",
 	[Key.friendsDescription]:
 		"ここは私の友達です、お互いに訪問して交流することを歓迎します",
 	[Key.searchFriends]: "友達を検索...",
 	[Key.friendsEmpty]: "まだ友達がいません",
-	[Key.searchBooknav]: "ブックマークを検索...",
 
-	// プロジェクト展示ページ
-	[Key.projects]: "プロジェクト",
-	[Key.projectsDescription]: "私が開発したプロジェクトです",
 	[Key.guestbook]: "ゲストブック",
 	[Key.guestbookDescription]:
 		"記録しておきたいこと、あとで思い返したいことがあります",
@@ -174,7 +157,6 @@ export const ja: Translation = {
 	[Key.guestbookDelete]: "メッセージを削除",
 	[Key.guestbookDeleteConfirm]: "このメッセージを削除しますか？",
 	[Key.guestbookBodyRequired]: "何か書いてから送信してください",
-	[Key.untitled]: "無題",
 	[Key.uncategorized]: "未分類",
 	[Key.noTags]: "タグなし",
 
@@ -186,7 +168,6 @@ export const ja: Translation = {
 	[Key.postsCount]: "投稿",
 	[Key.tagChartTitle]: "記事数",
 	[Key.tagChartAverage]: "平均",
-	[Key.tagsCount]: "タグ",
 	[Key.noData]: "データなし",
 
 	[Key.themeColor]: "テーマカラー",
@@ -208,45 +189,9 @@ export const ja: Translation = {
 	[Key.readTime]: "読了時間",
 	[Key.license]: "ライセンス",
 
-	// 追番 - 共通コンポーネント
-	[Key.animeTotal]: "合計",
-	[Key.animeAverageRating]: "平均評価",
-	[Key.animeSearch]: "アニメを検索...",
-	[Key.animeAllTypes]: "すべて",
-	[Key.animeTV]: "TV アニメ",
-	[Key.animeMovie]: "映画",
-	[Key.animeRatingDesc]: "評価が高い順",
-	[Key.animeRatingAsc]: "評価が低い順",
-	[Key.animeDateDesc]: "新しい順",
-	[Key.animeDateAsc]: "古い順",
-	[Key.animeNoResults]: "一致するアニメが見つかりません",
-	[Key.animeLastUpdated]: "データ更新日",
-	[Key.animeEpStatus]: "進捗",
-	[Key.animeViewDetails]: "詳細を見る",
-	[Key.animeBilibiliAvg]: "Bilibili 平均",
-	[Key.animeNoOverview]: "あらすじなし",
-	[Key.animeClose]: "閉じる",
-	[Key.animeSynopsis]: "あらすじ",
-	[Key.animeWatchNow]: "今すぐ視聴",
-	[Key.animeAllWithCount]: "すべて ({count})",
-	[Key.animeTVWithCount]: "TV ({count})",
-	[Key.animeMovieWithCount]: "映画 ({count})",
-	[Key.animeTypeAnime]: "アニメ",
-	[Key.animeTypeMovie]: "映画",
-	[Key.animeTypeDocumentary]: "ドキュメンタリー",
-	[Key.animeTypeChinese]: "中国アニメ",
-	[Key.animeTypeDrama]: "ドラマ",
-	[Key.animeTypeConcert]: "コンサート",
-
-	// ページネーション
-	[Key.paginationFirst]: "最初",
 	[Key.paginationPrev]: "前へ",
 	[Key.paginationNext]: "次へ",
-	[Key.paginationLast]: "最後",
 	[Key.paginationPage]: "",
-	[Key.paginationOf]: "ページ、全",
-	[Key.paginationTotal]: "ページ、合計",
-	[Key.paginationRecords]: "件",
 	[Key.paginationJump]: "指定ページへ移動",
 
 	// 404ページ
@@ -290,16 +235,9 @@ export const ja: Translation = {
 	[Key.lastModifiedOutdated]: "一部の内容が古くなっている可能性があります",
 	[Key.lastModifiedDaysAgo]: "{days}日前",
 	[Key.year]: "年",
-	[Key.month]: "月",
-	[Key.day]: "日",
-	[Key.hour]: "時",
-	[Key.minute]: "分",
-	[Key.second]: "秒",
 
 	// ページビュー統計
 	[Key.pageViews]: "閲覧数",
-	[Key.pageViewsLoading]: "読み込み中...",
-	[Key.pageViewsError]: "統計利用不可",
 
 	// ピン留め
 	[Key.pinned]: "ピン留め",
@@ -350,7 +288,6 @@ export const ja: Translation = {
 	// 設定パネルタブ
 	[Key.settingsTabAppearance]: "外観",
 	[Key.settingsTabWallpaper]: "壁紙",
-	[Key.settingsTabEffects]: "エフェクト",
 	[Key.settingsTabBackground]: "背景",
 
 	// カードスタイル
@@ -366,17 +303,7 @@ export const ja: Translation = {
 	// スポンサーページ
 	[Key.sponsor]: "スポンサー",
 	[Key.sponsorTitle]: "サポート",
-	[Key.sponsorDescription]:
-		"私のコンテンツがあなたの役に立ったなら、以下の方法で私をスポンサーしてください。あなたのサポートは私の継続的な創作の原動力です！",
-	[Key.sponsorMethods]: "支払い方法",
-	[Key.sponsorList]: "スポンサーリスト",
-	[Key.sponsorEmpty]: "スポンサー記録なし",
-	[Key.sponsorAmount]: "金額",
-	[Key.sponsorDate]: "日付",
-	[Key.sponsorMessage]: "メッセージ",
-	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "スキャンしてスポンサー",
-	[Key.sponsorGoTo]: "スポンサーへ",
 	[Key.sponsorButton]: "サポートと共有",
 	[Key.sponsorButtonText]:
 		"この記事が役に立ったなら、共有またはサポートをお願いします！",
@@ -388,17 +315,12 @@ export const ja: Translation = {
 	// サイト統計
 	[Key.siteStats]: "サイト統計",
 	[Key.siteStatsPostCount]: "記事",
-	[Key.siteStatsDynamicCount]: "投稿",
 	[Key.siteStatsCategoryCount]: "カテゴリー",
 	[Key.siteStatsTagCount]: "タグ",
 	[Key.siteStatsTotalWords]: "総文字数",
 	[Key.siteStatsViews]: "閲覧数",
 	[Key.siteStatsVisitors]: "訪問者数",
 	[Key.siteStatsRunningDays]: "運用日数",
-	[Key.siteStatsLastUpdate]: "最終活動",
-	[Key.siteStatsDaysAgo]: "{days} 日前",
-	[Key.siteStatsDays]: "{days} 日",
-	[Key.today]: "今日",
 
 	// サイト情報
 	[Key.siteInfo]: "サイト情報",
@@ -440,19 +362,9 @@ export const ja: Translation = {
 
 	[Key.shareArticle]: "共有",
 	[Key.generatingPoster]: "ポスター生成中...",
-	[Key.copied]: "コピーしました",
 	[Key.copyLink]: "リンクをコピー",
-	[Key.savePoster]: "ポスターを保存",
 	[Key.sharePoster]: "ポスターをシェア",
 	[Key.scanToRead]: "QRコードで読む",
-
-	// コードブロック折りたたみ設定
-	[Key.codeCollapsibleShowMore]: "展開する",
-	[Key.codeCollapsibleShowLess]: "折りたたむ",
-	[Key.codeCollapsibleExpanded]: "コードブロックが展開されました",
-	[Key.codeCollapsibleCollapsed]: "コードブロックが折りたたまれました",
-
-	[Key.searchAlbums]: "アルバムを検索...",
 
 	// パスワード保護
 	[Key.passwordProtected]: "パスワード保護",
@@ -465,9 +377,6 @@ export const ja: Translation = {
 	[Key.passwordProtectedRss]:
 		"この記事は暗号化されています。ウェブサイトにアクセスしてご覧ください。",
 
-	// 背景動画プレイヤー
-	[Key.videoPlay]: "背景動画を再生",
-	[Key.videoPause]: "背景動画を一時停止",
 	[Key.videoPrev]: "前の動画",
 	[Key.videoNext]: "次の動画",
 	[Key.videoLoadError]: "動画の読み込みに失敗しました",
@@ -508,8 +417,6 @@ export const ja: Translation = {
 	[Key.playModeList]: "リストループ",
 	[Key.playModeOne]: "1曲リピート",
 	[Key.playModeRandom]: "シャッフル",
-	[Key.playMode]: "再生モード",
-	[Key.playerNowPlaying]: "再生中",
 	[Key.playerSpeed]: "再生速度",
 	[Key.playerGlass]: "プレイヤーのガラス",
 	[Key.playerPersistent]: "プレイヤーを常時表示",
@@ -518,5 +425,4 @@ export const ja: Translation = {
 	[Key.playerAutoPlayHint]:
 		"ページを開くと自動で再生します（次回の訪問から）。ブラウザにブロックされた場合はクリック後に再生",
 	[Key.playerTapForSound]: "ミュートで再生中 — ページをクリックで音が出ます",
-	[Key.playerPlaylist]: "プレイリスト",
 };

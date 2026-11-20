@@ -46,6 +46,10 @@ jobs:
       - name: Check module boundaries
         run: pnpm deps:check
 
+      # 布网：只拦新增，存量记在 scripts/baselines/ 里（见 docs/改进清单.md 阶段 A）
+      - name: Check interaction guards
+        run: pnpm check:guards
+
       - name: Run unit tests
         run: pnpm test
 

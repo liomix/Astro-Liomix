@@ -10,10 +10,8 @@ export const ko: Translation = {
 	[Key.searchNoResults]: "검색 결과가 없습니다.",
 	[Key.searchTypeSomething]: "검색어를 입력하세요...",
 	[Key.searchLoading]: "검색 중...",
-	[Key.searchSummary]: "요약",
 	[Key.searchContent]: "내용",
 	[Key.searchViewMore]: "더 많은 결과 보기 ({count}개 더)",
-	[Key.other]: "기타",
 
 	// 네비게이션 메뉴 그룹
 	[Key.navArticles]: "글",
@@ -28,7 +26,6 @@ export const ko: Translation = {
 	[Key.allCategories]: "모든 카테고리",
 	[Key.allTags]: "모든 태그",
 	[Key.allSeries]: "모든 시리즈",
-	[Key.recentPosts]: "최근 게시글",
 	[Key.postList]: "게시글 목록",
 	[Key.tableOfContents]: "목차",
 	[Key.tocEmpty]: "이 페이지에는 목차가 없습니다",
@@ -59,14 +56,10 @@ export const ko: Translation = {
 	[Key.moreDynamics]: "더 많은 일상",
 	[Key.dynamicDescription]: "짧은 생각과 일상을 기록합니다.",
 	[Key.dynamicEmpty]: "아직 게시된 일상이 없습니다",
-	[Key.dynamicSearch]: "일상 검색...",
 	[Key.dynamicNoResults]: "일치하는 일상이 없습니다",
 	[Key.dynamicLoading]: "일상을 불러오는 중",
 	[Key.dynamicAllYears]: "모든 연도",
-	[Key.dynamicLoadMore]: "더 보기",
-	[Key.dynamicBackToList]: "일상 목록으로",
 	[Key.dynamicProfile]: "{name}님의 프로필 보기",
-	[Key.dynamicPermalink]: "이 일상의 고유 링크",
 	[Key.dynamicLike]: "좋아요",
 	[Key.dynamicComment]: "댓글",
 	[Key.dynamicLikes]: "좋아요",
@@ -94,15 +87,11 @@ export const ko: Translation = {
 	[Key.musicProgress]: "재생 진행률",
 	[Key.musicCover]: "커버",
 	[Key.musicNoCover]: "커버 이미지 없음",
-	[Key.musicAudioPlayer]: "오디오 플레이어",
 
 	// Announcement
 	[Key.announcement]: "공지사항",
 	[Key.announcementClose]: "닫기",
 
-	[Key.comments]: "댓글",
-	[Key.commentSection]: "댓글",
-	[Key.commentSubtitle]: "생각을 공유하고 모두와 이야기해 보세요",
 	[Key.commentNotConfigured]: "댓글 시스템이 설정되지 않았습니다",
 	[Key.commentChatToday]: "오늘",
 	[Key.commentChatLoading]: "불러오는 중…",
@@ -150,18 +139,12 @@ export const ko: Translation = {
 	[Key.commentInfoSubEmpty]: "눌러서 이름과 이메일 입력",
 	[Key.commentInfoNameRequired]: "이름을 입력해 주세요",
 	[Key.commentInfoEmailInvalid]: "이메일 형식이 올바르지 않습니다",
-	[Key.guestbookCommentHint]:
-		"설정 파일에서 댓글 시스템을 아직 활성화하지 않았습니다. 활성화하면 방문자가 이곳에 메시지를 남길 수 있습니다",
 	[Key.friends]: "친구",
 	[Key.friendsDescription]:
 		"여기는 제 친구들입니다. 방문하여 서로 교류해 보세요",
 	[Key.searchFriends]: "친구 검색...",
 	[Key.friendsEmpty]: "아직 친구가 없습니다.",
-	[Key.searchBooknav]: "북마크 검색...",
 
-	// 프로젝트 쇼케이스
-	[Key.projects]: "프로젝트",
-	[Key.projectsDescription]: "제가 개발한 프로젝트입니다",
 	[Key.guestbook]: "방명록",
 	[Key.guestbookDescription]:
 		"기록해 둘 만한 일, 나중에 다시 떠올릴 만한 이야기",
@@ -173,7 +156,6 @@ export const ko: Translation = {
 	[Key.guestbookDelete]: "메시지 삭제",
 	[Key.guestbookDeleteConfirm]: "이 메시지를 삭제할까요?",
 	[Key.guestbookBodyRequired]: "보낼 내용을 입력해 주세요",
-	[Key.untitled]: "제목 없음",
 	[Key.uncategorized]: "미분류",
 	[Key.noTags]: "태그 없음",
 
@@ -185,7 +167,6 @@ export const ko: Translation = {
 	[Key.postsCount]: "게시글",
 	[Key.tagChartTitle]: "글 수",
 	[Key.tagChartAverage]: "평균",
-	[Key.tagsCount]: "태그",
 	[Key.noData]: "데이터 없음",
 
 	[Key.themeColor]: "테마 색상",
@@ -207,45 +188,9 @@ export const ko: Translation = {
 	[Key.readTime]: "읽는 시간",
 	[Key.license]: "라이선스",
 
-	// Anime Tracking - Shared components
-	[Key.animeTotal]: "총계",
-	[Key.animeAverageRating]: "평균 평점",
-	[Key.animeSearch]: "애니메이션 검색...",
-	[Key.animeAllTypes]: "전체",
-	[Key.animeTV]: "TV 애니메이션",
-	[Key.animeMovie]: "극장판",
-	[Key.animeRatingDesc]: "평점 높은 순",
-	[Key.animeRatingAsc]: "평점 낮은 순",
-	[Key.animeDateDesc]: "최신순",
-	[Key.animeDateAsc]: "오래된 순",
-	[Key.animeNoResults]: "일치하는 애니메이션이 없습니다",
-	[Key.animeLastUpdated]: "데이터 업데이트 날짜",
-	[Key.animeEpStatus]: "진행 상황",
-	[Key.animeViewDetails]: "상세 보기",
-	[Key.animeBilibiliAvg]: "Bilibili 평균",
-	[Key.animeNoOverview]: "줄거리 정보 없음",
-	[Key.animeClose]: "닫기",
-	[Key.animeSynopsis]: "줄거리",
-	[Key.animeWatchNow]: "지금 시청하기",
-	[Key.animeAllWithCount]: "전체 ({count})",
-	[Key.animeTVWithCount]: "TV ({count})",
-	[Key.animeMovieWithCount]: "극장판 ({count})",
-	[Key.animeTypeAnime]: "애니메이션",
-	[Key.animeTypeMovie]: "극장판",
-	[Key.animeTypeDocumentary]: "다큐멘터리",
-	[Key.animeTypeChinese]: "중국 애니메이션",
-	[Key.animeTypeDrama]: "드라마",
-	[Key.animeTypeConcert]: "콘서트",
-
-	// Pagination
-	[Key.paginationFirst]: "처음",
 	[Key.paginationPrev]: "이전",
 	[Key.paginationNext]: "다음",
-	[Key.paginationLast]: "마지막",
 	[Key.paginationPage]: "페이지",
-	[Key.paginationOf]: "/",
-	[Key.paginationTotal]: ", 총",
-	[Key.paginationRecords]: "개",
 	[Key.paginationJump]: "지정한 페이지로 이동",
 
 	// 404 Page
@@ -290,16 +235,9 @@ export const ko: Translation = {
 	[Key.lastModifiedOutdated]: "일부 내용이 오래되었을 수 있습니다",
 	[Key.lastModifiedDaysAgo]: "{days}일 전",
 	[Key.year]: "년",
-	[Key.month]: "월",
-	[Key.day]: "일",
-	[Key.hour]: "시간",
-	[Key.minute]: "분",
-	[Key.second]: "초",
 
 	// Page Views Statistics
 	[Key.pageViews]: "조회수",
-	[Key.pageViewsLoading]: "불러오는 중...",
-	[Key.pageViewsError]: "통계를 불러올 수 없습니다",
 
 	// Pinned
 	[Key.pinned]: "고정됨",
@@ -350,7 +288,6 @@ export const ko: Translation = {
 	// Settings Panel Tabs
 	[Key.settingsTabAppearance]: "외형",
 	[Key.settingsTabWallpaper]: "배경화면",
-	[Key.settingsTabEffects]: "효과",
 	[Key.settingsTabBackground]: "배경",
 
 	// 카드 스타일
@@ -366,17 +303,7 @@ export const ko: Translation = {
 	// Sponsor Page
 	[Key.sponsor]: "후원",
 	[Key.sponsorTitle]: "저를 후원해 주세요",
-	[Key.sponsorDescription]:
-		"제 콘텐츠가 도움이 되셨다면 아래 방법으로 후원해 주세요. 여러분의 후원은 계속 창작할 수 있는 원동력이 됩니다!",
-	[Key.sponsorMethods]: "결제 방법",
-	[Key.sponsorList]: "후원자",
-	[Key.sponsorEmpty]: "아직 후원자가 없습니다",
-	[Key.sponsorAmount]: "금액",
-	[Key.sponsorDate]: "날짜",
-	[Key.sponsorMessage]: "메시지",
-	[Key.sponsorAnonymous]: "익명",
 	[Key.scanToSponsor]: "스캔하여 후원하기",
-	[Key.sponsorGoTo]: "후원하러 가기",
 	[Key.sponsorButton]: "응원 & 공유",
 	[Key.sponsorButtonText]: "이 글이 도움이 되셨다면 공유하거나 후원해 주세요!",
 
@@ -387,17 +314,12 @@ export const ko: Translation = {
 	// Site Statistics
 	[Key.siteStats]: "사이트 통계",
 	[Key.siteStatsPostCount]: "게시글",
-	[Key.siteStatsDynamicCount]: "일상",
 	[Key.siteStatsCategoryCount]: "카테고리",
 	[Key.siteStatsTagCount]: "태그",
 	[Key.siteStatsTotalWords]: "총 단어 수",
 	[Key.siteStatsViews]: "조회수",
 	[Key.siteStatsVisitors]: "방문자",
 	[Key.siteStatsRunningDays]: "운영 일수",
-	[Key.siteStatsLastUpdate]: "최근 활동",
-	[Key.siteStatsDaysAgo]: "{days}일 전",
-	[Key.siteStatsDays]: "{days}일",
-	[Key.today]: "오늘",
 
 	// Site Info
 	[Key.siteInfo]: "사이트 정보",
@@ -439,19 +361,9 @@ export const ko: Translation = {
 
 	[Key.shareArticle]: "공유",
 	[Key.generatingPoster]: "포스터 생성 중...",
-	[Key.copied]: "복사됨",
 	[Key.copyLink]: "링크 복사",
-	[Key.savePoster]: "포스터 저장",
 	[Key.sharePoster]: "포스터 공유",
 	[Key.scanToRead]: "스캔하여 읽기",
-
-	// Code Block Collapsible Configuration
-	[Key.codeCollapsibleShowMore]: "더 보기",
-	[Key.codeCollapsibleShowLess]: "간략히 보기",
-	[Key.codeCollapsibleExpanded]: "코드 블록 펼쳐짐",
-	[Key.codeCollapsibleCollapsed]: "코드 블록 접힘",
-
-	[Key.searchAlbums]: "앨범 검색...",
 
 	// Password Protection
 	[Key.passwordProtected]: "비밀번호로 보호됨",
@@ -464,9 +376,6 @@ export const ko: Translation = {
 	[Key.passwordProtectedRss]:
 		"이 글은 암호화되어 있습니다. 웹사이트에서 확인해 주세요.",
 
-	// Background video player
-	[Key.videoPlay]: "배경 영상 재생",
-	[Key.videoPause]: "배경 영상 일시정지",
 	[Key.videoPrev]: "이전 영상",
 	[Key.videoNext]: "다음 영상",
 	[Key.videoLoadError]: "영상을 불러오지 못했습니다",
@@ -507,8 +416,6 @@ export const ko: Translation = {
 	[Key.playModeList]: "목록 반복",
 	[Key.playModeOne]: "한 곡 반복",
 	[Key.playModeRandom]: "셔플",
-	[Key.playMode]: "재생 모드",
-	[Key.playerNowPlaying]: "재생 중",
 	[Key.playerSpeed]: "재생 속도",
 	[Key.playerGlass]: "플레이어 유리 효과",
 	[Key.playerPersistent]: "플레이어 항상 표시",
@@ -517,5 +424,4 @@ export const ko: Translation = {
 	[Key.playerAutoPlayHint]:
 		"페이지를 열면 자동으로 재생합니다(다음 방문부터). 브라우저가 차단하면 클릭 후 시작됩니다",
 	[Key.playerTapForSound]: "음소거로 재생 중 — 페이지를 클릭하면 소리가 납니다",
-	[Key.playerPlaylist]: "재생 목록",
 };

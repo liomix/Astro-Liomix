@@ -9,6 +9,8 @@ import { dynamicAnchor } from "@/features/dynamic/lib/dynamic-utils";
 import CardSkeleton from "@/shared/components/ui/CardSkeleton.svelte";
 import ClientPagination from "@/shared/components/ui/ClientPagination.svelte";
 import { registerEmptyLottie } from "@/shared/components/ui/empty-lottie";
+import I18nKey from "@/shared/i18n/i18nKey";
+import { i18n } from "@/shared/i18n/translation";
 import {
 	fetchCommentCounts,
 	slugOfPath,
@@ -48,26 +50,18 @@ interface Props {
 	itemsPerPage: number;
 	showComments: boolean;
 	/** 拉取失败时的提示。必须与「空」分开：请求挂了说「暂无动态」等于骗人 */
-	failedText: string;
-	emptyText: string;
-	noResultsText: string;
-	loadingText: string;
-	allYearsText: string;
 	/** 抽屉没有内容时的提示 */
-	commentEmptyText: string;
 }
 
-const {
-	source,
-	itemsPerPage,
-	showComments,
-	failedText,
-	emptyText,
-	noResultsText,
-	loadingText,
-	allYearsText,
-	commentEmptyText,
-}: Props = $props();
+const { source, itemsPerPage, showComments }: Props = $props();
+
+// 文案归组件自己：父级只传数据，不该替组件装配 i18n（见 docs/改进清单.md P1-2）
+const failedText = i18n(I18nKey.dynamicLoadFailed);
+const emptyText = i18n(I18nKey.dynamicEmpty);
+const noResultsText = i18n(I18nKey.dynamicNoResults);
+const loadingText = i18n(I18nKey.dynamicLoading);
+const allYearsText = i18n(I18nKey.dynamicAllYears);
+const commentEmptyText = i18n(I18nKey.commentNotConfigured);
 
 let entries = $state<DynamicData[]>([]);
 let filtered = $state<DynamicData[]>([]);
