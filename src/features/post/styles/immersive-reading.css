@@ -40,6 +40,19 @@ body.immersive-reading #canvas_sakura {
 	visibility: hidden !important;
 }
 
+/* 压过文章页纯净模式。
+   `article-purity.css` 为了让目录可见，写了
+   `#content-panel-inner[data-article-purity="true"] #left-sidebar { display: flex !important }`
+   —— 两个 id 的特异性，上面那组 `body.immersive-reading #left-sidebar`（一个 id）赢不了它。
+   结果就是开了沉浸阅读后，侧栏连同它那张目录卡一起还在，屏幕上出现两份目录。
+   这里补一条同为「父级属性 + 两个 id」的规则，用多出的 class + 元素压过去。 */
+body.immersive-reading #content-panel-inner #left-sidebar,
+body.immersive-reading #content-panel-inner #right-sidebar,
+body.immersive-reading #content-panel-inner #mobile-bottom-sidebar {
+	display: none !important;
+	visibility: hidden !important;
+}
+
 /* 内容贴顶：与目录栏保持一致的 1rem 顶部间距。
    用高特异性覆盖全屏/经典、透明覆盖、纯色等壁纸布局的 `top/--content-top: ... !important`。 */
 body.immersive-reading .content-panel,
