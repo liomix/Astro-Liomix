@@ -1,7 +1,7 @@
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import type { APIContext, GetStaticPaths } from "astro";
-import { renderPostOgImage, shouldGenerateOgImages } from "@/features/og";
+import { renderPostOgImage, shouldGenerateOgImages } from "@/features/post";
 import { publishedPosts } from "@/shared/lib/content/content-utils";
 import { removeFileExtension } from "@/shared/lib/seo/url";
 

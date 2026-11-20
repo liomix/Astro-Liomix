@@ -1,5 +1,5 @@
 /**
- * 文章域：文章卡片、头部、目录、系列导航、加密正文与打赏。
+ * 文章域：文章卡片、头部、目录、系列导航、加密正文、打赏，以及分享图（OG）渲染。
  * 不负责：评论与点赞（在 shared/lib 的横切能力里）、页面取数（在 pages/ 里）。
  */
 
@@ -32,6 +32,8 @@ export { postConfig } from "./config";
 // 工具 / 契约
 export { encryptContent } from "./lib/crypto-utils";
 export { initImmersiveReading } from "./lib/immersive-reading";
+// 工具 —— 分享图（原 features/og 域，只服务文章，见规范 §3.4）
+export { renderPostOgImage, shouldGenerateOgImages } from "./lib/og-image";
 export type {
 	PostPagePayload,
 	PostPagePayloadInput,
