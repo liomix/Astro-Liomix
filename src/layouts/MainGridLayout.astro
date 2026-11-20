@@ -1,8 +1,5 @@
 ---
 import type { MarkdownHeading } from "astro";
-import Live2DWidget from "@/features/effects/components/Live2DWidget.astro";
-import SpineModel from "@/features/effects/components/SpineModel.astro";
-import { live2dWidgetConfig } from "@/features/effects/config";
 import { musicPlayerConfig } from "@/features/music/config";
 import HeaderTopRow from "@/features/navigation/components/HeaderTopRow.astro";
 import NavMenuPanel from "@/features/navigation/components/NavMenuPanel.astro";
@@ -221,8 +218,6 @@ const {
 
         </div>
 
-        <SpineModel></SpineModel>
-        {live2dWidgetConfig.enable && <Live2DWidget config={live2dWidgetConfig} />}
 
         {/* 全局消息提示宿主：全站只挂一次，任意脚本用 showMessage() 发消息 */}
         <ToastHost client:idle />

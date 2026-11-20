@@ -31,7 +31,7 @@
     "deps:check": "depcruise src --config .dependency-cruiser.cjs",
     "typecheck": "tsc --noEmit",
     "lint:ci": "biome ci ./src ./scripts",
-    "postbuild": "npx tsx scripts/check-secrets.ts && npx tsx scripts/prune-pio-assets.ts && npx tsx scripts/subset-fonts.ts && npx tsx scripts/minify-inline-scripts.ts && npx tsx scripts/run-pagefind.ts && npx tsx scripts/check-artifacts.ts"
+    "postbuild": "npx tsx scripts/check-secrets.ts && npx tsx scripts/subset-fonts.ts && npx tsx scripts/minify-inline-scripts.ts && npx tsx scripts/run-pagefind.ts && npx tsx scripts/check-artifacts.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",
@@ -79,7 +79,6 @@
     "hast-util-from-html": "^2.0.3",
     "hastscript": "^9.0.1",
     "katex": "^0.19.1",
-    "l2d-widget": "^0.1.1",
     "lottie-web": "^5.13.0",
     "marked": "^18.1.1",
     "mdast-util-to-string": "^4.0.0",
