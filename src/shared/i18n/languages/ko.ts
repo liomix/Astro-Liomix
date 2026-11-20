@@ -157,22 +157,11 @@ export const ko: Translation = {
 		"여기는 제 친구들입니다. 방문하여 서로 교류해 보세요",
 	[Key.searchFriends]: "친구 검색...",
 	[Key.friendsEmpty]: "아직 친구가 없습니다.",
-	[Key.booknav]: "북마크 모음",
-	[Key.booknavDescription]: "유용한 사이트를 카테고리별로 모았습니다.",
 	[Key.searchBooknav]: "북마크 검색...",
-	[Key.booknavEmpty]: "북마크가 없습니다.",
 
 	// 프로젝트 쇼케이스
 	[Key.projects]: "프로젝트",
 	[Key.projectsDescription]: "제가 개발한 프로젝트입니다",
-	[Key.projectDetails]: "자세히 보기",
-	[Key.projectBack]: "프로젝트 목록으로 돌아가기",
-	[Key.projectEmpty]: "아직 프로젝트가 없습니다",
-	[Key.projectSearch]: "프로젝트 검색",
-	[Key.projectStatusPlanning]: "계획 중",
-	[Key.projectStatusDeveloping]: "개발 중",
-	[Key.projectStatusPublished]: "출시됨",
-	[Key.projectStatusArchived]: "보관됨",
 	[Key.guestbook]: "방명록",
 	[Key.guestbookDescription]:
 		"기록해 둘 만한 일, 나중에 다시 떠올릴 만한 이야기",
@@ -217,109 +206,6 @@ export const ko: Translation = {
 	[Key.updatedAt]: "수정일",
 	[Key.readTime]: "읽는 시간",
 	[Key.license]: "라이선스",
-	[Key.bangumi]: "Bangumi",
-
-	// Bangumi Filter and Status Text
-	[Key.bangumiTitle]: "나의 Bangumi",
-	[Key.bangumiSubtitle]: "나의 ACG 기록",
-	[Key.bangumiFilterAll]: "전체",
-	[Key.bangumiFilterWatched]: "시청 완료",
-	[Key.bangumiFilterWatching]: "시청 중",
-	[Key.bangumiFilterWish]: "보고 싶음",
-	[Key.bangumiFilterOnHold]: "보류",
-	[Key.bangumiFilterDropped]: "중단",
-	[Key.bangumiFilterGamePlayed]: "플레이 완료",
-	[Key.bangumiFilterGamePlaying]: "플레이 중",
-	[Key.bangumiFilterGameWish]: "플레이하고 싶음",
-	[Key.bangumiFilterBookRead]: "읽음",
-	[Key.bangumiFilterBookReading]: "읽는 중",
-	[Key.bangumiFilterBookWish]: "읽고 싶음",
-	[Key.bangumiFilterMusicListened]: "감상 완료",
-	[Key.bangumiFilterMusicListening]: "감상 중",
-	[Key.bangumiFilterMusicWish]: "감상하고 싶음",
-	[Key.bangumiStatusWish]: "보고 싶음",
-	[Key.bangumiStatusWatched]: "시청 완료",
-	[Key.bangumiStatusWatching]: "시청 중",
-	[Key.bangumiStatusOnHold]: "보류",
-	[Key.bangumiStatusDropped]: "중단",
-	[Key.bangumiStatusGameWish]: "플레이하고 싶음",
-	[Key.bangumiStatusGamePlayed]: "플레이 완료",
-	[Key.bangumiStatusGamePlaying]: "플레이 중",
-	[Key.bangumiStatusBookWish]: "읽고 싶음",
-	[Key.bangumiStatusBookRead]: "읽음",
-	[Key.bangumiStatusBookReading]: "읽는 중",
-	[Key.bangumiStatusMusicWish]: "감상하고 싶음",
-	[Key.bangumiStatusMusicListened]: "감상 완료",
-	[Key.bangumiStatusMusicListening]: "감상 중",
-	[Key.bangumiStatusUnknown]: "알 수 없음",
-	[Key.bangumiNoData]: "데이터 없음",
-	[Key.bangumiNoDataDescription]: "이 카테고리에는 항목이 없습니다",
-	[Key.bangumiEmpty]: "데이터 없음",
-	[Key.bangumiEmptyReason]:
-		"가능한 원인: 사용자 이름이 존재하지 않음, 네트워크 연결 문제, 또는 API 호출 제한",
-	[Key.bangumiFetchError]: "반구미 데이터 가져오기 실패",
-	[Key.bangumiFetchErrorDesc]:
-		"빌드 중 반구미 API에서 데이터를 가져오지 못했습니다. 이 페이지는 일시적으로 사용할 수 없습니다.",
-	[Key.bangumiUsername]: "사용자 이름",
-	[Key.bangumiApi]: "API",
-	[Key.bangumiConfigTip]:
-		"팁: 페이지 설정에서 올바른 반구미 사용자 이름을 설정하세요",
-	[Key.bangumiPrevPage]: "이전",
-	[Key.bangumiNextPage]: "다음",
-	[Key.bangumiCurrentPage]: "페이지",
-	[Key.bangumiTotalPages]: "/",
-	[Key.bangumiPage]: "페이지",
-
-	// Bangumi Categories
-	[Key.bangumiCategoryBook]: "책",
-	[Key.bangumiCategoryAnime]: "애니메이션",
-	[Key.bangumiCategoryMusic]: "음악",
-	[Key.bangumiCategoryGame]: "게임",
-	[Key.bangumiCategoryReal]: "실사",
-
-	// Bangumi Data Update
-	[Key.bangumiLastUpdated]: "데이터 업데이트 날짜",
-	[Key.bangumiUpdatedAt]: "빌드 시각",
-	[Key.bangumiDataStatic]: "정적 데이터",
-
-	// VNDB
-	[Key.vndb]: "VNDB",
-	[Key.vndbSubtitle]: "내 VNDB 비주얼 노벨 목록",
-	[Key.vndbFilterAll]: "전체",
-	[Key.vndbFilterVoted]: "평가함",
-	[Key.vndbFilterUnvoted]: "미평가",
-	[Key.vndbFilterNotes]: "메모 있음",
-	[Key.vndbStatusWishlist]: "플레이하고 싶음",
-	[Key.vndbStatusPlaying]: "플레이 중",
-	[Key.vndbStatusFinished]: "플레이 완료",
-	[Key.vndbStatusStalled]: "보류",
-	[Key.vndbStatusDropped]: "중단",
-	[Key.vndbStatusUnknown]: "알 수 없음",
-	[Key.vndbNoData]: "데이터 없음",
-	[Key.vndbNoDataDescription]: "이 카테고리에는 항목이 없습니다",
-	[Key.vndbEmpty]: "데이터 없음",
-	[Key.vndbEmptyReason]:
-		"가능한 원인: 사용자 ID가 존재하지 않음, 목록이 비공개, 네트워크 연결 문제, 또는 API 호출 제한",
-	[Key.vndbFetchError]: "VNDB 데이터 가져오기 실패",
-	[Key.vndbFetchErrorDesc]:
-		"빌드 중 VNDB API에서 데이터를 가져오지 못했습니다. 이 페이지는 일시적으로 사용할 수 없습니다.",
-	[Key.vndbNotConfigured]: "VNDB 사용자 ID가 설정되지 않았습니다",
-	[Key.vndbNotConfiguredDesc]:
-		"src/config/siteConfig.ts에서 VNDB 사용자 ID를 설정하세요",
-	[Key.vndbLastUpdated]: "데이터 업데이트 날짜",
-	[Key.vndbVotes]: "표",
-	[Key.vndbLengthVeryShort]: "매우 짧음",
-	[Key.vndbLengthShort]: "짧음",
-	[Key.vndbLengthMedium]: "중간",
-	[Key.vndbLengthLong]: "김",
-	[Key.vndbLengthVeryLong]: "매우 김",
-
-	// Anime Tracking - Bilibili
-	[Key.bilibili]: "Bilibili",
-	[Key.bilibiliSubtitle]: "저의 Bilibili 시청 목록 (애니메이션 + 드라마)",
-	[Key.bilibiliNotConfigured]: "Bilibili 데이터 소스가 설정되지 않았습니다",
-	[Key.bilibiliNotConfiguredDesc]:
-		"src/config/siteConfig.ts에서 bilibili.uid를 설정하세요",
 
 	// Anime Tracking - Shared components
 	[Key.animeTotal]: "총계",
@@ -350,36 +236,6 @@ export const ko: Translation = {
 	[Key.animeTypeChinese]: "중국 애니메이션",
 	[Key.animeTypeDrama]: "드라마",
 	[Key.animeTypeConcert]: "콘서트",
-
-	// MyAnimeList
-	[Key.mal]: "MyAnimeList",
-	[Key.malSubtitle]: "MyAnimeList 애니메이션 및 만화 목록",
-	[Key.malCategoryAnime]: "애니메이션",
-	[Key.malCategoryManga]: "만화",
-	[Key.malFilterAll]: "전체",
-	[Key.malStatusWatching]: "시청 중",
-	[Key.malStatusReading]: "읽는 중",
-	[Key.malStatusCompleted]: "시청 완료",
-	[Key.malStatusOnHold]: "보류",
-	[Key.malStatusDropped]: "중단",
-	[Key.malStatusPlanToWatch]: "보고 싶음",
-	[Key.malStatusPlanToRead]: "읽고 싶음",
-	[Key.malNoData]: "데이터 없음",
-	[Key.malNoDataDescription]: "이 카테고리에는 항목이 없습니다",
-	[Key.malEmpty]: "데이터 없음",
-	[Key.malEmptyReason]:
-		"가능한 원인: 사용자 이름이 존재하지 않음, 목록이 비공개, Client ID가 유효하지 않음, 또는 네트워크 연결 문제",
-	[Key.malFetchError]: "MyAnimeList 데이터 가져오기 실패",
-	[Key.malFetchErrorDesc]:
-		"빌드 중 MyAnimeList API에서 데이터를 가져오지 못했습니다. 사용자 이름과 Client ID를 확인하고 목록이 공개인지 확인하세요.",
-	[Key.malNotConfigured]: "MyAnimeList가 설정되지 않았습니다",
-	[Key.malNotConfiguredDesc]:
-		"src/config/siteConfig.ts에서 MyAnimeList 사용자 이름과 Client ID를 설정하세요 (목록은 공개여야 합니다)",
-	[Key.malLastUpdated]: "데이터 업데이트 날짜",
-	[Key.malSeasonWinter]: "겨울",
-	[Key.malSeasonSpring]: "봄",
-	[Key.malSeasonSummer]: "여름",
-	[Key.malSeasonFall]: "가을",
 
 	// Pagination
 	[Key.paginationFirst]: "처음",
@@ -595,14 +451,6 @@ export const ko: Translation = {
 	[Key.codeCollapsibleExpanded]: "코드 블록 펼쳐짐",
 	[Key.codeCollapsibleCollapsed]: "코드 블록 접힘",
 
-	// Gallery Page
-	[Key.gallery]: "갤러리",
-	[Key.galleryDescription]: "삶의 아름다운 순간을 담다",
-	[Key.galleryPhotos]: "장",
-	[Key.galleryAlbums]: "앨범",
-	[Key.galleryNoAlbums]: "아직 앨범이 없습니다",
-	[Key.galleryBackToAlbums]: "앨범으로 돌아가기",
-	[Key.galleryEnterAlbum]: "앨범 보기",
 	[Key.searchAlbums]: "앨범 검색...",
 
 	// Password Protection

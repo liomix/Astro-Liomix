@@ -157,23 +157,11 @@ export const en: Translation = {
 		"Here are my friends, welcome to visit and communicate with each other",
 	[Key.searchFriends]: "Search friends...",
 	[Key.friendsEmpty]: "No friends yet.",
-	[Key.booknav]: "Bookmark Nav",
-	[Key.booknavDescription]:
-		"A curated collection of useful sites, organized by category.",
 	[Key.searchBooknav]: "Search bookmarks...",
-	[Key.booknavEmpty]: "No bookmarks yet.",
 
 	// Project showcase
 	[Key.projects]: "Projects",
 	[Key.projectsDescription]: "Here are the projects I've built",
-	[Key.projectDetails]: "View details",
-	[Key.projectBack]: "Back to projects",
-	[Key.projectEmpty]: "No projects yet",
-	[Key.projectSearch]: "Search projects",
-	[Key.projectStatusPlanning]: "Planning",
-	[Key.projectStatusDeveloping]: "In Development",
-	[Key.projectStatusPublished]: "Published",
-	[Key.projectStatusArchived]: "Archived",
 	[Key.guestbook]: "Guestbook",
 	[Key.guestbookDescription]:
 		"Many things are worth recording, and worth recalling afterwards",
@@ -219,109 +207,6 @@ export const en: Translation = {
 	[Key.updatedAt]: "Updated at",
 	[Key.readTime]: "Read time",
 	[Key.license]: "License",
-	[Key.bangumi]: "Bangumi",
-
-	// Bangumi Filter and Status Text
-	[Key.bangumiTitle]: "My Bangumi",
-	[Key.bangumiSubtitle]: "Record my ACG journey",
-	[Key.bangumiFilterAll]: "All",
-	[Key.bangumiFilterWatched]: "Watched",
-	[Key.bangumiFilterWatching]: "Watching",
-	[Key.bangumiFilterWish]: "Wish",
-	[Key.bangumiFilterOnHold]: "On Hold",
-	[Key.bangumiFilterDropped]: "Dropped",
-	[Key.bangumiFilterGamePlayed]: "Played",
-	[Key.bangumiFilterGamePlaying]: "Playing",
-	[Key.bangumiFilterGameWish]: "Wish to Play",
-	[Key.bangumiFilterBookRead]: "Read",
-	[Key.bangumiFilterBookReading]: "Reading",
-	[Key.bangumiFilterBookWish]: "Wish to Read",
-	[Key.bangumiFilterMusicListened]: "Listened",
-	[Key.bangumiFilterMusicListening]: "Listening",
-	[Key.bangumiFilterMusicWish]: "Wish to Listen",
-	[Key.bangumiStatusWish]: "Wish",
-	[Key.bangumiStatusWatched]: "Watched",
-	[Key.bangumiStatusWatching]: "Watching",
-	[Key.bangumiStatusOnHold]: "On Hold",
-	[Key.bangumiStatusDropped]: "Dropped",
-	[Key.bangumiStatusGameWish]: "Wish to Play",
-	[Key.bangumiStatusGamePlayed]: "Played",
-	[Key.bangumiStatusGamePlaying]: "Playing",
-	[Key.bangumiStatusBookWish]: "Wish to Read",
-	[Key.bangumiStatusBookRead]: "Read",
-	[Key.bangumiStatusBookReading]: "Reading",
-	[Key.bangumiStatusMusicWish]: "Wish to Listen",
-	[Key.bangumiStatusMusicListened]: "Listened",
-	[Key.bangumiStatusMusicListening]: "Listening",
-	[Key.bangumiStatusUnknown]: "Unknown",
-	[Key.bangumiNoData]: "No Data",
-	[Key.bangumiNoDataDescription]: "No items in this category",
-	[Key.bangumiEmpty]: "No Data",
-	[Key.bangumiEmptyReason]:
-		"Possible reasons: username does not exist, network connection issue, or API limit",
-	[Key.bangumiFetchError]: "Bangumi Data Fetch Failed",
-	[Key.bangumiFetchErrorDesc]:
-		"Failed to fetch data from Bangumi API during build. This page is temporarily unavailable.",
-	[Key.bangumiUsername]: "Username",
-	[Key.bangumiApi]: "API",
-	[Key.bangumiConfigTip]:
-		"Tip: Please set the correct Bangumi username in the page configuration",
-	[Key.bangumiPrevPage]: "Previous",
-	[Key.bangumiNextPage]: "Next",
-	[Key.bangumiCurrentPage]: "Page",
-	[Key.bangumiTotalPages]: "of",
-	[Key.bangumiPage]: "page",
-
-	// Bangumi Categories
-	[Key.bangumiCategoryBook]: "Book",
-	[Key.bangumiCategoryAnime]: "Anime",
-	[Key.bangumiCategoryMusic]: "Music",
-	[Key.bangumiCategoryGame]: "Game",
-	[Key.bangumiCategoryReal]: "Real",
-
-	// Bangumi Data Update
-	[Key.bangumiLastUpdated]: "Data updated on",
-	[Key.bangumiUpdatedAt]: "Build time",
-	[Key.bangumiDataStatic]: "Static data",
-
-	// VNDB
-	[Key.vndb]: "VNDB",
-	[Key.vndbSubtitle]: "My visual novel list from VNDB",
-	[Key.vndbFilterAll]: "All",
-	[Key.vndbFilterVoted]: "Voted",
-	[Key.vndbFilterUnvoted]: "Unvoted",
-	[Key.vndbFilterNotes]: "With notes",
-	[Key.vndbStatusWishlist]: "Wishlist",
-	[Key.vndbStatusPlaying]: "Playing",
-	[Key.vndbStatusFinished]: "Finished",
-	[Key.vndbStatusStalled]: "Stalled",
-	[Key.vndbStatusDropped]: "Dropped",
-	[Key.vndbStatusUnknown]: "Unknown",
-	[Key.vndbNoData]: "No Data",
-	[Key.vndbNoDataDescription]: "No items in this category",
-	[Key.vndbEmpty]: "No Data",
-	[Key.vndbEmptyReason]:
-		"Possible reasons: user ID does not exist, list is private, network issue, or API limit",
-	[Key.vndbFetchError]: "VNDB Data Fetch Failed",
-	[Key.vndbFetchErrorDesc]:
-		"Failed to fetch data from VNDB API during build. This page is temporarily unavailable.",
-	[Key.vndbNotConfigured]: "VNDB User ID Not Configured",
-	[Key.vndbNotConfiguredDesc]:
-		"Please configure your VNDB user ID in src/config/siteConfig.ts",
-	[Key.vndbLastUpdated]: "Data updated on",
-	[Key.vndbVotes]: "votes",
-	[Key.vndbLengthVeryShort]: "Very short",
-	[Key.vndbLengthShort]: "Short",
-	[Key.vndbLengthMedium]: "Medium",
-	[Key.vndbLengthLong]: "Long",
-	[Key.vndbLengthVeryLong]: "Very long",
-
-	// Anime Tracking - Bilibili
-	[Key.bilibili]: "Bilibili",
-	[Key.bilibiliSubtitle]: "My Bilibili follow list (anime + drama)",
-	[Key.bilibiliNotConfigured]: "Bilibili not configured",
-	[Key.bilibiliNotConfiguredDesc]:
-		"Configure bilibili.uid in src/config/siteConfig.ts",
 
 	// Anime Tracking - Shared components
 	[Key.animeTotal]: "Total",
@@ -352,36 +237,6 @@ export const en: Translation = {
 	[Key.animeTypeChinese]: "Chinese Animation",
 	[Key.animeTypeDrama]: "Drama",
 	[Key.animeTypeConcert]: "Concert",
-
-	// MyAnimeList
-	[Key.mal]: "MyAnimeList",
-	[Key.malSubtitle]: "My anime and manga lists from MyAnimeList",
-	[Key.malCategoryAnime]: "Anime",
-	[Key.malCategoryManga]: "Manga",
-	[Key.malFilterAll]: "All",
-	[Key.malStatusWatching]: "Watching",
-	[Key.malStatusReading]: "Reading",
-	[Key.malStatusCompleted]: "Completed",
-	[Key.malStatusOnHold]: "On Hold",
-	[Key.malStatusDropped]: "Dropped",
-	[Key.malStatusPlanToWatch]: "Plan to Watch",
-	[Key.malStatusPlanToRead]: "Plan to Read",
-	[Key.malNoData]: "No Data",
-	[Key.malNoDataDescription]: "No items in this category",
-	[Key.malEmpty]: "No Data",
-	[Key.malEmptyReason]:
-		"Possible reasons: username does not exist, list is private, invalid Client ID, or network issue",
-	[Key.malFetchError]: "MyAnimeList Data Fetch Failed",
-	[Key.malFetchErrorDesc]:
-		"Failed to fetch data from MyAnimeList API during build. Please check the username and Client ID, and make sure the list is public.",
-	[Key.malNotConfigured]: "MyAnimeList Not Configured",
-	[Key.malNotConfiguredDesc]:
-		"Please configure your MyAnimeList username and Client ID in src/config/siteConfig.ts. The list must be public.",
-	[Key.malLastUpdated]: "Data updated on",
-	[Key.malSeasonWinter]: "Winter",
-	[Key.malSeasonSpring]: "Spring",
-	[Key.malSeasonSummer]: "Summer",
-	[Key.malSeasonFall]: "Fall",
 
 	// Pagination
 	[Key.paginationFirst]: "First",
@@ -599,14 +454,6 @@ export const en: Translation = {
 	[Key.codeCollapsibleExpanded]: "Code block expanded",
 	[Key.codeCollapsibleCollapsed]: "Code block collapsed",
 
-	// Gallery Page
-	[Key.gallery]: "Gallery",
-	[Key.galleryDescription]: "Capturing beautiful moments in life",
-	[Key.galleryPhotos]: "photos",
-	[Key.galleryAlbums]: "albums",
-	[Key.galleryNoAlbums]: "No albums yet",
-	[Key.galleryBackToAlbums]: "Back to albums",
-	[Key.galleryEnterAlbum]: "Enter album",
 	[Key.searchAlbums]: "Search albums...",
 
 	// Password Protection

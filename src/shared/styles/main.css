@@ -1,18 +1,26 @@
 @import 'tailwindcss';
 @import './layout/layout-styles.css';
-@import '../../features/navigation/styles/navbar.css';
 @import './banner/banner-title.css';
-@import '../../features/effects/styles/waves.css';
 @import './transition.css';
 @import './custom-scrollbar.css';
 @import './widgets/tags.css';
-@import '../../features/theme/styles/display-settings.css';
-@import '../../features/theme/styles/light-dark-switch.css';
 @import './widgets/categories.css';
 @import './layout/layout-base.css';
-@import '../../features/post/styles/article-purity.css';
+/* 列表页共用的页头套件（.page-shell / .page-header / .page-heading）。
+   原先由各列表页各自 import；改为这里引一次（规范 §4.6/§8.4）。 */
+@import './common.css';
 @import './lottie-icon.css';
 @import './components/comment/comment-drawer.css';
+
+/* 域样式由域根组件自己引入（规范 §4.6），这里只留 shared 层。
+   原 5 条 features/* @import 的去处：
+     navigation/styles/navbar.css              → navigation/components/Navbar.astro
+     effects/styles/waves.css                  → effects/components/WavesEffect.astro
+     theme/styles/display-settings.css         → theme/components/DisplaySettings.svelte
+     theme/styles/light-dark-switch.css        → theme/components/LightDarkSwitch.svelte
+     post/styles/article-purity.css            → post/components/PostDetail.astro
+   另有 post/styles/immersive-reading.css 原由 layouts/Layout.astro 引入，
+   现改为 post/components/ImmersiveReading.astro 自己带（它渲染在 Shell 的 FloatingControls 里）。 */
 
 /* 全局浮层层级（只登记「跨组件互相遮挡」的浮层；组件内部局部的 0/1/10/20 不在此列） */
 :root {

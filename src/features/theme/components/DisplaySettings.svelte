@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import "@/features/theme/styles/display-settings.css";
 import { dynamicConfig } from "@/features/dynamic";
 import { originFromElement } from "@/features/theme/lib/light-dark-switch";
 import {

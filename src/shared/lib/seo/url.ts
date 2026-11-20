@@ -87,13 +87,9 @@ export function url(path: string): string {
 	return joinUrl("", import.meta.env.BASE_URL, path);
 }
 
-// 内容详情页路径模式：文章(/posts/、/post/) 与 项目详情(/projects/<slug>/)
-// 用正则而非 includes("/projects/")，是为了不把 /projects/ 列表页误判成详情页
-const CONTENT_DETAIL_PATH_PATTERNS = [
-	/\/posts\/.+/,
-	/\/post\/.+/,
-	/\/projects\/.+/,
-];
+// 内容详情页路径模式：文章（/posts/、/post/）
+// 侧边栏显隐、悬浮目录、沉浸阅读都读这里，新增详情页类型时只改这一处
+const CONTENT_DETAIL_PATH_PATTERNS = [/\/posts\/.+/, /\/post\/.+/];
 
 /**
  * 判断路径是否为「内容详情页」（文章 / 项目）。

@@ -155,23 +155,11 @@ export const ru: Translation = {
 		"Вот мои друзья, добро пожаловать посетить и общаться друг с другом",
 	[Key.searchFriends]: "Поиск друзей...",
 	[Key.friendsEmpty]: "Друзей пока нет.",
-	[Key.booknav]: "Каталог закладок",
-	[Key.booknavDescription]:
-		"Подборка полезных сайтов, сгруппированных по категориям.",
 	[Key.searchBooknav]: "Поиск закладок...",
-	[Key.booknavEmpty]: "Закладок пока нет.",
 
 	// Витрина проектов
 	[Key.projects]: "Проекты",
 	[Key.projectsDescription]: "Мои разработанные проекты",
-	[Key.projectDetails]: "Подробнее",
-	[Key.projectBack]: "К списку проектов",
-	[Key.projectEmpty]: "Проектов пока нет",
-	[Key.projectSearch]: "Поиск проектов",
-	[Key.projectStatusPlanning]: "В планах",
-	[Key.projectStatusDeveloping]: "В разработке",
-	[Key.projectStatusPublished]: "Опубликовано",
-	[Key.projectStatusArchived]: "В архиве",
 	[Key.guestbook]: "Гостевая книга",
 	[Key.guestbookDescription]:
 		"Есть вещи, которые стоит записать, чтобы потом вспомнить",
@@ -216,109 +204,6 @@ export const ru: Translation = {
 	[Key.updatedAt]: "Обновлено",
 	[Key.readTime]: "Время чтения",
 	[Key.license]: "Лицензия",
-	[Key.bangumi]: "Bangumi",
-
-	// Фильтр и статус Бангуми текст
-	[Key.bangumiTitle]: "Мой Bangumi",
-	[Key.bangumiSubtitle]: "Запись моего аниме путешествия",
-	[Key.bangumiFilterAll]: "Все",
-	[Key.bangumiFilterWatched]: "Просмотрено",
-	[Key.bangumiFilterWatching]: "Смотрю",
-	[Key.bangumiFilterWish]: "Хочу",
-	[Key.bangumiFilterOnHold]: "Отложено",
-	[Key.bangumiFilterDropped]: "Брошено",
-	[Key.bangumiFilterGamePlayed]: "Пройдено",
-	[Key.bangumiFilterGamePlaying]: "Играю",
-	[Key.bangumiFilterGameWish]: "Хочу сыграть",
-	[Key.bangumiFilterBookRead]: "Прочитано",
-	[Key.bangumiFilterBookReading]: "Читаю",
-	[Key.bangumiFilterBookWish]: "Хочу прочитать",
-	[Key.bangumiFilterMusicListened]: "Прослушано",
-	[Key.bangumiFilterMusicListening]: "Слушаю",
-	[Key.bangumiFilterMusicWish]: "Хочу послушать",
-	[Key.bangumiStatusWish]: "Хочу",
-	[Key.bangumiStatusWatched]: "Просмотрено",
-	[Key.bangumiStatusWatching]: "Смотрю",
-	[Key.bangumiStatusOnHold]: "Отложено",
-	[Key.bangumiStatusDropped]: "Брошено",
-	[Key.bangumiStatusGameWish]: "Хочу сыграть",
-	[Key.bangumiStatusGamePlayed]: "Пройдено",
-	[Key.bangumiStatusGamePlaying]: "Играю",
-	[Key.bangumiStatusBookWish]: "Хочу прочитать",
-	[Key.bangumiStatusBookRead]: "Прочитано",
-	[Key.bangumiStatusBookReading]: "Читаю",
-	[Key.bangumiStatusMusicWish]: "Хочу послушать",
-	[Key.bangumiStatusMusicListened]: "Прослушано",
-	[Key.bangumiStatusMusicListening]: "Слушаю",
-	[Key.bangumiStatusUnknown]: "Неизвестно",
-	[Key.bangumiNoData]: "Нет данных",
-	[Key.bangumiNoDataDescription]: "В этой категории нет элементов",
-	[Key.bangumiEmpty]: "Нет данных",
-	[Key.bangumiEmptyReason]:
-		"Возможные причины: имя пользователя не существует, проблема с подключением к сети или ограничение API",
-	[Key.bangumiFetchError]: "Ошибка загрузки данных Bangumi",
-	[Key.bangumiFetchErrorDesc]:
-		"Не удалось загрузить данные из Bangumi API при сборке. Эта страница временно недоступна.",
-	[Key.bangumiUsername]: "Имя пользователя",
-	[Key.bangumiApi]: "API",
-	[Key.bangumiConfigTip]:
-		"Подсказка: установите правильное имя пользователя Bangumi в конфигурации страницы",
-	[Key.bangumiPrevPage]: "Предыдущая",
-	[Key.bangumiNextPage]: "Следующая",
-	[Key.bangumiCurrentPage]: "Страница",
-	[Key.bangumiTotalPages]: "из",
-	[Key.bangumiPage]: "страница",
-
-	// Категории Бангуми
-	[Key.bangumiCategoryBook]: "Книга",
-	[Key.bangumiCategoryAnime]: "Аниме",
-	[Key.bangumiCategoryMusic]: "Музыка",
-	[Key.bangumiCategoryGame]: "Игра",
-	[Key.bangumiCategoryReal]: "Реальный",
-
-	// Обновление данных Бангуми
-	[Key.bangumiLastUpdated]: "Дата обновления данных",
-	[Key.bangumiUpdatedAt]: "Время сборки",
-	[Key.bangumiDataStatic]: "Статические данные",
-
-	// VNDB
-	[Key.vndb]: "VNDB",
-	[Key.vndbSubtitle]: "Мой список визуальных новелл VNDB",
-	[Key.vndbFilterAll]: "Все",
-	[Key.vndbFilterVoted]: "Оценено",
-	[Key.vndbFilterUnvoted]: "Без оценки",
-	[Key.vndbFilterNotes]: "С заметками",
-	[Key.vndbStatusWishlist]: "Хочу сыграть",
-	[Key.vndbStatusPlaying]: "Играю",
-	[Key.vndbStatusFinished]: "Пройдено",
-	[Key.vndbStatusStalled]: "Отложено",
-	[Key.vndbStatusDropped]: "Брошено",
-	[Key.vndbStatusUnknown]: "Неизвестно",
-	[Key.vndbNoData]: "Нет данных",
-	[Key.vndbNoDataDescription]: "В этой категории нет элементов",
-	[Key.vndbEmpty]: "Нет данных",
-	[Key.vndbEmptyReason]:
-		"Возможные причины: ID пользователя не существует, список закрыт, проблемы с сетью или ограничение API",
-	[Key.vndbFetchError]: "Ошибка загрузки данных VNDB",
-	[Key.vndbFetchErrorDesc]:
-		"Не удалось загрузить данные из VNDB API при сборке. Эта страница временно недоступна.",
-	[Key.vndbNotConfigured]: "ID пользователя VNDB не настроен",
-	[Key.vndbNotConfiguredDesc]:
-		"Укажите ID пользователя VNDB в src/config/siteConfig.ts",
-	[Key.vndbLastUpdated]: "Дата обновления данных",
-	[Key.vndbVotes]: "голосов",
-	[Key.vndbLengthVeryShort]: "Очень короткая",
-	[Key.vndbLengthShort]: "Короткая",
-	[Key.vndbLengthMedium]: "Средняя",
-	[Key.vndbLengthLong]: "Длинная",
-	[Key.vndbLengthVeryLong]: "Очень длинная",
-
-	// Отслеживание аниме - Bilibili
-	[Key.bilibili]: "Bilibili",
-	[Key.bilibiliSubtitle]: "Мой список Bilibili (аниме и сериалы)",
-	[Key.bilibiliNotConfigured]: "Источник данных Bilibili не настроен",
-	[Key.bilibiliNotConfiguredDesc]:
-		"Настройте bilibili.uid в src/config/siteConfig.ts",
 
 	// Отслеживание аниме - общие компоненты
 	[Key.animeTotal]: "Всего",
@@ -349,36 +234,6 @@ export const ru: Translation = {
 	[Key.animeTypeChinese]: "Китайское аниме",
 	[Key.animeTypeDrama]: "Сериал",
 	[Key.animeTypeConcert]: "Концерт",
-
-	// MyAnimeList
-	[Key.mal]: "MyAnimeList",
-	[Key.malSubtitle]: "Мои списки аниме и манги из MyAnimeList",
-	[Key.malCategoryAnime]: "Аниме",
-	[Key.malCategoryManga]: "Манга",
-	[Key.malFilterAll]: "Все",
-	[Key.malStatusWatching]: "Смотрю",
-	[Key.malStatusReading]: "Читаю",
-	[Key.malStatusCompleted]: "Просмотрено",
-	[Key.malStatusOnHold]: "Отложено",
-	[Key.malStatusDropped]: "Брошено",
-	[Key.malStatusPlanToWatch]: "Хочу посмотреть",
-	[Key.malStatusPlanToRead]: "Хочу прочитать",
-	[Key.malNoData]: "Нет данных",
-	[Key.malNoDataDescription]: "В этой категории нет элементов",
-	[Key.malEmpty]: "Нет данных",
-	[Key.malEmptyReason]:
-		"Возможные причины: имя пользователя не существует, список закрыт, неверный Client ID или проблема с сетью",
-	[Key.malFetchError]: "Ошибка загрузки данных MyAnimeList",
-	[Key.malFetchErrorDesc]:
-		"Не удалось загрузить данные из MyAnimeList API при сборке. Проверьте имя пользователя и Client ID, а также убедитесь, что список открыт.",
-	[Key.malNotConfigured]: "MyAnimeList не настроен",
-	[Key.malNotConfiguredDesc]:
-		"Укажите имя пользователя и Client ID MyAnimeList в src/config/siteConfig.ts (список должен быть открытым)",
-	[Key.malLastUpdated]: "Дата обновления данных",
-	[Key.malSeasonWinter]: "Зима",
-	[Key.malSeasonSpring]: "Весна",
-	[Key.malSeasonSummer]: "Лето",
-	[Key.malSeasonFall]: "Осень",
 
 	// Пагинация
 	[Key.paginationFirst]: "Первая",
@@ -597,14 +452,6 @@ export const ru: Translation = {
 	[Key.codeCollapsibleExpanded]: "Блок кода развернут",
 	[Key.codeCollapsibleCollapsed]: "Блок кода свернут",
 
-	// Страница галереи
-	[Key.gallery]: "Галерея",
-	[Key.galleryDescription]: "Запечатлеть прекрасные моменты жизни",
-	[Key.galleryPhotos]: "фото",
-	[Key.galleryAlbums]: "альбомов",
-	[Key.galleryNoAlbums]: "Пока нет альбомов",
-	[Key.galleryBackToAlbums]: "Вернуться к альбомам",
-	[Key.galleryEnterAlbum]: "Открыть альбом",
 	[Key.searchAlbums]: "Поиск альбомов...",
 
 	// Защита паролем

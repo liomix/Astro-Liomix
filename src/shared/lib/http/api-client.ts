@@ -19,7 +19,12 @@ export type ApiErrorKind =
 	/** 4xx：请求本身有问题，重试只会重复失败 */
 	| "client"
 	/** 5xx：服务端故障，可重试但用户不必知道细节 */
-	| "server";
+	| "server"
+	/**
+	 * 响应结构不符合契约（规范 §4.4 的「schema」）。
+	 * 外部 API 改字段名的第一现场：这类失败不重试，因为再发一次还是同一个形状。
+	 */
+	| "schema";
 
 /** problem+json 里的单字段错误 */
 export interface ApiFieldError {

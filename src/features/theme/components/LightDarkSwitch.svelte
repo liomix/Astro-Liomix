@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import "@/features/theme/styles/light-dark-switch.css";
 import sunMoonData from "@/assets/lottie/sun-moon.json";
 import { originFromElement } from "@/features/theme/lib/light-dark-switch";
 import {

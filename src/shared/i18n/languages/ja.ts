@@ -158,22 +158,11 @@ export const ja: Translation = {
 		"ここは私の友達です、お互いに訪問して交流することを歓迎します",
 	[Key.searchFriends]: "友達を検索...",
 	[Key.friendsEmpty]: "まだ友達がいません",
-	[Key.booknav]: "ブックマーク集",
-	[Key.booknavDescription]: "便利なサイトをカテゴリ別に集めました",
 	[Key.searchBooknav]: "ブックマークを検索...",
-	[Key.booknavEmpty]: "ブックマークがありません",
 
 	// プロジェクト展示ページ
 	[Key.projects]: "プロジェクト",
 	[Key.projectsDescription]: "私が開発したプロジェクトです",
-	[Key.projectDetails]: "詳細を見る",
-	[Key.projectBack]: "プロジェクト一覧へ戻る",
-	[Key.projectEmpty]: "プロジェクトはまだありません",
-	[Key.projectSearch]: "プロジェクトを検索",
-	[Key.projectStatusPlanning]: "計画中",
-	[Key.projectStatusDeveloping]: "開発中",
-	[Key.projectStatusPublished]: "公開済み",
-	[Key.projectStatusArchived]: "アーカイブ",
 	[Key.guestbook]: "ゲストブック",
 	[Key.guestbookDescription]:
 		"記録しておきたいこと、あとで思い返したいことがあります",
@@ -218,109 +207,6 @@ export const ja: Translation = {
 	[Key.updatedAt]: "更新日",
 	[Key.readTime]: "読了時間",
 	[Key.license]: "ライセンス",
-	[Key.bangumi]: "Bangumi",
-
-	// バングミフィルターと状態文本
-	[Key.bangumiTitle]: "私のBangumi",
-	[Key.bangumiSubtitle]: "私の二次元の旅を記録する",
-	[Key.bangumiFilterAll]: "すべて",
-	[Key.bangumiFilterWatched]: "見た",
-	[Key.bangumiFilterWatching]: "視聴中",
-	[Key.bangumiFilterWish]: "見たい",
-	[Key.bangumiFilterOnHold]: "保留",
-	[Key.bangumiFilterDropped]: "中断",
-	[Key.bangumiFilterGamePlayed]: "プレイ済み",
-	[Key.bangumiFilterGamePlaying]: "プレイ中",
-	[Key.bangumiFilterGameWish]: "プレイしたい",
-	[Key.bangumiFilterBookRead]: "読んだ",
-	[Key.bangumiFilterBookReading]: "読んでいる",
-	[Key.bangumiFilterBookWish]: "読みたい",
-	[Key.bangumiFilterMusicListened]: "聴いた",
-	[Key.bangumiFilterMusicListening]: "聴いている",
-	[Key.bangumiFilterMusicWish]: "聴きたい",
-	[Key.bangumiStatusWish]: "見たい",
-	[Key.bangumiStatusWatched]: "見た",
-	[Key.bangumiStatusWatching]: "視聴中",
-	[Key.bangumiStatusOnHold]: "保留",
-	[Key.bangumiStatusDropped]: "中断",
-	[Key.bangumiStatusGameWish]: "プレイしたい",
-	[Key.bangumiStatusGamePlayed]: "プレイ済み",
-	[Key.bangumiStatusGamePlaying]: "プレイ中",
-	[Key.bangumiStatusBookWish]: "読みたい",
-	[Key.bangumiStatusBookRead]: "読んだ",
-	[Key.bangumiStatusBookReading]: "読んでいる",
-	[Key.bangumiStatusMusicWish]: "聴きたい",
-	[Key.bangumiStatusMusicListened]: "聴いた",
-	[Key.bangumiStatusMusicListening]: "聴いている",
-	[Key.bangumiStatusUnknown]: "不明",
-	[Key.bangumiNoData]: "データなし",
-	[Key.bangumiNoDataDescription]: "このカテゴリに項目がありません",
-	[Key.bangumiEmpty]: "データなし",
-	[Key.bangumiEmptyReason]:
-		"考えられる理由：ユーザー名が存在しない、ネットワーク接続の問題、またはAPI制限",
-	[Key.bangumiFetchError]: "Bangumi データ取得失敗",
-	[Key.bangumiFetchErrorDesc]:
-		"ビルド時に Bangumi API からのデータ取得に失敗しました。このページは一時的に利用できません。",
-	[Key.bangumiUsername]: "ユーザー名",
-	[Key.bangumiApi]: "API",
-	[Key.bangumiConfigTip]:
-		"ヒント：ページ設定で正しいBangumiユーザー名を設定してください",
-	[Key.bangumiPrevPage]: "前へ",
-	[Key.bangumiNextPage]: "次へ",
-	[Key.bangumiCurrentPage]: "ページ",
-	[Key.bangumiTotalPages]: "の",
-	[Key.bangumiPage]: "ページ",
-
-	// バングミカテゴリ
-	[Key.bangumiCategoryBook]: "本",
-	[Key.bangumiCategoryAnime]: "アニメ",
-	[Key.bangumiCategoryMusic]: "音楽",
-	[Key.bangumiCategoryGame]: "ゲーム",
-	[Key.bangumiCategoryReal]: "実写",
-
-	// バングミデータ更新
-	[Key.bangumiLastUpdated]: "データ更新日",
-	[Key.bangumiUpdatedAt]: "ビルド時間",
-	[Key.bangumiDataStatic]: "静的データ",
-
-	// VNDB
-	[Key.vndb]: "VNDB",
-	[Key.vndbSubtitle]: "私のビジュアルノベルリスト",
-	[Key.vndbFilterAll]: "すべて",
-	[Key.vndbFilterVoted]: "評価済み",
-	[Key.vndbFilterUnvoted]: "未評価",
-	[Key.vndbFilterNotes]: "ノートあり",
-	[Key.vndbStatusWishlist]: "プレイしたい",
-	[Key.vndbStatusPlaying]: "プレイ中",
-	[Key.vndbStatusFinished]: "プレイ済み",
-	[Key.vndbStatusStalled]: "保留",
-	[Key.vndbStatusDropped]: "中断",
-	[Key.vndbStatusUnknown]: "不明",
-	[Key.vndbNoData]: "データなし",
-	[Key.vndbNoDataDescription]: "このカテゴリに項目がありません",
-	[Key.vndbEmpty]: "データなし",
-	[Key.vndbEmptyReason]:
-		"考えられる理由：ユーザーIDが存在しない、リストが非公開、ネットワーク接続の問題、またはAPI制限",
-	[Key.vndbFetchError]: "VNDB データ取得失敗",
-	[Key.vndbFetchErrorDesc]:
-		"ビルド時に VNDB API からのデータ取得に失敗しました。このページは一時的に利用できません。",
-	[Key.vndbNotConfigured]: "VNDB ユーザーIDが未設定です",
-	[Key.vndbNotConfiguredDesc]:
-		"src/config/siteConfig.ts で VNDB ユーザーIDを設定してください",
-	[Key.vndbLastUpdated]: "データ更新日",
-	[Key.vndbVotes]: "票",
-	[Key.vndbLengthVeryShort]: "非常に短い",
-	[Key.vndbLengthShort]: "短い",
-	[Key.vndbLengthMedium]: "中程度",
-	[Key.vndbLengthLong]: "長い",
-	[Key.vndbLengthVeryLong]: "非常に長い",
-
-	// 追番 - Bilibili
-	[Key.bilibili]: "Bilibili",
-	[Key.bilibiliSubtitle]: "私のBilibili追番・追劇リスト",
-	[Key.bilibiliNotConfigured]: "Bilibiliデータソースが未設定",
-	[Key.bilibiliNotConfiguredDesc]:
-		"src/config/siteConfig.ts で bilibili.uid を設定してください",
 
 	// 追番 - 共通コンポーネント
 	[Key.animeTotal]: "合計",
@@ -351,36 +237,6 @@ export const ja: Translation = {
 	[Key.animeTypeChinese]: "中国アニメ",
 	[Key.animeTypeDrama]: "ドラマ",
 	[Key.animeTypeConcert]: "コンサート",
-
-	// MyAnimeList
-	[Key.mal]: "MyAnimeList",
-	[Key.malSubtitle]: "私の MyAnimeList アニメ・マンガリスト",
-	[Key.malCategoryAnime]: "アニメ",
-	[Key.malCategoryManga]: "マンガ",
-	[Key.malFilterAll]: "すべて",
-	[Key.malStatusWatching]: "視聴中",
-	[Key.malStatusReading]: "読んでいる",
-	[Key.malStatusCompleted]: "見た",
-	[Key.malStatusOnHold]: "保留",
-	[Key.malStatusDropped]: "中断",
-	[Key.malStatusPlanToWatch]: "見たい",
-	[Key.malStatusPlanToRead]: "読みたい",
-	[Key.malNoData]: "データなし",
-	[Key.malNoDataDescription]: "このカテゴリに項目がありません",
-	[Key.malEmpty]: "データなし",
-	[Key.malEmptyReason]:
-		"考えられる理由：ユーザー名が存在しない、リストが非公開、Client ID が無効、またはネットワーク接続の問題",
-	[Key.malFetchError]: "MyAnimeList データ取得失敗",
-	[Key.malFetchErrorDesc]:
-		"ビルド時に MyAnimeList API からのデータ取得に失敗しました。ユーザー名と Client ID を確認し、リストが公開であることを確認してください。",
-	[Key.malNotConfigured]: "MyAnimeList が未設定です",
-	[Key.malNotConfiguredDesc]:
-		"src/config/siteConfig.ts で MyAnimeList のユーザー名と Client ID を設定してください（リストは公開にする必要があります）",
-	[Key.malLastUpdated]: "データ更新日",
-	[Key.malSeasonWinter]: "冬",
-	[Key.malSeasonSpring]: "春",
-	[Key.malSeasonSummer]: "夏",
-	[Key.malSeasonFall]: "秋",
 
 	// ページネーション
 	[Key.paginationFirst]: "最初",
@@ -596,14 +452,6 @@ export const ja: Translation = {
 	[Key.codeCollapsibleExpanded]: "コードブロックが展開されました",
 	[Key.codeCollapsibleCollapsed]: "コードブロックが折りたたまれました",
 
-	// ギャラリーページ
-	[Key.gallery]: "ギャラリー",
-	[Key.galleryDescription]: "人生の美しい瞬間を記録する",
-	[Key.galleryPhotos]: "枚の写真",
-	[Key.galleryAlbums]: "冊のアルバム",
-	[Key.galleryNoAlbums]: "アルバムがありません",
-	[Key.galleryBackToAlbums]: "アルバム一覧に戻る",
-	[Key.galleryEnterAlbum]: "アルバムを見る",
 	[Key.searchAlbums]: "アルバムを検索...",
 
 	// パスワード保護
