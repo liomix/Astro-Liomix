@@ -17,7 +17,7 @@ export const backgroundWallpaperConfig: BackgroundWallpaperConfig = {
 	 *
 	 * 路径支持三种写法：
 	 *   1. src 目录（不以 "/" 开头，走 Astro 图片优化，推荐）："assets/images/websitewallpaper/website-bg-1.png"
-	 *   2. public 目录（以 "/" 开头，原样输出不优化）："/assets/images/banner.avif"
+	 *   2. public 目录（以 "/" 开头，原样输出不优化）："/images/banner.avif"
 	 *   3. 远程 URL（不优化，体积要小）："https://t.alcy.cc/pc"
 	 *
 	 * 单张直接用字符串；多张写成数组，每次刷新随机取一张：
@@ -35,7 +35,7 @@ export const backgroundWallpaperConfig: BackgroundWallpaperConfig = {
 		// 背景视频播放地址
 		// 支持单个视频路径（字符串）或多个视频循环（数组，参考上面壁纸配置）
 		// 支持远程视频URL，本地视频请放在 public/assets/videos/ 目录下
-		// playerUrl: "/assets/videos/firefly.mp4",
+		// playerUrl: "/videos/firefly.mp4",
 		playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4",
 	},
 	// 壁纸专用的输出设置（不影响正文 / 封面图，那些仍走 siteConfig 的 quality: 85）

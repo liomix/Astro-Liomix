@@ -11,8 +11,8 @@ const OUTPUT_FILE = "src/data/lqips.json";
 // 需要忽略的目录（相对于项目根目录）
 const IGNORE_DIRS = [
 	"public/favicon/**",
-	"public/assets/images/effects/**",
-	"public/assets/music/**",
+	"public/effects/**",
+	"public/music/**",
 ];
 
 interface RgbColor {

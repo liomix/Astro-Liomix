@@ -131,7 +131,7 @@ export const fontsList: FontDefinition[] = [
 	},
 	// ─── 本地字体示例 ───
 	// 使用步骤：
-	// 1. 将 TTF/OTF/WOFF2 字体文件放在 public/assets/fonts/ 目录下
+	// 1. 将 TTF/OTF/WOFF2 字体文件放在 public/fonts/ 目录下
 	// 2. 参考下方配置填写正确的字体信息
 	// 3. 在 fontConfig.selected 或区域字段中引用 cssVariable
 	{
@@ -144,7 +144,7 @@ export const fontsList: FontDefinition[] = [
 		options: {
 			variants: [
 				{
-					src: ["./public/assets/fonts/LXGW-WenKai-Lite-Regular.ttf"],
+					src: ["./public/fonts/LXGW-WenKai-Lite-Regular.ttf"],
 					weight: "400",
 					style: "normal",
 				},
@@ -159,7 +159,7 @@ export const fontsList: FontDefinition[] = [
 		options: {
 			variants: [
 				{
-					src: ["./public/assets/fonts/GreatVibes-Regular-2.otf"],
+					src: ["./public/fonts/GreatVibes-Regular-2.otf"],
 				},
 			],
 		},

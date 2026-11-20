@@ -28,7 +28,7 @@ export type CommentApiConfig = {
  * 表情包配置
  * ---------------------------------------------------------------------------
  * 数据由桌面端 EmojiJsonEditor 生成，一份 JSON = 一个表情包系列 = 面板里的一个 tab。
- * JSON 和图片放在同一个目录（public/assets/emoji/<系列>.json 挨着 <系列>/ 图片文件夹），
+ * JSON 和图片放在同一个目录（public/emoji/<系列>.json 挨着 <系列>/ 图片文件夹），
  * JSON 里只存「基础地址 + 文件名」，完整路径在读的时候拼出来；
  * config/commentEmojiConfig.ts 再把它摊平成组件直接能用的结构。
  */
@@ -60,7 +60,7 @@ export interface CommentEmojiItem {
 	id: string;
 	/** 无障碍名称，写在按钮的 title / aria-label 上 */
 	name: string;
-	/** 图片地址：basePath + file-name，例如 /assets/emoji/huoying/hy-1.webp */
+	/** 图片地址：basePath + file-name，例如 /emoji/huoying/hy-1.webp */
 	src: string;
 }
 

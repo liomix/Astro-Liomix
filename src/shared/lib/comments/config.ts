@@ -16,18 +16,18 @@ import type {
 	CommentEmojiPack,
 	CommentEmojiSource,
 } from "@/shared/types/comments";
-import huoying from "../../../../public/assets/emoji/huoying.json";
+import huoying from "../../../../public/emoji/huoying.json";
 
 /**
  * 评论区表情包
  * ---------------------------------------------------------------------------
  * 一份 JSON = 一个系列 = 面板里的一个 tab。JSON 由桌面端 EmojiJsonEditor 生成，
- * 和图片一起放在 public/assets/emoji/ 下（<系列>.json 挨着 <系列>/ 图片文件夹），
+ * 和图片一起放在 public/emoji/ 下（<系列>.json 挨着 <系列>/ 图片文件夹），
  * 编辑器填的「基础地址」就是图片目录在站点里的路径。
  *
  * 加一个新系列：
- *   1. 图片丢进 public/assets/emoji/<系列>/；
- *   2. 用编辑器导出 <系列>.json，放到 public/assets/emoji/ 下；
+ *   1. 图片丢进 public/emoji/<系列>/；
+ *   2. 用编辑器导出 <系列>.json，放到 public/emoji/ 下；
  *   3. 在下面 packs 里加一行 packOf(...)，标签写中文名。
  * 组件不用改：tab 按 packs 生成，只有一个系列时不显示 tab 栏。
  *

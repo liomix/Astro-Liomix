@@ -10,7 +10,7 @@ const config = musicPlayerConfig;
 const isFullUrl = (path: string) => /^https?:\/\//.test(path);
 
 // 缺省封面：没配、或配置里写了空串时，用一张内置的唱片图兜底
-const DEFAULT_COVER = "/assets/music/cover/default.svg";
+const DEFAULT_COVER = "/music/cover/default.svg";
 const defaultCover = url(
 	config.defaultCover && config.defaultCover !== ""
 		? config.defaultCover

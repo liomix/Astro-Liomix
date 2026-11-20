@@ -48,11 +48,11 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 
 	// 缺省封面：曲目没写 cover、或音频里没有内嵌封面时用它
 	// 放在 public 下，路径相对站点根目录
-	defaultCover: "/assets/music/cover/default.svg",
+	defaultCover: "/music/cover/default.svg",
 
 	// 本地音乐配置（当 mode 为 'local' 时使用）
 	// 1. 支持传入歌词文件的路径
-	// lrc: "/assets/music/lrc/直到你降临.lrc",
+	// lrc: "/music/lrc/直到你降临.lrc",
 	// 2. 或者直接填入歌词字符串内容
 	// lrc: "[00:00.00]歌词内容...",
 	local: {
@@ -61,7 +61,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 				name: "直到你降临",
 				artist: "阿肆",
 				// 从「直到你降临.mp4」无损提取的音轨（AAC 原样搬运，未二次压缩）
-				url: "/assets/music/直到你降临.m4a",
+				url: "/music/直到你降临.m4a",
 				// 不写 cover：音频本身没有内嵌封面，走上面的 defaultCover
 				lrc: "",
 			},

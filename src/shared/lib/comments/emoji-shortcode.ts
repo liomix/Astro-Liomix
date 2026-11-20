@@ -51,7 +51,7 @@ export interface MarkedEmojiExtension {
 const byToken = new Map<string, ResolvedEmoji>();
 const tokenBySrc = new Map<string, string>();
 
-/** 去掉目录与扩展名：`/assets/emoji/huoying/hy-1.webp` → `hy-1` */
+/** 去掉目录与扩展名：`/emoji/huoying/hy-1.webp` → `hy-1` */
 function stemOf(src: string): string {
 	const file = src.slice(src.lastIndexOf("/") + 1);
 	const dot = file.lastIndexOf(".");
