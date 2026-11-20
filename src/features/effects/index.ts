@@ -1,6 +1,11 @@
 /**
  * 特效域：樱花、波浪、打字机与背景视频。
- * 所有动画都必须响应 prefers-reduced-motion。
+ *
+ * 所有动画都必须响应 prefers-reduced-motion —— 两条 canvas 动画各自读 matchMedia，
+ * 系统开了「减少动态效果」就整块不启动。
+ *
+ * 出口只放域外真正消费的东西：设置面板要 sakuraConfig，global.d.ts 要两个管理器契约。
+ * waves-draw 的几何常量、worker 消息类型都是域内实现细节，透出去只会让外面误以为可用。
  */
 
 // 组件
@@ -11,30 +16,6 @@ export { default as WavesEffect } from "./components/WavesEffect.astro";
 
 // 配置
 export { sakuraConfig } from "./config";
-export type { WavesLayer } from "./lib/waves-draw";
 
-// 工具 / 契约
-export {
-	cubicBezier,
-	EASE,
-	ease,
-	TRANSLATE_FROM,
-	TRANSLATE_TO,
-	VIEWBOX,
-	WAVE_LAYERS,
-	WAVE_PATH_D,
-	WAVE_PATH_X_MAX,
-	WAVE_PATH_X_MIN,
-	WAVE_STRIP_W,
-	WAVE_X_MAX,
-	WAVE_X_MIN,
-	WavesRenderer,
-} from "./lib/waves-draw";
 // 类型
-export type {
-	SakuraConfig,
-	SakuraManagerLike,
-	SakuraWorkerInboundMessage,
-	SakuraWorkerOutboundMessage,
-	WavesManagerLike,
-} from "./types";
+export type { SakuraManagerLike, WavesManagerLike } from "./types";

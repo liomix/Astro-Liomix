@@ -2,7 +2,7 @@
 // 水波纹特效:纯主线程 Canvas 2D 实现。
 // 首帧在模块脚本中同步绘制(无 await),先于壁纸图片出现,避免闪烁;
 // 逐帧仅对预渲染条带做 drawImage(GPU 合成),开销极低,远优于原 SVG 每帧重绘。
-// 绘制几何共享自 src/utils/waves-draw.ts,管理器契约见 src/types/waves.ts
+// 绘制几何共享自 features/effects/lib/waves-draw.ts,管理器契约见 features/effects/types.ts
 import "@/features/effects/styles/waves.css";
 ---
 

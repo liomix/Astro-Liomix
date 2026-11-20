@@ -1,7 +1,7 @@
 ---
 // 樱花特效:优先使用 OffscreenCanvas + Web Worker 绘制(脱离主线程,
 // 避免页面切换时主线程阻塞导致樱花掉帧);不支持时回退到主线程 Canvas 2D 实现。
-// 配置见 src/config/effectsConfig.ts,通信协议见 src/types/sakura-worker.ts
+// 配置见 features/effects/config.ts,通信协议见 features/effects/types.ts
 ---
 
 <script>
@@ -546,26 +546,32 @@
 		window.sakuraInitialized = true;
 
 		// 读取用户设置(localStorage 优先,缺省回退到配置默认值)
-		const storedEnabled = localStorage.getItem("sakuraEnabled");
-		const isEnabled =
-			storedEnabled !== null ? storedEnabled === "true" : sakuraConfig.enable;
-		const cfg: SakuraConfig = Object.assign({}, sakuraConfig, {
-			enable: isEnabled,
-		});
-		initSakura(cfg);
+		let userEnabled = (() => {
+			const stored = localStorage.getItem("sakuraEnabled");
+			return stored !== null ? stored === "true" : sakuraConfig.enable;
+		})();
+		// 装饰动画必须响应系统「减少动态效果」(规范 §8.5 / §12.4)：
+		// 飘落的花瓣对前庭敏感的人是真实的不适来源，用户开了樱花也不画。
+		const reducedMotionQuery = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		);
+		const syncSakura = () =>
+			initSakura(
+				Object.assign({}, sakuraConfig, {
+					enable: userEnabled && !reducedMotionQuery.matches,
+				}),
+			);
+		syncSakura();
+
+		// 系统设置切换时同步生效，不必刷新页面
+		reducedMotionQuery.addEventListener("change", syncSakura);
 
 		// 监听设置面板的樱花特效切换事件(放在守卫内,避免重复注册)
 		window.addEventListener("sakuraToggle", (e: Event) => {
 			const detail = (e as CustomEvent<{ enabled: boolean }>).detail;
 			if (!detail) return;
-			const mgr = window.sakuraManager;
-			if (!mgr) return;
-			if (detail.enabled && !mgr.getIsRunning()) {
-				mgr.config.enable = true;
-				void mgr.init();
-			} else if (!detail.enabled && mgr.getIsRunning()) {
-				mgr.stop();
-			}
+			userEnabled = detail.enabled;
+			syncSakura();
 		});
 	})();
 </script>

@@ -6,7 +6,6 @@ import {
 } from "@/features/dynamic/lib/dynamic-actions";
 import { registerDynamicGallery } from "@/features/dynamic/lib/dynamic-gallery";
 import { dynamicAnchor } from "@/features/dynamic/lib/dynamic-utils";
-import { fetchMemos } from "@/features/dynamic/lib/memos-adapter";
 import CardSkeleton from "@/shared/components/ui/CardSkeleton.svelte";
 import ClientPagination from "@/shared/components/ui/ClientPagination.svelte";
 import { registerEmptyLottie } from "@/shared/components/ui/empty-lottie";
@@ -44,12 +43,6 @@ type DynamicData = {
 	comments?: number;
 };
 
-interface MemosConfig {
-	enable: boolean;
-	apiUrl: string;
-	parent?: string;
-}
-
 interface Props {
 	source: string;
 	itemsPerPage: number;
@@ -62,7 +55,6 @@ interface Props {
 	allYearsText: string;
 	/** 抽屉没有内容时的提示 */
 	commentEmptyText: string;
-	memos?: MemosConfig;
 }
 
 const {
@@ -75,7 +67,6 @@ const {
 	loadingText,
 	allYearsText,
 	commentEmptyText,
-	memos,
 }: Props = $props();
 
 let entries = $state<DynamicData[]>([]);
@@ -265,14 +256,13 @@ function createItem(entry: DynamicData) {
 	if (time) {
 		const date = new Date(entry.published);
 		time.dateTime = date.toISOString();
-		// 第三方 API 和 Memos 使用浏览器本地时区，本地构建数据用站点时区
-		time.textContent =
-			source.startsWith("http") || memos?.enable
-				? formatDynamicDate(
-						date,
-						Intl.DateTimeFormat().resolvedOptions().timeZone,
-					)
-				: formatDynamicDate(date);
+		// 第三方 API 用浏览器本地时区，本地构建数据用站点时区
+		time.textContent = source.startsWith("http")
+			? formatDynamicDate(
+					date,
+					Intl.DateTimeFormat().resolvedOptions().timeZone,
+				)
+			: formatDynamicDate(date);
 	}
 
 	const content = root.querySelector<HTMLElement>("[data-dynamic-content]");
@@ -478,13 +468,9 @@ onMount(() => {
 
 	const load = async () => {
 		try {
-			if (memos?.enable) {
-				entries = await fetchMemos(memos.apiUrl, { parent: memos.parent });
-			} else {
-				const response = await fetch(source);
-				if (!response.ok) throw new Error(`HTTP ${response.status}`);
-				entries = (await response.json()) as DynamicData[];
-			}
+			const response = await fetch(source);
+			if (!response.ok) throw new Error(`HTTP ${response.status}`);
+			entries = (await response.json()) as DynamicData[];
 			// 更新页头统计（动态条数 / 获赞 / 评论）
 			syncHeroStats();
 			// 真实评论数随后端回来再刷一次；拿不到就沿用数据源里的基数

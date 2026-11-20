@@ -31,7 +31,6 @@ const limit = Math.max(1, Math.floor(configuredLimit));
 const apiUrl = dynamicConfig.apiUrl?.startsWith("http")
 	? dynamicConfig.apiUrl
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
-const memos = dynamicConfig.memos;
 
 const profileUrl = url(dynamicConfig.profileUrl || "/");
 
@@ -85,7 +84,6 @@ const avatarPosterUrl = profileConfig.avatarPoster
 				client:visible
 				apiUrl={apiUrl}
 				limit={limit}
-				{memos}
 				profileName={profileConfig.name}
 				{profileUrl}
 				{avatarUrl}

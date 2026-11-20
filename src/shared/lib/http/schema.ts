@@ -3,7 +3,7 @@
  *
  * **只给构建期取数用**：导入方是 `features/<域>/client.ts`，而 client.ts 只被
  * `lib/load.ts` 在预渲染时调用。浏览器里的请求**不要**引这个文件——zod 会被打进首屏，
- * 运行期请在手写守卫里判形状（见 `features/dynamic/lib/memos-adapter.ts`）。
+ * 运行期请在手写守卫里判形状（浏览器侧不要引 zod）。
  *
  * 失败形态统一成 ApiError `kind: "schema"`：外部 API 改字段名时，构建会在这里停住，
  * 并打印「哪个字段、期望什么」——而不是渲染出一页空卡片。

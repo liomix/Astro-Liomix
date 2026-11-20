@@ -642,6 +642,7 @@ const showTabs = packs.length > 1;
 		formatTime,
 		isToday,
 		paintEmptyPlaceholder,
+		prepareMarkdown,
 		setMarkdown,
 		toneOf,
 	} from "@/shared/lib/comments/comment-render";
@@ -657,6 +658,8 @@ const showTabs = packs.length > 1;
 
 
 	function init() {
+		// marked 按需加载：在拉评论的同时并行起 import，真渲染时不至于还是纯文本
+		void prepareMarkdown();
 		const chat = document.querySelector<HTMLElement>("[data-tg-chat]");
 		if (!chat) return;
 

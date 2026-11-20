@@ -8,7 +8,7 @@
  * 改白名单等于改评论的信任边界，别为了显示效果放宽它。
  */
 
-import { Marked, type Tokens } from "marked";
+import type { Marked, Tokens } from "marked";
 import { createEmptyLottie } from "@/shared/components/ui/empty-lottie";
 import { emojiShortcodeExtension } from "./emoji-shortcode";
 
@@ -77,19 +77,34 @@ function escapeCommentHtml(value: string): string {
 	});
 }
 
-// Marked 18 去掉了 `html: false` 选项，等价做法是让 html 渲染器只吐转义文本；
-// 下面的 sanitizeHtml 是第二道闸，白名单之外的元素/属性全部丢掉。
-const md = new Marked({
-	gfm: true,
-	breaks: true,
-	renderer: {
-		html: ({ text }: Tokens.HTML | Tokens.Tag) => escapeCommentHtml(text ?? ""),
-	},
-});
+/**
+ * marked 是首屏最重的一块（约 45 KB）。按需加载：进评论脚本时 `prepareMarkdown()`
+ * 起一次 import，没到位之前 `setMarkdown` 先用纯文本顶着。
+ * 别改回顶层 import —— 那会把它重新钉进首屏预算（scripts/check-js-budget.ts 会红）。
+ */
+let md: Marked | null = null;
+let mdLoading: Promise<void> | null = null;
 
-// 行内表情：正文里存的是短码（`:huoying/hy-1:`），渲染时才翻译成图片。
-// 做成扩展而不是先替换再解析，是为了让代码块和行内代码里的短码原样留着。
-md.use({ extensions: [emojiShortcodeExtension] });
+export function prepareMarkdown(): Promise<void> {
+	mdLoading ??= (async () => {
+		const { Marked } = await import("marked");
+		// Marked 18 去掉了 `html: false` 选项，等价做法是让 html 渲染器只吐转义文本；
+		// 下面的 sanitizeHtml 是第二道闸，白名单之外的元素/属性全部丢掉。
+		const parser = new Marked({
+			gfm: true,
+			breaks: true,
+			renderer: {
+				html: ({ text }: Tokens.HTML | Tokens.Tag) =>
+					escapeCommentHtml(text ?? ""),
+			},
+		});
+		// 行内表情：正文里存的是短码（`:huoying/hy-1:`），渲染时才翻译成图片。
+		// 做成扩展而不是先替换再解析，是为了让代码块和行内代码里的短码原样留着。
+		parser.use({ extensions: [emojiShortcodeExtension] });
+		md = parser;
+	})();
+	return mdLoading;
+}
 
 /** 语言标识 → 顶栏显示名；表里没有的原样显示，没写语言的用「代码」兜底 */
 const LANG_NAMES: Record<string, string> = {
@@ -285,7 +300,8 @@ function sanitizeHtml(html: string): string {
 
 /** 把 Markdown 渲染成可安全插入气泡的 HTML */
 function renderMarkdown(text: string): string {
-	return sanitizeHtml(md.parse(text) as string);
+	// 走到这里 md 一定就绪：setMarkdown 在未就绪时会先走纯文本分支
+	return md ? sanitizeHtml(md.parse(text) as string) : "";
 }
 
 /** 代码块顶栏要用的三条文案，由 Astro 那边按语言渲染好传进来 */
@@ -337,6 +353,12 @@ export function setMarkdown(
 	text: string,
 	labels: CodeLabels,
 ): void {
+	if (!md) {
+		// 解析器还在路上：先放纯文本，到位后原地重渲染一次
+		target.textContent = text;
+		void prepareMarkdown().then(() => setMarkdown(target, text, labels));
+		return;
+	}
 	target.innerHTML = renderMarkdown(text);
 	decorateCodeBlocks(target, labels);
 }

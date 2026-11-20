@@ -27,7 +27,6 @@ const showComments =
 const dataUrl = dynamicConfig.apiUrl?.startsWith("http")
 	? dynamicConfig.apiUrl
 	: url(dynamicConfig.apiUrl || "/api/dynamic.json");
-const memos = dynamicConfig.memos;
 ---
 
 <MainGridLayout title={title} description={description}>
@@ -61,7 +60,6 @@ const memos = dynamicConfig.memos;
 				noResultsText={i18n(I18nKey.dynamicNoResults)}
 				loadingText={i18n(I18nKey.dynamicLoading)}
 				allYearsText={i18n(I18nKey.dynamicAllYears)}
-				{memos}
 			/>
 
 			<DynamicItemTemplate />

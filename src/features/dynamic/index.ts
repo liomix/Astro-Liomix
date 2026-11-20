@@ -26,7 +26,5 @@ export {
 	dynamicSlug,
 	sortDynamics,
 } from "./lib/dynamic-utils";
-export type { DynamicEntry, DynamicImage } from "./lib/memos-adapter";
-export { fetchMemos } from "./lib/memos-adapter";
 // 类型
-export type { DynamicConfig, DynamicMemocsConfig } from "./types";
+export type { DynamicConfig } from "./types";

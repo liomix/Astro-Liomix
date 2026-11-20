@@ -11,7 +11,6 @@ import {
 	syncDynamicLikeStates,
 } from "@/features/dynamic/lib/dynamic-actions";
 import { dynamicAnchor } from "@/features/dynamic/lib/dynamic-utils";
-import { fetchMemos } from "@/features/dynamic/lib/memos-adapter";
 import SidebarDialog from "@/shared/components/ui/SidebarDialog.svelte";
 import I18nKey from "@/shared/i18n/i18nKey";
 import { i18n } from "@/shared/i18n/translation";
@@ -39,16 +38,9 @@ interface DynamicEntry {
 	comments?: number;
 }
 
-interface MemosConfig {
-	enable: boolean;
-	apiUrl: string;
-	parent?: string;
-}
-
 interface Props {
 	apiUrl: string;
 	limit: number;
-	memos?: MemosConfig;
 	/** 站长信息，用于弹窗条目的头像与昵称 */
 	profileName: string;
 	profileUrl: string;
@@ -60,7 +52,6 @@ interface Props {
 let {
 	apiUrl,
 	limit,
-	memos,
 	profileName,
 	profileUrl,
 	avatarUrl,
@@ -89,11 +80,7 @@ onMount(async () => {
 	registerDynamicActions();
 	try {
 		let data: DynamicEntry[];
-		if (memos?.enable) {
-			data = await fetchMemos(memos.apiUrl, { parent: memos.parent });
-		} else {
-			data = await fetchWithDedup(apiUrl);
-		}
+		data = await fetchWithDedup(apiUrl);
 
 		allEntries = data;
 		totalCount = data.length;
@@ -140,10 +127,10 @@ function getPlainText(html: string): string {
 }
 
 // 格式化日期：统一「YYYY-MM-DD HH:mm」
-// 第三方 API 和 Memos 使用浏览器本地时区，本地数据用站点时区
+// 第三方 API 用浏览器本地时区，本地数据用站点时区
 function formatDate(timestamp: number): string {
 	const date = new Date(timestamp);
-	if (apiUrl.startsWith("http") || memos?.enable) {
+	if (apiUrl.startsWith("http")) {
 		return formatDynamicDate(
 			date,
 			Intl.DateTimeFormat().resolvedOptions().timeZone,
